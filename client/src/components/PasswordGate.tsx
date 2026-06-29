@@ -71,25 +71,14 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
 
       <div className="max-w-md w-full flex flex-col items-center gap-8 relative z-10">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden"
-            style={{ background: 'oklch(0.22 0.01 65)' }}
-          >
-            <img
-              src="/logo.webp"
-              alt="Top of Temecula"
-              className="w-16 h-auto"
-            />
-          </div>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/logo.webp"
+            alt="Top of Temecula"
+            className="w-64 h-auto drop-shadow-md"
+          />
           <div className="text-center">
-            <p className="tot-eyebrow mb-1">Welcome to</p>
-            <h1 className="text-3xl font-serif font-bold text-foreground leading-tight">
-              Top of Temecula
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 font-medium tracking-wide">
-              Ambassador Training Portal
-            </p>
+            <p className="tot-eyebrow mb-1">Ambassador Training Portal</p>
           </div>
         </div>
 
