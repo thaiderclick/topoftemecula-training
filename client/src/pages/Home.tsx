@@ -1,41 +1,109 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  BookOpen, 
-  CheckCircle, 
-  Award, 
-  ArrowRight, 
-  ArrowLeft, 
-  RefreshCw, 
-  HelpCircle, 
-  ChevronRight, 
-  MapPin, 
-  FileText, 
-  Video, 
-  Shield, 
-  Compass, 
+import { useAuth } from '@/_core/hooks/useAuth';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Link } from 'wouter';
+import { getLoginUrl } from '@/const';
+import {
+  BookOpen,
+  CheckCircle,
+  Award,
+  ArrowRight,
+  ArrowLeft,
+  RefreshCw,
+  HelpCircle,
+  ChevronRight,
+  FileText,
+  Video,
+  Shield,
   Sparkles,
   Volume2,
   Check,
   X,
   Lock,
-  ExternalLink,
-  Smartphone
+  MessageSquare,
+  Eye,
+  EyeOff,
+  LogIn,
+  Loader2,
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
-import { trainingModules, finalReadinessTest, Module, Question } from '../data/trainingData';
+import { trainingModules, finalReadinessTest, Module } from '../data/trainingData';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ProgressState {
+  completedModules: string[];
+  completedQuizzes: string[];
+  completedAssignments: string[];
+  assignmentsData: Record<string, string>;
+  safetyCompleted: boolean;
+  passedFinalTest: boolean;
+  finalTestScore: number | null;
+  shift1DebriefData: Record<string, string> | null;
+}
+
+const DEFAULT_PROGRESS: ProgressState = {
+  completedModules: [],
+  completedQuizzes: [],
+  completedAssignments: [],
+  assignmentsData: {},
+  safetyCompleted: false,
+  passedFinalTest: false,
+  finalTestScore: null,
+  shift1DebriefData: null,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  // State for user progress (persisted in localStorage)
-  const [completedModules, setCompletedCompletedModules] = useState<string[]>([]);
-  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
-  const [completedAssignments, setCompletedAssignments] = useState<string[]>([]);
-  const [passedFinalTest, setPassedFinalTest] = useState(false);
-  const [assignmentsData, setAssignmentsData] = useState<Record<string, string>>({});
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
 
-  // Navigation states
+  // ── Server progress sync ──
+  const progressQuery = trpc.training.getProgress.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const saveProgressMutation = trpc.training.saveProgress.useMutation();
+
+  // ── Local progress state (mirrors server) ──
+  const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+
+  useEffect(() => {
+    if (progressQuery.data && !progressLoaded) {
+      setProgress({
+        completedModules: progressQuery.data.completedModules ?? [],
+        completedQuizzes: progressQuery.data.completedQuizzes ?? [],
+        completedAssignments: progressQuery.data.completedAssignments ?? [],
+        assignmentsData: (progressQuery.data.assignmentsData as Record<string, string>) ?? {},
+        safetyCompleted: progressQuery.data.safetyCompleted ?? false,
+        passedFinalTest: progressQuery.data.passedFinalTest ?? false,
+        finalTestScore: progressQuery.data.finalTestScore ?? null,
+        shift1DebriefData: (progressQuery.data.shift1DebriefData as Record<string, string> | null) ?? null,
+      });
+      setProgressLoaded(true);
+    }
+  }, [progressQuery.data, progressLoaded]);
+
+  const saveProgress = (updates: Partial<ProgressState>) => {
+    const next = { ...progress, ...updates };
+    setProgress(next);
+    saveProgressMutation.mutate({
+      completedModules: next.completedModules,
+      completedQuizzes: next.completedQuizzes,
+      completedAssignments: next.completedAssignments,
+      assignmentsData: next.assignmentsData,
+      safetyCompleted: next.safetyCompleted,
+      passedFinalTest: next.passedFinalTest,
+      finalTestScore: next.finalTestScore ?? undefined,
+      shift1DebriefData: next.shift1DebriefData ?? undefined,
+    });
+  };
+
+  // ── Navigation state ──
   const [activeModuleId, setActiveModuleId] = useState<string>('day1');
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
@@ -43,104 +111,49 @@ export default function Home() {
   const [quizScore, setQuizScore] = useState<number>(0);
   const [showQuiz, setShowQuiz] = useState<boolean>(false);
   const [showAssignment, setShowAssignment] = useState<boolean>(false);
-
-  // Final test states
   const [showFinalTest, setShowFinalTest] = useState(false);
   const [finalTestAnswers, setFinalTestAnswers] = useState<Record<string, number>>({});
   const [finalTestSubmitted, setFinalTestSubmitted] = useState(false);
   const [finalTestScore, setFinalTestScore] = useState(0);
-
-  // Script card flip states
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [revealedRecall, setRevealedRecall] = useState<Record<string, boolean>>({});
+  const [showShift1Debrief, setShowShift1Debrief] = useState(false);
+  const [shift1DebriefAnswers, setShift1DebriefAnswers] = useState<Record<string, string>>({});
 
-  // Mobile drawer/sidebar toggle
-  const [sidebarOpen, setSidebarSidebarOpen] = useState(false);
-
-  // Load progress from localStorage on mount
-  useEffect(() => {
-    const savedCompletedModules = localStorage.getItem('tot_completed_modules');
-    const savedCompletedQuizzes = localStorage.getItem('tot_completed_quizzes');
-    const savedCompletedAssignments = localStorage.getItem('tot_completed_assignments');
-    const savedPassedFinal = localStorage.getItem('tot_passed_final');
-    const savedAssignments = localStorage.getItem('tot_assignments_data');
-
-    if (savedCompletedModules) setCompletedCompletedModules(JSON.parse(savedCompletedModules));
-    if (savedCompletedQuizzes) setCompletedQuizzes(JSON.parse(savedCompletedQuizzes));
-    if (savedCompletedAssignments) setCompletedAssignments(JSON.parse(savedCompletedAssignments));
-    if (savedPassedFinal) setPassedFinalTest(JSON.parse(savedPassedFinal));
-    if (savedAssignments) setAssignmentsData(JSON.parse(savedAssignments));
-  }, []);
-
-  // Save progress helpers
-  const saveCompletedModules = (modules: string[]) => {
-    setCompletedCompletedModules(modules);
-    localStorage.setItem('tot_completed_modules', JSON.stringify(modules));
-  };
-
-  const saveCompletedQuizzes = (quizzes: string[]) => {
-    setCompletedQuizzes(quizzes);
-    localStorage.setItem('tot_completed_quizzes', JSON.stringify(quizzes));
-  };
-
-  const saveCompletedAssignments = (assignments: string[]) => {
-    setCompletedAssignments(assignments);
-    localStorage.setItem('tot_completed_assignments', JSON.stringify(assignments));
-  };
-
-  const savePassedFinal = (passed: boolean) => {
-    setPassedFinalTest(passed);
-    localStorage.setItem('tot_passed_final', JSON.stringify(passed));
-  };
-
-  const saveAssignmentsData = (data: Record<string, string>) => {
-    setAssignmentsData(data);
-    localStorage.setItem('tot_assignments_data', JSON.stringify(data));
-  };
-
-  const resetProgress = () => {
-    if (window.confirm("Are you sure you want to reset your training progress? This will clear all quiz scores and assignment answers.")) {
-      setCompletedCompletedModules([]);
-      setCompletedQuizzes([]);
-      setCompletedAssignments([]);
-      setPassedFinalTest(false);
-      setAssignmentsData({});
-      setQuizAnswers({});
-      setQuizSubmitted(false);
-      setFinalTestAnswers({});
-      setFinalTestSubmitted(false);
-      setActiveModuleId('day1');
-      setCurrentSlideIndex(0);
-      setShowQuiz(false);
-      setShowAssignment(false);
-      setShowFinalTest(false);
-      localStorage.clear();
-      toast.success("Progress reset successfully.");
-    }
-  };
-
-  // Find active module
+  // Sync local assignment data to textarea
   const activeModule = trainingModules.find(m => m.id === activeModuleId) || trainingModules[0];
 
-  // Progress percentage calculation
-  const totalSteps = trainingModules.length * 3 + 1; // 3 modules (slides, quiz, assignment) + 1 final test
+  // ── Progress calculations ──
+  const totalSteps = trainingModules.length * 3 + 2; // slides, quiz, assignment per module + safety + final
   let completedSteps = 0;
   trainingModules.forEach(m => {
-    if (completedModules.includes(m.id)) completedSteps++;
-    if (completedQuizzes.includes(m.id)) completedSteps++;
-    if (completedAssignments.includes(m.id)) completedSteps++;
+    if (progress.completedModules.includes(m.id)) completedSteps++;
+    if (progress.completedQuizzes.includes(m.id)) completedSteps++;
+    if (progress.completedAssignments.includes(m.id)) completedSteps++;
   });
-  if (passedFinalTest) completedSteps++;
+  if (progress.safetyCompleted) completedSteps++;
+  if (progress.passedFinalTest) completedSteps++;
   const overallProgress = Math.round((completedSteps / totalSteps) * 100);
 
-  // Handle slide navigation
+  // ── Gating logic ──
+  const isModuleUnlocked = (moduleId: string) => {
+    const index = trainingModules.findIndex(m => m.id === moduleId);
+    if (index === 0) return true;
+    const prevMod = trainingModules[index - 1];
+    return progress.completedAssignments.includes(prevMod.id);
+  };
+
+  const isSafetyUnlocked = () => trainingModules.every(m => progress.completedAssignments.includes(m.id));
+  const isFinalTestUnlocked = () => isSafetyUnlocked() && progress.safetyCompleted;
+
+  // ── Slide navigation ──
   const nextSlide = () => {
     if (currentSlideIndex < activeModule.slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
     } else {
-      // End of slides, transition to Quiz
-      if (!completedModules.includes(activeModule.id)) {
-        const updated = [...completedModules, activeModule.id];
-        saveCompletedModules(updated);
+      if (!progress.completedModules.includes(activeModule.id)) {
+        saveProgress({ completedModules: [...progress.completedModules, activeModule.id] });
         toast.success(`Day ${activeModule.day} Content Completed! Moving to Knowledge Check.`);
       }
       setShowQuiz(true);
@@ -150,162 +163,195 @@ export default function Home() {
   };
 
   const prevSlide = () => {
-    if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
-    }
+    if (currentSlideIndex > 0) setCurrentSlideIndex(currentSlideIndex - 1);
   };
 
-  // Handle quiz selection
+  // ── Quiz ──
   const handleQuizAnswerSelect = (questionId: string, optionIndex: number) => {
     if (quizSubmitted) return;
     setQuizAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
   };
 
-  // Submit quiz
   const submitQuiz = () => {
-    // Validate all answered
     const unanswered = activeModule.quiz.filter(q => quizAnswers[q.id] === undefined);
-    if (unanswered.length > 0) {
-      toast.error("Please answer all questions before submitting.");
-      return;
-    }
-
+    if (unanswered.length > 0) { toast.error('Please answer all questions before submitting.'); return; }
     let correctCount = 0;
-    activeModule.quiz.forEach(q => {
-      if (quizAnswers[q.id] === q.correctAnswer) correctCount++;
-    });
-
+    activeModule.quiz.forEach(q => { if (quizAnswers[q.id] === q.correctAnswer) correctCount++; });
     setQuizScore(correctCount);
     setQuizSubmitted(true);
-
     if (correctCount === activeModule.quiz.length) {
-      if (!completedQuizzes.includes(activeModule.id)) {
-        saveCompletedQuizzes([...completedQuizzes, activeModule.id]);
+      if (!progress.completedQuizzes.includes(activeModule.id)) {
+        saveProgress({ completedQuizzes: [...progress.completedQuizzes, activeModule.id] });
       }
-      toast.success("Perfect score! Knowledge check passed.");
+      toast.success('Perfect score! Knowledge check passed.');
     } else {
       toast.error(`Score: ${correctCount}/${activeModule.quiz.length}. Review explanations and try again for a perfect score!`);
     }
   };
 
-  // Submit assignment
+  // ── Assignment ──
   const handleAssignmentSubmit = (text: string) => {
-    if (!text.trim()) {
-      toast.error("Please enter your assignment response before submitting.");
-      return;
-    }
-
-    const updatedData = { ...assignmentsData, [activeModule.id]: text };
-    saveAssignmentsData(updatedData);
-
-    if (!completedAssignments.includes(activeModule.id)) {
-      saveCompletedAssignments([...completedAssignments, activeModule.id]);
-    }
-
-    toast.success(`Day ${activeModule.day} Assignment Submitted Successfully!`);
+    if (!text.trim()) { toast.error('Please enter your assignment response before submitting.'); return; }
+    const updatedData = { ...progress.assignmentsData, [activeModule.id]: text };
+    const updatedAssignments = progress.completedAssignments.includes(activeModule.id)
+      ? progress.completedAssignments
+      : [...progress.completedAssignments, activeModule.id];
+    saveProgress({ assignmentsData: updatedData, completedAssignments: updatedAssignments });
+    toast.success(`Day ${activeModule.day} Assignment Submitted!`);
     setShowAssignment(false);
-
-    // Auto unlock next module if available
     const currentIndex = trainingModules.findIndex(m => m.id === activeModule.id);
     if (currentIndex < trainingModules.length - 1) {
       const nextMod = trainingModules[currentIndex + 1];
       setActiveModuleId(nextMod.id);
       setCurrentSlideIndex(0);
       setShowQuiz(false);
-      setShowAssignment(false);
-    } else {
-      // Completed all modules, unlock Final Test
-      setShowFinalTest(true);
-      setFinalTestAnswers({});
-      setFinalTestSubmitted(false);
     }
   };
 
-  // Final Test Answer Select
+  // ── Final Test ──
   const handleFinalTestSelect = (questionId: string, optionIndex: number) => {
     if (finalTestSubmitted) return;
     setFinalTestAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
   };
 
-  // Submit Final Test
   const submitFinalTest = () => {
     const unanswered = finalReadinessTest.filter(q => finalTestAnswers[q.id] === undefined);
-    if (unanswered.length > 0) {
-      toast.error("Please answer all 10 questions before submitting.");
-      return;
-    }
-
+    if (unanswered.length > 0) { toast.error('Please answer all 10 questions before submitting.'); return; }
     let correctCount = 0;
-    finalReadinessTest.forEach(q => {
-      if (finalTestAnswers[q.id] === q.correctAnswer) correctCount++;
-    });
-
+    finalReadinessTest.forEach(q => { if (finalTestAnswers[q.id] === q.correctAnswer) correctCount++; });
     setFinalTestScore(correctCount);
     setFinalTestSubmitted(true);
-
     if (correctCount === finalReadinessTest.length) {
-      savePassedFinal(true);
-      toast.success("CONGRATULATIONS! You scored 10/10 and passed the Final Readiness Test!");
+      saveProgress({ passedFinalTest: true, finalTestScore: correctCount });
+      toast.success('CONGRATULATIONS! You scored 10/10 and passed the Final Readiness Test!');
     } else {
-      toast.error(`Score: ${correctCount}/10. You must score 10/10 to pass and unlock your clearance certificate. Review and retry!`);
+      toast.error(`Score: ${correctCount}/10. You must score 10/10 to pass. Review and retry!`);
     }
   };
 
-  // Check if a module is unlocked
-  const isModuleUnlocked = (moduleId: string) => {
-    const index = trainingModules.findIndex(m => m.id === moduleId);
-    if (index === 0) return true;
-    
-    // Unlocked if previous module's assignment is completed
-    const prevMod = trainingModules[index - 1];
-    return completedAssignments.includes(prevMod.id);
+  const retryFinalTest = () => {
+    setFinalTestSubmitted(false);
+    setFinalTestAnswers({});
+    setFinalTestScore(0);
   };
 
-  // Check if final test is unlocked
-  const isFinalTestUnlocked = () => {
-    return trainingModules.every(m => completedAssignments.includes(m.id));
+  // ── Shift 1 Debrief ──
+  const handleShift1Submit = () => {
+    const required = ['what_went_well', 'what_was_hard', 'one_thing_to_improve'];
+    const missing = required.filter(k => !shift1DebriefAnswers[k]?.trim());
+    if (missing.length > 0) { toast.error('Please answer all three debrief questions.'); return; }
+    saveProgress({ shift1DebriefData: shift1DebriefAnswers });
+    toast.success('Shift 1 Debrief submitted! Great reflection.');
+    setShowShift1Debrief(false);
   };
 
-  // Toggle card flip helper
-  const toggleCardFlip = (cardId: string) => {
-    setFlippedCards(prev => ({ ...prev, [cardId]: !prev[cardId] }));
+  // ── Helpers ──
+  const toggleCardFlip = (cardId: string) => setFlippedCards(prev => ({ ...prev, [cardId]: !prev[cardId] }));
+  const toggleRecall = (key: string) => setRevealedRecall(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const resetProgress = () => {
+    if (!window.confirm('Reset all training progress? This cannot be undone.')) return;
+    const empty = DEFAULT_PROGRESS;
+    setProgress(empty);
+    setProgressLoaded(false);
+    saveProgressMutation.mutate({
+      completedModules: [],
+      completedQuizzes: [],
+      completedAssignments: [],
+      assignmentsData: {},
+      safetyCompleted: false,
+      passedFinalTest: false,
+    });
+    setActiveModuleId('day1');
+    setCurrentSlideIndex(0);
+    setShowQuiz(false);
+    setShowAssignment(false);
+    setShowFinalTest(false);
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setFinalTestAnswers({});
+    setFinalTestSubmitted(false);
+    toast.success('Progress reset successfully.');
   };
+
+  // ─── Loading / Auth Gate ───────────────────────────────────────────────────
+
+  if (authLoading || (isAuthenticated && !progressLoaded && progressQuery.isLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your training portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md w-full text-center flex flex-col items-center gap-6">
+          <img
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
+            alt="Top of Temecula"
+            className="w-16 h-16 rounded-full border-2 border-primary shadow-md"
+          />
+          <div>
+            <h1 className="text-2xl font-serif font-extrabold text-foreground">Top of Temecula</h1>
+            <p className="text-sm text-muted-foreground mt-1">Ambassador Training Portal</p>
+          </div>
+          <Card className="w-full border-border bg-card p-6 text-left">
+            <p className="text-sm text-muted-foreground mb-4">
+              Sign in to access your paid training modules, track your progress, and unlock your Field Clearance Certificate.
+            </p>
+            <a href={getLoginUrl()}>
+              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-5 font-bold gap-2">
+                <LogIn className="w-4 h-4" /> Sign In to Start Training
+              </Button>
+            </a>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main Training Portal ──────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground transition-colors duration-300">
-      
+    <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
+
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
-          <img 
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp" 
-            alt="Top of Temecula" 
+          <img
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
+            alt="Top of Temecula"
             className="w-8 h-8 rounded-full border border-primary"
           />
           <h1 className="text-lg font-serif font-bold text-foreground">Top of Temecula</h1>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setSidebarSidebarOpen(!sidebarOpen)}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
           className="border-primary text-primary hover:bg-primary/10"
         >
-          {sidebarOpen ? 'Close Menu' : 'View Progress'}
+          {sidebarOpen ? 'Close' : 'Progress'}
         </Button>
       </header>
 
-      {/* Sidebar - Desktop fixed, Mobile overlay drawer */}
+      {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-80 bg-card border-r border-border p-6 flex flex-col justify-between
         transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col gap-6 overflow-y-auto pr-2">
-          {/* Brand Header */}
+          {/* Brand */}
           <div className="flex items-center gap-4 border-b border-border pb-6">
-            <img 
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp" 
-              alt="Top of Temecula Logo" 
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
+              alt="Top of Temecula Logo"
               className="w-12 h-12 rounded-full border-2 border-primary shadow-sm"
             />
             <div>
@@ -314,7 +360,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Progress Tracker Widget */}
+          {/* Progress widget */}
           <div className="bg-background/60 rounded-xl p-4 border border-border shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -330,15 +376,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Training Module Navigation List */}
+          {/* Module nav */}
           <nav className="flex flex-col gap-2">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1">Training Modules</h3>
-            
             {trainingModules.map((m) => {
               const unlocked = isModuleUnlocked(m.id);
-              const active = activeModuleId === m.id && !showFinalTest;
-              const completed = completedAssignments.includes(m.id);
-
+              const active = activeModuleId === m.id && !showFinalTest && !showShift1Debrief;
+              const completed = progress.completedAssignments.includes(m.id);
               return (
                 <button
                   key={m.id}
@@ -349,47 +393,32 @@ export default function Home() {
                     setShowQuiz(false);
                     setShowAssignment(false);
                     setShowFinalTest(false);
-                    setSidebarSidebarOpen(false);
+                    setShowShift1Debrief(false);
+                    setSidebarOpen(false);
                   }}
                   className={`
-                    w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 relative overflow-hidden
-                    ${active 
-                      ? 'bg-primary/10 border-primary text-foreground shadow-sm font-medium' 
-                      : unlocked 
-                        ? 'bg-transparent border-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground' 
-                        : 'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'
-                    }
+                    w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
+                    ${active ? 'bg-primary/10 border-primary text-foreground shadow-sm font-medium' :
+                      unlocked ? 'bg-transparent border-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground' :
+                      'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'}
                   `}
                 >
-                  {/* Visual Status Indicator */}
                   <div className="mt-0.5">
-                    {completed ? (
-                      <CheckCircle className="w-5 h-5 text-primary" />
-                    ) : !unlocked ? (
-                      <Lock className="w-5 h-5 text-muted-foreground/30" />
-                    ) : (
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold
-                        ${active ? 'border-primary text-primary' : 'border-muted-foreground/40 text-muted-foreground/60'}
-                      `}>
-                        {m.day}
-                      </div>
-                    )}
+                    {completed ? <CheckCircle className="w-5 h-5 text-primary" /> :
+                     !unlocked ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
+                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${active ? 'border-primary text-primary' : 'border-muted-foreground/40 text-muted-foreground/60'}`}>{m.day}</div>}
                   </div>
-
-                  {/* Module Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
                       <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Day {m.day}</span>
                       <span className="text-[10px] text-muted-foreground">{m.duration}</span>
                     </div>
                     <h4 className="text-sm font-bold truncate text-foreground mt-0.5">{m.title}</h4>
-                    
-                    {/* Visual Milestones Sub-Progress */}
                     {unlocked && (
                       <div className="flex gap-1 mt-2">
-                        <span className={`h-1 flex-1 rounded-full ${completedModules.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
-                        <span className={`h-1 flex-1 rounded-full ${completedQuizzes.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
-                        <span className={`h-1 flex-1 rounded-full ${completedAssignments.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
+                        <span className={`h-1 flex-1 rounded-full ${progress.completedModules.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
+                        <span className={`h-1 flex-1 rounded-full ${progress.completedQuizzes.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
+                        <span className={`h-1 flex-1 rounded-full ${progress.completedAssignments.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
                       </div>
                     )}
                   </div>
@@ -397,98 +426,146 @@ export default function Home() {
               );
             })}
 
-            {/* Final Test Navigation Link */}
-            <button
-              disabled={!isFinalTestUnlocked()}
-              onClick={() => {
-                setShowFinalTest(true);
-                setSidebarSidebarOpen(false);
-              }}
+            {/* Safety Scenarios */}
+            <Link
+              href="/safety"
+              onClick={() => setSidebarOpen(false)}
               className={`
-                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-4
-                ${showFinalTest 
-                  ? 'bg-primary/15 border-primary text-foreground shadow-sm font-medium' 
-                  : isFinalTestUnlocked()
-                    ? 'bg-transparent border-transparent text-primary hover:bg-primary/10' 
-                    : 'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'
-                }
+                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
+                ${!isSafetyUnlocked() ? 'border-transparent text-muted-foreground/40 cursor-not-allowed pointer-events-none' :
+                  progress.safetyCompleted ? 'border-emerald-200 bg-emerald-50/30 text-foreground dark:border-emerald-900/40 dark:bg-emerald-950/10' :
+                  'border-transparent text-primary hover:bg-primary/10'}
               `}
             >
               <div className="mt-0.5">
-                {passedFinalTest ? (
-                  <Award className="w-5 h-5 text-primary animate-bounce" />
-                ) : (
-                  <Lock className={`w-5 h-5 ${isFinalTestUnlocked() ? 'text-primary' : 'text-muted-foreground/30'}`} />
-                )}
+                {progress.safetyCompleted ? <CheckCircle className="w-5 h-5 text-emerald-600" /> :
+                 !isSafetyUnlocked() ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
+                 <Shield className="w-5 h-5 text-primary" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Required</span>
+                <h4 className="text-sm font-bold truncate mt-0.5">Safety Scenarios</h4>
+              </div>
+            </Link>
+
+            {/* AI Roleplay */}
+            <Link
+              href="/roleplay"
+              onClick={() => setSidebarOpen(false)}
+              className={`
+                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
+                ${!isSafetyUnlocked() ? 'border-transparent text-muted-foreground/40 cursor-not-allowed pointer-events-none' :
+                  'border-transparent text-primary hover:bg-primary/10'}
+              `}
+            >
+              <div className="mt-0.5">
+                {!isSafetyUnlocked() ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
+                 <MessageSquare className="w-5 h-5 text-primary" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Practice</span>
+                <h4 className="text-sm font-bold truncate mt-0.5">AI Roleplay Simulator</h4>
+              </div>
+            </Link>
+
+            {/* Final Test */}
+            <button
+              disabled={!isFinalTestUnlocked()}
+              onClick={() => { setShowFinalTest(true); setShowShift1Debrief(false); setSidebarOpen(false); }}
+              className={`
+                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
+                ${showFinalTest ? 'bg-primary/15 border-primary text-foreground shadow-sm font-medium' :
+                  isFinalTestUnlocked() ? 'bg-transparent border-transparent text-primary hover:bg-primary/10' :
+                  'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'}
+              `}
+            >
+              <div className="mt-0.5">
+                {progress.passedFinalTest ? <Award className="w-5 h-5 text-primary animate-bounce" /> :
+                 <Lock className={`w-5 h-5 ${isFinalTestUnlocked() ? 'text-primary' : 'text-muted-foreground/30'}`} />}
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-bold tracking-wide uppercase text-primary">Final Stage</span>
                 <h4 className="text-sm font-bold truncate mt-0.5">Readiness Certificate</h4>
               </div>
             </button>
+
+            {/* Shift 1 Debrief (unlocked after final test passed) */}
+            {progress.passedFinalTest && (
+              <button
+                onClick={() => { setShowShift1Debrief(true); setShowFinalTest(false); setSidebarOpen(false); }}
+                className={`
+                  w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
+                  ${showShift1Debrief ? 'bg-primary/15 border-primary text-foreground shadow-sm font-medium' :
+                    progress.shift1DebriefData ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-900/40 dark:bg-emerald-950/10' :
+                    'border-amber-200 bg-amber-50/30 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/10 hover:bg-amber-50/50'}
+                `}
+              >
+                <div className="mt-0.5">
+                  {progress.shift1DebriefData ? <CheckCircle className="w-5 h-5 text-emerald-600" /> :
+                   <FileText className="w-5 h-5 text-amber-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-bold tracking-wide uppercase text-amber-600">After Shift 1</span>
+                  <h4 className="text-sm font-bold truncate mt-0.5">Shift 1 Debrief</h4>
+                </div>
+              </button>
+            )}
           </nav>
         </div>
 
-        {/* Footer Settings & Reset */}
+        {/* Footer */}
         <div className="border-t border-border pt-4 mt-6 flex justify-between items-center">
           <div className="text-xs text-muted-foreground">
-            <span>Ambassador: <strong>Dylan</strong></span>
+            <span>Ambassador: <strong>{user?.name ?? 'Dylan'}</strong></span>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={resetProgress}
-            className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-1 p-1 h-auto"
-          >
-            <RefreshCw className="w-3 h-3" /> Reset Progress
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={resetProgress} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-1 p-1 h-auto">
+              <RefreshCw className="w-3 h-3" /> Reset
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 p-1 h-auto">
+              Sign Out
+            </Button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content Canvas */}
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-0 bg-background/30 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col justify-center">
-          
-          {/* STAGE 1: Final Readiness Certificate (Unlocked & Passed) */}
-          {passedFinalTest && showFinalTest && (
-            <Card className="border-2 border-primary bg-card/80 shadow-xl p-8 text-center flex flex-col items-center justify-center animate-fade-in relative overflow-hidden">
+
+          {/* ── Clearance Certificate ── */}
+          {progress.passedFinalTest && showFinalTest && (
+            <Card className="border-2 border-primary bg-card/80 shadow-xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform -translate-x-10 translate-y-10" />
-              
               <Award className="w-20 h-20 text-primary mb-6 animate-bounce" />
               <h1 className="text-3xl md:text-4xl font-serif font-extrabold text-foreground mb-2">Clearance Certificate</h1>
               <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">Top of Temecula Field Ambassador</p>
-              
               <div className="max-w-md bg-background/50 rounded-2xl p-6 border border-border mb-8 shadow-inner">
                 <p className="text-sm text-muted-foreground italic mb-4">"This certifies that"</p>
-                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">Dylan</h2>
+                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'Dylan'}</h2>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Has successfully completed all 3 days of paid interactive study, scored 100% on the Final Readiness Test, mastered safety and compliance protocols, and is officially cleared for field operations.
+                  Has successfully completed all 3 days of paid interactive study, passed the Safety Scenarios, scored 10/10 on the Final Readiness Test, and is officially cleared for field operations.
                 </p>
               </div>
-
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                <Button 
-                  onClick={() => {
-                    toast.success("Certificate saved! Show this screen to Tim on your first day.");
-                  }}
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md"
-                >
+                <Button onClick={() => toast.success('Certificate saved! Show this screen to Tim on your first day.')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">
                   Verify Clearance with Tim
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowFinalTest(false)}
-                  className="flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl py-6 text-sm font-semibold"
-                >
+                <Button variant="outline" onClick={() => setShowFinalTest(false)} className="flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl py-6 text-sm font-semibold">
                   Review Training Guides
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* STAGE 2: Final Test Interface (Unlocked, not yet passed or reviewing) */}
-          {showFinalTest && !passedFinalTest && (
+          {/* ── Final Test ── */}
+          {showFinalTest && !progress.passedFinalTest && (
             <Card className="border border-border bg-card/90 shadow-lg p-6 md:p-8">
               <CardHeader className="p-0 mb-6">
                 <div className="flex items-center gap-2 text-primary mb-2">
@@ -500,12 +577,10 @@ export default function Home() {
                   Answer all 10 questions correctly to unlock your Field Clearance Certificate. You can retry as many times as needed.
                 </CardDescription>
               </CardHeader>
-
               <CardContent className="p-0 flex flex-col gap-6 max-h-[55vh] overflow-y-auto pr-2">
                 {finalReadinessTest.map((q, idx) => {
                   const selectedOpt = finalTestAnswers[q.id];
                   const isCorrect = selectedOpt === q.correctAnswer;
-
                   return (
                     <div key={q.id} className="border border-border/60 bg-background/40 rounded-xl p-4 md:p-5 shadow-sm">
                       <h3 className="text-sm md:text-base font-bold text-foreground mb-3">
@@ -516,7 +591,6 @@ export default function Home() {
                           const isSelected = selectedOpt === optIdx;
                           const showSuccess = finalTestSubmitted && optIdx === q.correctAnswer;
                           const showDanger = finalTestSubmitted && isSelected && !isCorrect;
-
                           return (
                             <button
                               key={optIdx}
@@ -536,8 +610,6 @@ export default function Home() {
                           );
                         })}
                       </div>
-
-                      {/* Explanation for incorrect answers */}
                       {finalTestSubmitted && !isCorrect && (
                         <div className="mt-3 text-xs text-rose-700 dark:text-rose-400 flex gap-1.5 items-start bg-rose-50/50 dark:bg-rose-950/10 p-3 rounded-lg border border-rose-200/40">
                           <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -548,49 +620,30 @@ export default function Home() {
                   );
                 })}
               </CardContent>
-
               <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                 {finalTestSubmitted ? (
                   <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
                     <div className="text-sm font-bold text-foreground flex items-center gap-2 flex-1">
                       {finalTestScore === 10 ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <CheckCircle className="w-5 h-5" /> Score: 10/10 — Passed!
-                        </span>
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><CheckCircle className="w-5 h-5" /> Score: 10/10 — Passed!</span>
                       ) : (
-                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                          <X className="w-5 h-5" /> Score: {finalTestScore}/10 — Review required
-                        </span>
+                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1"><X className="w-5 h-5" /> Score: {finalTestScore}/10 — Review required</span>
                       )}
                     </div>
                     {finalTestScore === 10 ? (
-                      <Button 
-                        onClick={() => savePassedFinal(true)}
-                        className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1.5"
-                      >
+                      <Button onClick={() => saveProgress({ passedFinalTest: true, finalTestScore })} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1.5">
                         Claim Clearance Certificate <Award className="w-4 h-4" />
                       </Button>
                     ) : (
-                      <Button 
-                        onClick={() => {
-                          setFinalTestSubmitted(false);
-                          setFinalTestAnswers({});
-                        }}
-                        className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1.5"
-                      >
+                      <Button onClick={retryFinalTest} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1.5">
                         Retry Test <RefreshCw className="w-4 h-4" />
                       </Button>
                     )}
                   </div>
                 ) : (
                   <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {Object.keys(finalTestAnswers).length} of 10 answered
-                    </span>
-                    <Button 
-                      onClick={submitFinalTest}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md"
-                    >
+                    <span className="text-xs text-muted-foreground font-medium">{Object.keys(finalTestAnswers).length} of 10 answered</span>
+                    <Button onClick={submitFinalTest} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md">
                       Submit Assessment
                     </Button>
                   </div>
@@ -599,11 +652,56 @@ export default function Home() {
             </Card>
           )}
 
-          {/* STAGE 3: Day Modules (Slides, Quiz, Assignment) */}
-          {!showFinalTest && (
+          {/* ── Shift 1 Debrief ── */}
+          {showShift1Debrief && (
+            <Card className="border border-border bg-card/90 shadow-lg p-6 md:p-8">
+              <CardHeader className="p-0 mb-6">
+                <div className="flex items-center gap-2 text-amber-600 mb-2">
+                  <FileText className="w-5 h-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">After Your First Shift</span>
+                </div>
+                <CardTitle className="text-2xl font-serif font-extrabold">Shift 1 Debrief</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Complete this after your first real field shift. Honest reflection is how you improve fast.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 flex flex-col gap-5">
+                {[
+                  { key: 'what_went_well', label: 'What went well on your first shift?', placeholder: 'Describe 2-3 things that felt natural or went better than expected...' },
+                  { key: 'what_was_hard', label: 'What was harder than expected?', placeholder: 'Be honest — what caught you off guard or felt awkward?' },
+                  { key: 'one_thing_to_improve', label: 'What is ONE specific thing you will do differently next shift?', placeholder: 'Make it concrete and actionable...' },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key} className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-foreground">{label}</label>
+                    <textarea
+                      value={progress.shift1DebriefData?.[key] ?? shift1DebriefAnswers[key] ?? ''}
+                      onChange={e => setShift1DebriefAnswers(prev => ({ ...prev, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      rows={3}
+                      disabled={!!progress.shift1DebriefData}
+                      className="w-full p-3 border border-border rounded-xl text-sm bg-background/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none disabled:opacity-60"
+                    />
+                  </div>
+                ))}
+              </CardContent>
+              {!progress.shift1DebriefData && (
+                <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex justify-end">
+                  <Button onClick={handleShift1Submit} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1.5">
+                    Submit Debrief <CheckCircle className="w-4 h-4" />
+                  </Button>
+                </CardFooter>
+              )}
+              {progress.shift1DebriefData && (
+                <div className="mt-4 p-3 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900/40 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" /> Debrief submitted. Great reflection!
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* ── Day Modules ── */}
+          {!showFinalTest && !showShift1Debrief && (
             <div className="flex flex-col gap-6">
-              
-              {/* Module Welcome Header */}
               <div className="mb-2">
                 <div className="flex items-center gap-2 text-primary mb-1">
                   <BookOpen className="w-4 h-4" />
@@ -613,57 +711,43 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mt-1">{activeModule.subtitle}</p>
               </div>
 
-              {/* Slide Reader Stage */}
+              {/* Slide Reader */}
               {!showQuiz && !showAssignment && (
                 <Card className="border border-border bg-card/90 shadow-md flex flex-col justify-between min-h-[50vh] p-6 md:p-8 relative overflow-hidden">
-                  
-                  {/* Decorative Subtle Background Asset */}
                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl transform translate-x-8 -translate-y-8" />
-                  
-                  {/* Slide Content Render */}
                   <div className="flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full py-4">
                     <div className="flex justify-between items-baseline mb-4">
                       <span className="text-xs font-bold text-primary tracking-wide uppercase">Slide {currentSlideIndex + 1} of {activeModule.slides.length}</span>
                     </div>
-                    
                     <h2 className="text-xl md:text-2xl font-serif font-bold text-foreground mb-5">
                       {activeModule.slides[currentSlideIndex].title}
                     </h2>
 
-                    {/* Render standard text content */}
+                    {/* Text slide */}
                     {(!activeModule.slides[currentSlideIndex].type || activeModule.slides[currentSlideIndex].type === 'text') && (
                       <div className="flex flex-col gap-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-                        {activeModule.slides[currentSlideIndex].content?.map((p, idx) => (
-                          <p key={idx}>{p}</p>
-                        ))}
+                        {activeModule.slides[currentSlideIndex].content?.map((p, idx) => <p key={idx}>{p}</p>)}
                       </div>
                     )}
 
-                    {/* Render Interactive Script Flashcards */}
+                    {/* Script flashcards */}
                     {activeModule.slides[currentSlideIndex].type === 'script' && (
                       <div className="flex flex-col gap-4 my-2">
                         {activeModule.slides[currentSlideIndex].scripts?.map((s, idx) => {
                           const cardId = `${activeModule.id}_s_${idx}`;
                           const isFlipped = flippedCards[cardId];
-
                           return (
-                            <div 
-                              key={idx} 
-                              onClick={() => toggleCardFlip(cardId)}
-                              className="group cursor-pointer perspective-1000 h-28 w-full"
-                            >
+                            <div key={idx} onClick={() => toggleCardFlip(cardId)} className="group cursor-pointer perspective-1000 h-28 w-full">
                               <div className={`relative w-full h-full duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
-                                {/* Front of Card */}
                                 <div className="absolute inset-0 backface-hidden border border-primary/30 bg-primary/5 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-primary transition-colors">
                                   <div className="flex items-center gap-3">
                                     <Volume2 className="w-5 h-5 text-primary animate-pulse" />
                                     <span className="text-sm font-bold text-foreground">{s.label}</span>
                                   </div>
                                   <span className="text-[10px] font-bold text-primary uppercase tracking-wider group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
-                                    Tap to reveal script <ChevronRight className="w-3 h-3" />
+                                    Tap to reveal <ChevronRight className="w-3 h-3" />
                                   </span>
                                 </div>
-                                {/* Back of Card */}
                                 <div className="absolute inset-0 backface-hidden rotate-y-180 border border-primary bg-card rounded-xl p-4 flex flex-col justify-center shadow-md">
                                   <p className="text-xs md:text-sm text-foreground font-medium italic leading-relaxed">"{s.text}"</p>
                                 </div>
@@ -674,29 +758,20 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Render Objection Handling Cards */}
+                    {/* Objection cards */}
                     {activeModule.slides[currentSlideIndex].type === 'objection' && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
                         {activeModule.slides[currentSlideIndex].scripts?.map((s, idx) => {
                           const cardId = `${activeModule.id}_obj_${idx}`;
                           const isFlipped = flippedCards[cardId];
-
                           return (
-                            <div 
-                              key={idx} 
-                              onClick={() => toggleCardFlip(cardId)}
-                              className="group cursor-pointer perspective-1000 h-32 w-full"
-                            >
+                            <div key={idx} onClick={() => toggleCardFlip(cardId)} className="group cursor-pointer perspective-1000 h-32 w-full">
                               <div className={`relative w-full h-full duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
-                                {/* Front */}
                                 <div className="absolute inset-0 backface-hidden border border-secondary-foreground/20 bg-secondary/50 rounded-xl p-4 flex flex-col justify-between shadow-sm hover:border-primary transition-colors">
                                   <span className="text-xs font-bold text-secondary-foreground uppercase tracking-wider">Objection</span>
                                   <h4 className="text-sm font-bold text-foreground leading-snug">{s.label}</h4>
-                                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-0.5">
-                                    Tap to reveal response <ChevronRight className="w-3 h-3" />
-                                  </span>
+                                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-0.5">Tap to reveal <ChevronRight className="w-3 h-3" /></span>
                                 </div>
-                                {/* Back */}
                                 <div className="absolute inset-0 backface-hidden rotate-y-180 border border-primary bg-card rounded-xl p-4 flex flex-col justify-center shadow-md">
                                   <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Your Safe Response:</span>
                                   <p className="text-xs text-foreground font-medium italic leading-relaxed">"{s.text}"</p>
@@ -708,63 +783,66 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Render Do's and Don'ts Lists */}
+                    {/* Do's and Don'ts */}
                     {activeModule.slides[currentSlideIndex].type === 'dosdonts' && (
                       <div className="flex flex-col gap-2.5 my-2">
                         {activeModule.slides[currentSlideIndex].items?.map((item, idx) => (
-                          <div 
-                            key={idx} 
-                            className={`
-                              flex items-start gap-3 p-3.5 rounded-xl border text-xs md:text-sm
-                              ${item.bad 
-                                ? 'border-rose-200 bg-rose-50/50 text-rose-900 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-300' 
-                                : 'border-emerald-200 bg-emerald-50/50 text-emerald-900 dark:border-emerald-950/20 dark:bg-emerald-950/10 dark:text-emerald-300'
-                              }
-                            `}
-                          >
-                            <div className="mt-0.5 shrink-0">
-                              {item.bad ? <X className="w-4 h-4 text-rose-600" /> : <Check className="w-4 h-4 text-emerald-600" />}
-                            </div>
-                            <div>
-                              <strong className="font-bold mr-1">{item.label}:</strong>
-                              <span className="font-medium italic">"{item.text}"</span>
-                            </div>
+                          <div key={idx} className={`flex items-start gap-3 p-3.5 rounded-xl border text-xs md:text-sm ${item.bad ? 'border-rose-200 bg-rose-50/50 text-rose-900 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-300' : 'border-emerald-200 bg-emerald-50/50 text-emerald-900 dark:border-emerald-950/20 dark:bg-emerald-950/10 dark:text-emerald-300'}`}>
+                            <div className="mt-0.5 shrink-0">{item.bad ? <X className="w-4 h-4 text-rose-600" /> : <Check className="w-4 h-4 text-emerald-600" />}</div>
+                            <div><strong className="font-bold mr-1">{item.label}:</strong><span className="font-medium italic">"{item.text}"</span></div>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* High-Contrast Highlights Block */}
+                    {/* Active Recall */}
+                    {activeModule.slides[currentSlideIndex].type === 'recall' && (
+                      <div className="flex flex-col gap-4 my-2">
+                        <p className="text-xs text-muted-foreground">Try to answer each question from memory before revealing the answer.</p>
+                        {activeModule.slides[currentSlideIndex].recallPrompts?.map((rp, idx) => {
+                          const key = `${activeModule.id}_recall_${idx}`;
+                          const revealed = revealedRecall[key];
+                          return (
+                            <div key={idx} className="border border-border rounded-xl overflow-hidden">
+                              <div className="p-4 bg-background/50">
+                                <p className="text-sm font-bold text-foreground">{idx + 1}. {rp.prompt}</p>
+                              </div>
+                              <div className={`border-t border-border transition-all duration-300 ${revealed ? 'max-h-40' : 'max-h-0 overflow-hidden'}`}>
+                                <div className="p-4 bg-primary/5">
+                                  <p className="text-xs text-foreground leading-relaxed">{rp.answer}</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => toggleRecall(key)}
+                                className="w-full p-2.5 border-t border-border text-xs font-bold text-primary flex items-center justify-center gap-1.5 hover:bg-primary/5 transition-colors"
+                              >
+                                {revealed ? <><EyeOff className="w-3.5 h-3.5" /> Hide Answer</> : <><Eye className="w-3.5 h-3.5" /> Reveal Answer</>}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {activeModule.slides[currentSlideIndex].highlight && (
                       <div className="mt-6 border-l-4 border-primary bg-primary/5 p-4 rounded-r-xl">
-                        <p className="text-xs md:text-sm font-semibold text-primary-foreground leading-relaxed">
-                          {activeModule.slides[currentSlideIndex].highlight}
-                        </p>
+                        <p className="text-xs md:text-sm font-semibold text-foreground leading-relaxed">{activeModule.slides[currentSlideIndex].highlight}</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Navigation Footer */}
                   <div className="border-t border-border pt-6 mt-6 flex justify-between items-center">
-                    <Button 
-                      variant="ghost" 
-                      onClick={prevSlide} 
-                      disabled={currentSlideIndex === 0}
-                      className="text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-5 rounded-xl"
-                    >
+                    <Button variant="ghost" onClick={prevSlide} disabled={currentSlideIndex === 0} className="text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-5 rounded-xl">
                       <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
-                    <Button 
-                      onClick={nextSlide}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1 px-6 py-5 rounded-xl font-bold shadow-md"
-                    >
+                    <Button onClick={nextSlide} className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1 px-6 py-5 rounded-xl font-bold shadow-md">
                       {currentSlideIndex === activeModule.slides.length - 1 ? 'Go to Quiz' : 'Next'} <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </Card>
               )}
 
-              {/* Interactive Quiz Stage */}
+              {/* Quiz */}
               {showQuiz && !showAssignment && (
                 <Card className="border border-border bg-card/90 shadow-md p-6 md:p-8">
                   <CardHeader className="p-0 mb-6">
@@ -774,15 +852,13 @@ export default function Home() {
                     </div>
                     <CardTitle className="text-xl font-serif font-bold">Verify Your Understanding</CardTitle>
                     <CardDescription className="text-sm text-muted-foreground">
-                      Score 100% on this quick check to unlock the final Day {activeModule.day} practical assignment.
+                      Score 100% to unlock the Day {activeModule.day} practical assignment.
                     </CardDescription>
                   </CardHeader>
-
                   <CardContent className="p-0 flex flex-col gap-6">
                     {activeModule.quiz.map((q, idx) => {
                       const selectedOpt = quizAnswers[q.id];
                       const isCorrect = selectedOpt === q.correctAnswer;
-
                       return (
                         <div key={q.id} className="border border-border/60 bg-background/40 rounded-xl p-4 md:p-5 shadow-sm">
                           <h3 className="text-sm md:text-base font-bold text-foreground mb-3">
@@ -793,7 +869,6 @@ export default function Home() {
                               const isSelected = selectedOpt === optIdx;
                               const showSuccess = quizSubmitted && optIdx === q.correctAnswer;
                               const showDanger = quizSubmitted && isSelected && !isCorrect;
-
                               return (
                                 <button
                                   key={optIdx}
@@ -813,8 +888,6 @@ export default function Home() {
                               );
                             })}
                           </div>
-
-                          {/* Explanation */}
                           {quizSubmitted && !isCorrect && (
                             <div className="mt-3 text-xs text-rose-700 dark:text-rose-400 flex gap-1.5 items-start bg-rose-50/50 dark:bg-rose-950/10 p-3 rounded-lg border border-rose-200/40">
                               <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -825,58 +898,37 @@ export default function Home() {
                       );
                     })}
                   </CardContent>
-
                   <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                     {quizSubmitted ? (
                       <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
                         <div className="text-sm font-bold text-foreground flex items-center gap-2 flex-1">
                           {quizScore === activeModule.quiz.length ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                              <CheckCircle className="w-5 h-5" /> Score: {quizScore}/{activeModule.quiz.length} — Passed!
-                            </span>
+                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><CheckCircle className="w-5 h-5" /> Score: {quizScore}/{activeModule.quiz.length} — Passed!</span>
                           ) : (
-                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                              <X className="w-5 h-5" /> Score: {quizScore}/{activeModule.quiz.length} — Try again
-                            </span>
+                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1"><X className="w-5 h-5" /> Score: {quizScore}/{activeModule.quiz.length} — Try again</span>
                           )}
                         </div>
                         {quizScore === activeModule.quiz.length ? (
-                          <Button 
-                            onClick={() => setShowAssignment(true)}
-                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1"
-                          >
+                          <Button onClick={() => setShowAssignment(true)} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
                             Go to Day {activeModule.day} Assignment <ArrowRight className="w-4 h-4" />
                           </Button>
                         ) : (
-                          <Button 
-                            onClick={() => {
-                              setQuizSubmitted(false);
-                              setQuizAnswers({});
-                            }}
-                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1"
-                          >
+                          <Button onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); }} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
                             Retry Quiz <RefreshCw className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
                     ) : (
                       <div className="flex justify-between items-center w-full">
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {Object.keys(quizAnswers).length} of {activeModule.quiz.length} answered
-                        </span>
-                        <Button 
-                          onClick={submitQuiz}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md"
-                        >
-                          Submit Answers
-                        </Button>
+                        <span className="text-xs text-muted-foreground font-medium">{Object.keys(quizAnswers).length} of {activeModule.quiz.length} answered</span>
+                        <Button onClick={submitQuiz} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md">Submit Answers</Button>
                       </div>
                     )}
                   </CardFooter>
                 </Card>
               )}
 
-              {/* Interactive Assignment Stage */}
+              {/* Assignment */}
               {showAssignment && (
                 <Card className="border border-border bg-card/90 shadow-md p-6 md:p-8">
                   <CardHeader className="p-0 mb-6">
@@ -885,11 +937,8 @@ export default function Home() {
                       <span className="text-xs font-bold uppercase tracking-wider">Day {activeModule.day} Practical Assignment</span>
                     </div>
                     <CardTitle className="text-xl font-serif font-bold">{activeModule.assignment.title}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mt-1">
-                      {activeModule.assignment.description}
-                    </CardDescription>
+                    <CardDescription className="text-sm text-muted-foreground mt-1">{activeModule.assignment.description}</CardDescription>
                   </CardHeader>
-
                   <CardContent className="p-0 flex flex-col gap-4">
                     {activeModule.assignment.type === 'roleplay' && (
                       <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 flex items-center gap-3.5 mb-2">
@@ -897,44 +946,32 @@ export default function Home() {
                         <div>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Recording Tip</h4>
                           <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                            Use your phone's built-in voice recorder, Loom, or record a quick video on your computer. Upload it to Google Drive or Dropbox, make sure the link is set to "anyone with link can view," and paste it below.
+                            Use your phone's built-in voice recorder, Loom, or record a quick video. Upload to Google Drive or Dropbox, set the link to "anyone with link can view," and paste it below.
                           </p>
                         </div>
                       </div>
                     )}
-
                     <textarea
-                      value={assignmentsData[activeModule.id] || ''}
-                      onChange={(e) => setAssignmentsData(prev => ({ ...prev, [activeModule.id]: e.target.value }))}
+                      value={progress.assignmentsData[activeModule.id] || ''}
+                      onChange={e => setProgress(prev => ({ ...prev, assignmentsData: { ...prev.assignmentsData, [activeModule.id]: e.target.value } }))}
                       placeholder={activeModule.assignment.placeholder}
                       className="w-full min-h-[25vh] p-4 border border-border rounded-xl text-xs md:text-sm bg-background/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                     />
                   </CardContent>
-
                   <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex justify-between items-center">
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => setShowAssignment(false)}
-                      className="text-muted-foreground hover:text-foreground rounded-xl px-3 py-5"
-                    >
+                    <Button variant="ghost" onClick={() => setShowAssignment(false)} className="text-muted-foreground hover:text-foreground rounded-xl px-3 py-5">
                       Back to Quiz
                     </Button>
-                    <Button 
-                      onClick={() => handleAssignmentSubmit(assignmentsData[activeModule.id] || '')}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1"
-                    >
+                    <Button onClick={() => handleAssignmentSubmit(progress.assignmentsData[activeModule.id] || '')} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
                       Submit Assignment <CheckCircle className="w-4 h-4" />
                     </Button>
                   </CardFooter>
                 </Card>
               )}
-
             </div>
           )}
-
         </div>
       </main>
-
     </div>
   );
 }

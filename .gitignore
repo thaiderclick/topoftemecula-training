@@ -6,6 +6,7 @@
 dist/
 build/
 *.dist
+api/server.js
 
 # Environment variables
 .env
@@ -44,6 +45,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+*.bak
 
 # Coverage directory used by tools like istanbul
 coverage/

@@ -17,9 +17,10 @@ export interface Module {
     title: string;
     content?: string[];
     highlight?: string;
-    type?: 'text' | 'script' | 'objection' | 'dosdonts';
+    type?: 'text' | 'script' | 'objection' | 'dosdonts' | 'recall';
     scripts?: { label: string; text: string }[];
     items?: { label: string; text: string; bad?: boolean }[];
+    recallPrompts?: { prompt: string; answer: string }[];
   }[];
   quiz: Question[];
   assignment: {
@@ -31,6 +32,7 @@ export interface Module {
 }
 
 export const trainingModules: Module[] = [
+  // ─── DAY 1 ───────────────────────────────────────────────────────────────────
   {
     id: 'day1',
     day: 1,
@@ -86,6 +88,24 @@ export const trainingModules: Module[] = [
           "• Social Media: Great for temporary posts that disappear. We provide a lasting local directory profile.",
           "• Their Website: Great, but customers have to find it first. We drive local traffic to it."
         ]
+      },
+      {
+        title: 'Active Recall: Day 1 Check',
+        type: 'recall',
+        recallPrompts: [
+          {
+            prompt: "What is your one-sentence mission?",
+            answer: "Top of Temecula helps local residents discover local businesses, events, deals, and jobs — and your job is to help businesses claim the free profiles already created for them."
+          },
+          {
+            prompt: "What does a successful shift look like? (Name 3 of the 5 goals)",
+            answer: "Drove the full route on time; was polite and professional; got a claim OR captured an owner email; logged every visit before leaving the lot; stayed safe."
+          },
+          {
+            prompt: "How do you position Top of Temecula against Google?",
+            answer: "We don't replace Google. We add a hyper-local discovery channel for valley residents. The free claim ensures their local info is accurate and unlocks a free dashboard."
+          }
+        ]
       }
     ],
     quiz: [
@@ -133,6 +153,8 @@ export const trainingModules: Module[] = [
       type: 'text'
     }
   },
+
+  // ─── DAY 2 ───────────────────────────────────────────────────────────────────
   {
     id: 'day2',
     day: 2,
@@ -162,14 +184,15 @@ export const trainingModules: Module[] = [
         ]
       },
       {
-        title: 'The Three-Tier Pricing Ladder',
+        title: 'Pricing: What You Need to Know',
         content: [
-          "If a business is highly interested and asks about paid options to get more visibility, we have three simple, clear tiers:",
-          "1. Free Claim Tier ($0): Basic profile control, business info, and access to the basic AI dashboard.",
-          "2. Standard Featured Tier ($49/mo): Premium placement in their category, highlighted map pin, and a free social media shoutout on our highly engaged local platforms.",
-          "3. Elite Verified Tier ($79/mo): Top category ranking, verified local badge, priority email/newsletter placement, and quarterly social media features."
+          "The free claim is your primary focus. If a business is highly interested and asks about paid options, here is what we offer:",
+          "• Free Claim Tier ($0/mo): Basic profile control, business info, and access to the AI-citation dashboard. No credit card ever required.",
+          "• Standard Featured Tier ($49/mo): Premium placement in their category, highlighted map pin, and a free social media shoutout on our highly engaged local platforms.",
+          "• Elite Verified Tier ($79/mo): Top category ranking, verified local badge, priority email/newsletter placement, and quarterly social media features.",
+          "IMPORTANT: You are NOT a salesperson. Do not push paid tiers. If they ask, explain briefly and keep the focus on the free claim. Any paid upgrade is handled by Tim directly — never collect payment yourself."
         ],
-        highlight: "Keep it light! Your job is NOT to sell these on the spot. If they ask, explain the tiers, but keep the focus on the free claim."
+        highlight: "If they ask about cost: 'The claim and the dashboard are 100% free. There are optional featured tiers starting at $49/month if you ever want extra visibility, but the free claim is the main thing today.'"
       },
       {
         title: 'How to Handle Pricing Questions',
@@ -196,6 +219,24 @@ export const trainingModules: Module[] = [
           { label: "DON'T Say", text: "\"I need your credit card to activate the free dashboard.\"", bad: true },
           { label: "DO Say", text: "\"The claim is free and requires no credit card or payment info at all.\"" }
         ]
+      },
+      {
+        title: 'Active Recall: Day 2 Check',
+        type: 'recall',
+        recallPrompts: [
+          {
+            prompt: "What is the AI-Citation Tracker and why do owners care?",
+            answer: "It tracks how often AI tools like ChatGPT, Gemini, and Perplexity are recommending and citing their business. Most owners have no idea how AI views them — this is a unique, high-value free tool."
+          },
+          {
+            prompt: "If an owner asks 'How much does this cost?' — what do you say?",
+            answer: "The claim and the dashboard are 100% free — no credit card required. There are optional featured tiers starting at $49/month if they ever want extra visibility, but the free claim is the focus today."
+          },
+          {
+            prompt: "What are the three pricing tiers?",
+            answer: "Free Claim ($0/mo), Standard Featured ($49/mo), Elite Verified ($79/mo)."
+          }
+        ]
       }
     ],
     quiz: [
@@ -213,15 +254,15 @@ export const trainingModules: Module[] = [
       },
       {
         id: 'q2_2',
-        text: 'If an owner asks about paid upgrades, what is the correct approach?',
+        text: 'What is the starting price for the first paid featured tier?',
         options: [
-          'Hard-close them on the $79/mo Elite tier immediately',
-          'Tell them we don\'t have any paid options',
-          'Explain the tiers briefly (starting at $49/mo), keep it low-pressure, and focus on securing the free claim first',
-          'Take their credit card number on a piece of paper'
+          '$99/month',
+          '$29/month',
+          '$49/month',
+          '$149/month'
         ],
         correctAnswer: 2,
-        explanation: 'Keep it low-pressure. Explain the tiers briefly, focus on the free claim, and let them explore the dashboard or have Tim follow up.'
+        explanation: 'The Standard Featured Tier starts at $49/month. The Elite Verified Tier is $79/month. Always keep the focus on the free claim first.'
       },
       {
         id: 'q2_3',
@@ -243,6 +284,8 @@ export const trainingModules: Module[] = [
       type: 'text'
     }
   },
+
+  // ─── DAY 3 ───────────────────────────────────────────────────────────────────
   {
     id: 'day3',
     day: 3,
@@ -281,15 +324,43 @@ export const trainingModules: Module[] = [
           },
           {
             label: "\"The owner is not here.\"",
-            text: "\"No problem! Would it help if we emailed the owner an invitation to claim their free profile? If you have their best email, we can send the invite directly. I\'ll leave this card for them too.\""
+            text: "\"No problem! Would it help if we emailed the owner an invitation to claim their free profile? If you have their best email, we can send the invite directly. I'll leave this card for them too.\""
           },
           {
             label: "\"We already have Google / Yelp.\"",
-            text: "\"That\'s great — we don\'t replace Google. We add a hyper-local discovery channel for Temecula Valley residents, and our dashboard shows you how often AI search tools recommend you. The claim just ensures your local info is accurate.\""
+            text: "\"That's great — we don't replace Google. We add a hyper-local discovery channel for Temecula Valley residents, and our dashboard shows you how often AI search tools recommend you. The claim just ensures your local info is accurate.\""
           },
           {
             label: "\"We are not interested.\"",
-            text: "\"No problem at all! I\'ll leave the card in case you want to review the free profile later. Have a wonderful day!\" (Then exit politely — never argue.)"
+            text: "\"No problem at all! I'll leave the card in case you want to review the free profile later. Have a wonderful day!\" (Then exit politely — never argue.)"
+          }
+        ]
+      },
+      {
+        title: 'The Gatekeeper Playbook',
+        content: [
+          "The most common situation you will face: the owner is NOT there. A front-desk employee, receptionist, or manager greets you instead. This is the Gatekeeper.",
+          "Your goal shifts: Win the gatekeeper's trust so they help you get the owner's email.",
+          "Key mindset: The gatekeeper is not your obstacle — they are your ally. Make it easy and appealing for them to help you.",
+          "The email-invite play: \"No problem! Would it be okay if we sent the owner a direct email invitation to claim their free profile? It's a quick link they can review on their own time — no commitment. What's the best email to reach them?\""
+        ],
+        highlight: "Capturing a valid owner email is a high-value lead. Treat it like a claim win."
+      },
+      {
+        title: 'Gatekeeper Scripts',
+        type: 'script',
+        scripts: [
+          {
+            label: "Opening to a gatekeeper",
+            text: "\"Hi! I'm Dylan with Top of Temecula. We created a free local profile for this business and I'm stopping by to make sure the owner knows about it. Is the owner or manager available today?\""
+          },
+          {
+            label: "If they say the owner is out",
+            text: "\"No problem! Could I get the owner's best email so we can send them a direct invitation to claim their free profile? It's a quick link — no commitment, completely free. It would be a great thing for them to see.\""
+          },
+          {
+            label: "If they're hesitant to share the email",
+            text: "\"Totally understand — I'll leave this claim card for them too. If you do have a chance to mention it, the profile is already live and the claim is free. Have a great day!\""
           }
         ]
       },
@@ -306,14 +377,42 @@ export const trainingModules: Module[] = [
       },
       {
         title: 'CRM Logging: If It Isn\'t Logged, It Didn\'t Happen',
-        content: [
-          "Before you leave the parking lot of a business, you must log the visit in our CRM (Google Form). This ensures we track our data accurately.",
-          "What to capture: Business Name • Address • Owner Available? • Email Captured? • Claimed On-Site? • Specific Field Notes."
-        ],
         type: 'dosdonts',
         items: [
           { label: "Good CRM Note", text: "\"Owner out. Spoke with Sarah (front desk). Got owner email (mike@valleyins.com) for claim invite. Left card. Sarah says owner is in mornings. Interested in the AI dashboard.\"" },
           { label: "Useless CRM Note", text: "\"Went there. Talked to someone. Busy.\"", bad: true }
+        ]
+      },
+      {
+        title: 'Content Capture Checklist',
+        type: 'dosdonts',
+        items: [
+          { label: "Film Vertically", text: "Hold your phone portrait (vertical) for all clips. Horizontal video is not usable for our social platforms." },
+          { label: "Good Natural Light", text: "Stand near a window or outside. Avoid dark rooms, harsh overhead lighting, or shooting into the sun." },
+          { label: "Steady Shot", text: "Hold the phone with both hands or prop it against something stable. Shaky footage is unusable." },
+          { label: "5-10 Seconds Per Clip", text: "Short, focused clips are ideal. Capture one subject per clip — a storefront sign, a product display, a team member (with permission)." },
+          { label: "Always Get Permission First", text: "Before filming inside a business, ask the owner or manager: 'Would it be okay if I captured a quick clip of your storefront for our local guide?'" },
+          { label: "NEVER Film", text: "Customers, payment areas, registers, employee-only areas, or anyone who hasn't given permission. This is a hard rule.", bad: true },
+          { label: "Log It", text: "Note in your CRM that you captured content and what you filmed. Tim reviews all content before it goes live." }
+        ],
+        highlight: "Content capture is optional and only happens when the owner enthusiastically agrees. When in doubt, skip it and focus on the claim."
+      },
+      {
+        title: 'Active Recall: Day 3 Check',
+        type: 'recall',
+        recallPrompts: [
+          {
+            prompt: "What is the Gatekeeper Playbook? What is your goal when the owner isn't there?",
+            answer: "Win the gatekeeper's trust so they help you get the owner's email. The email-invite play: ask if you can send the owner a direct invitation to claim their free profile."
+          },
+          {
+            prompt: "What is the strict rule about phone use while driving?",
+            answer: "Zero phone use while moving. Pull over safely to check routes, text, or log visits in the CRM. No exceptions."
+          },
+          {
+            prompt: "What do you do if a business owner is aggressive or tells you to leave?",
+            answer: "Leave immediately. No arguing, no second pitch. Walk safely to your car and call Tim. Your safety is the absolute priority."
+          }
         ]
       }
     ],
@@ -475,14 +574,14 @@ export const finalReadinessTest: Question[] = [
   },
   {
     id: 'f10',
-    text: 'Who are the best people to ask for when entering a business?',
+    text: 'What is the correct starting price for the Standard Featured paid tier?',
     options: [
-      'Any customer standing in line',
-      'The owner, general manager, office manager, or marketing manager',
-      'The delivery driver out back',
-      'Only the head of security'
+      '$29/month',
+      '$99/month',
+      '$49/month',
+      '$79/month'
     ],
-    correctAnswer: 1,
-    explanation: 'You want to speak with decision-makers or those who handle operations, marketing, or administration.'
+    correctAnswer: 2,
+    explanation: 'The Standard Featured Tier is $49/month. The Elite Verified Tier is $79/month. The basic claim is always free.'
   }
 ];
