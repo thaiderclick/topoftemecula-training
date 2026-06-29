@@ -300,7 +300,7 @@ export default function Home() {
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border" style={{ background: 'oklch(0.22 0.01 65)' }}>
         <div className="flex items-center gap-3">
           <img
-            src="/manus-storage/tot_logo_1dd3a1f8.webp"
+            src="/logo.webp"
             alt="Top of Temecula"
             className="h-7 w-auto"
           />
@@ -329,7 +329,7 @@ export default function Home() {
           {/* Brand */}
           <div className="flex items-center gap-4 pb-6" style={{ borderBottom: '1px solid oklch(0.32 0.01 65)' }}>
             <img
-              src="/manus-storage/tot_logo_1dd3a1f8.webp"
+              src="/logo.webp"
               alt="Top of Temecula Logo"
               className="h-10 w-auto"
             />
@@ -501,7 +501,7 @@ export default function Home() {
         {/* Footer */}
         <div className="pt-4 mt-6 flex justify-between items-center" style={{ borderTop: '1px solid oklch(0.32 0.01 65)' }}>
           <div className="text-xs" style={{ color: 'oklch(0.55 0.01 65)' }}>
-            <span>Ambassador: <strong style={{ color: 'oklch(0.75 0.01 65)' }}>{user?.name ?? 'Dylan'}</strong></span>
+            <span>Ambassador: <strong style={{ color: 'oklch(0.75 0.01 65)' }}>{user?.name ?? 'Trainee'}</strong></span>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={resetProgress} className="text-[10px] flex items-center gap-1 p-1 h-auto" style={{ color: 'oklch(0.45 0.01 65)' }}>
@@ -533,14 +533,14 @@ export default function Home() {
               <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">Top of Temecula Field Ambassador</p>
               <div className="max-w-md bg-background/50 rounded-2xl p-6 border border-border mb-8 shadow-inner">
                 <p className="text-sm text-muted-foreground italic mb-4">"This certifies that"</p>
-                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'Dylan'}</h2>
+                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'Ambassador'}</h2>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Has successfully completed all 3 days of paid interactive study, passed the Safety Scenarios, scored 10/10 on the Final Readiness Test, and is officially cleared for field operations.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                <Button onClick={() => toast.success('Certificate saved! Show this screen to Tim on your first day.')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">
-                  Verify Clearance with Tim
+                <Button onClick={() => toast.success('Certificate saved! Share this screen with your supervisor to confirm field clearance.')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">
+                  Confirm Field Clearance
                 </Button>
                 <Button variant="outline" onClick={() => setShowFinalTest(false)} className="flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl py-6 text-sm font-semibold">
                   Review Training Guides

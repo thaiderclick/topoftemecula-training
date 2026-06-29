@@ -42,7 +42,7 @@ export const trainingModules: Module[] = [
     duration: '4 Hours (Paid)',
     slides: [
       {
-        title: 'Welcome to the Team, Dylan!',
+        title: 'Welcome to the Team!',
         content: [
           "You're joining a hyper-local community platform built to help people across the Temecula Valley discover the best local businesses, events, deals, jobs, and guides.",
           "We cover Temecula, Murrieta, Menifee, Wildomar, Lake Elsinore, French Valley, and nearby areas.",
@@ -190,7 +190,7 @@ export const trainingModules: Module[] = [
           "• Free Claim Tier ($0/mo): Basic profile control, business info, and access to the AI-citation dashboard. No credit card ever required.",
           "• Standard Featured Tier ($49/mo): Premium placement in their category, highlighted map pin, and a free social media shoutout on our highly engaged local platforms.",
           "• Elite Verified Tier ($79/mo): Top category ranking, verified local badge, priority email/newsletter placement, and quarterly social media features.",
-          "IMPORTANT: You are NOT a salesperson. Do not push paid tiers. If they ask, explain briefly and keep the focus on the free claim. Any paid upgrade is handled by Tim directly — never collect payment yourself."
+          "IMPORTANT: You are NOT a salesperson. Do not push paid tiers. If they ask, explain briefly and keep the focus on the free claim. Any paid upgrade is handled by your supervisor directly — never collect payment yourself."
         ],
         highlight: "If they ask about cost: 'The claim and the dashboard are 100% free. There are optional featured tiers starting at $49/month if you ever want extra visibility, but the free claim is the main thing today.'"
       },
@@ -204,7 +204,7 @@ export const trainingModules: Module[] = [
           },
           {
             label: "If they ask for exact features of paid tiers:",
-            text: "\"The free claim is the best place to start. Once you're in the dashboard, you can see all the optional tiers and features. I can also have Tim follow up with you with a complete breakdown if you'd like!\""
+            text: "\"The free claim is the best place to start. Once you're in the dashboard, you can see all the optional tiers and features. I can also have someone follow up with you with a complete breakdown if you'd like!\""
           }
         ]
       },
@@ -298,8 +298,8 @@ export const trainingModules: Module[] = [
         title: 'The Script: Your Field Playbook',
         content: [
           "Depending on how busy the business is, you will use one of three script lengths. Practice these until they feel natural and conversational:",
-          "• 10-Second (Very Busy): \"Hi, I'm Dylan with Top of Temecula. We created a free starter profile for your business, and I'm just dropping off your claim card so the owner can review and claim it for free.\"",
-          "• 30-Second (Standard): \"Hi, I'm Dylan with Top of Temecula — a local community guide. We already created a free starter profile for your business. I'm stopping by with your claim card so you can scan it, check the info, and claim it free. Takes about a minute and makes sure locals see the right details.\"",
+          "• 10-Second (Very Busy): \"Hi, I'm [Your Name] with Top of Temecula. We created a free starter profile for your business, and I'm just dropping off your claim card so the owner can review and claim it for free.\"",
+          "• 30-Second (Standard): \"Hi, I'm [Your Name] with Top of Temecula — a local community guide. We already created a free starter profile for your business. I'm stopping by with your claim card so you can scan it, check the info, and claim it free. Takes about a minute and makes sure locals see the right details.\"",
           "• Full Pitch (Engaged Owner): See next slide..."
         ]
       },
@@ -309,7 +309,7 @@ export const trainingModules: Module[] = [
         scripts: [
           {
             label: "The Full Pitch Script",
-            text: "\"Hi, I'm Dylan with Top of Temecula. We help valley residents discover local businesses, events, deals, and guides. We already created a free starter profile for your business — this QR card goes straight to it so you can review it and claim it free. Once you claim, you also get a free dashboard that shows how often AI tools like ChatGPT are recommending your business to local searchers. No credit card required to claim.\""
+            text: "\"Hi, I'm [Your Name] with Top of Temecula. We help valley residents discover local businesses, events, deals, and guides. We already created a free starter profile for your business — this QR card goes straight to it so you can review it and claim it free. Once you claim, you also get a free dashboard that shows how often AI tools like ChatGPT are recommending your business to local searchers. No credit card required to claim.\""
           }
         ],
         highlight: "Practice delivering this with a warm, friendly, confident, and low-pressure tone."
@@ -352,7 +352,7 @@ export const trainingModules: Module[] = [
         scripts: [
           {
             label: "Opening to a gatekeeper",
-            text: "\"Hi! I'm Dylan with Top of Temecula. We created a free local profile for this business and I'm stopping by to make sure the owner knows about it. Is the owner or manager available today?\""
+            text: "\"Hi! I'm [Your Name] with Top of Temecula. We created a free local profile for this business and I'm stopping by to make sure the owner knows about it. Is the owner or manager available today?\""
           },
           {
             label: "If they say the owner is out",
@@ -371,9 +371,9 @@ export const trainingModules: Module[] = [
           "1. Driving: You are authorized to drive your personal vehicle between routes. Obey all traffic laws. NO PHONE USE while moving. Pull over safely to check routes or log visits.",
           "2. Public Storefronts Only: Only enter public commercial spaces during regular business hours. Never enter private homes, warehouses, back rooms, or employee-only areas.",
           "3. No Cash/Checks: Never accept cash, checks, or write down credit card numbers. All upgrades happen securely online.",
-          "4. Location Sharing: You must share your live location with Tim (supervisor) at the start of every shift and check out at the end."
+          "4. Location Sharing: You must share your live location with your supervisor at the start of every shift and check out at the end."
         ],
-        highlight: "If anyone is rude, aggressive, or makes you uncomfortable, leave immediately. No questions asked. Call Tim."
+        highlight: "If anyone is rude, aggressive, or makes you uncomfortable, leave immediately. No questions asked. Call your supervisor."
       },
       {
         title: 'CRM Logging: If It Isn\'t Logged, It Didn\'t Happen',
@@ -393,7 +393,7 @@ export const trainingModules: Module[] = [
           { label: "5-10 Seconds Per Clip", text: "Short, focused clips are ideal. Capture one subject per clip — a storefront sign, a product display, a team member (with permission)." },
           { label: "Always Get Permission First", text: "Before filming inside a business, ask the owner or manager: 'Would it be okay if I captured a quick clip of your storefront for our local guide?'" },
           { label: "NEVER Film", text: "Customers, payment areas, registers, employee-only areas, or anyone who hasn't given permission. This is a hard rule.", bad: true },
-          { label: "Log It", text: "Note in your CRM that you captured content and what you filmed. Tim reviews all content before it goes live." }
+          { label: "Log It", text: "Note in your CRM that you captured content and what you filmed. Your supervisor reviews all content before it goes live." }
         ],
         highlight: "Content capture is optional and only happens when the owner enthusiastically agrees. When in doubt, skip it and focus on the claim."
       },
@@ -411,7 +411,7 @@ export const trainingModules: Module[] = [
           },
           {
             prompt: "What do you do if a business owner is aggressive or tells you to leave?",
-            answer: "Leave immediately. No arguing, no second pitch. Walk safely to your car and call Tim. Your safety is the absolute priority."
+            answer: "Leave immediately. No arguing, no second pitch. Walk safely to your car and call your supervisor. Your safety is the absolute priority."
           }
         ]
       }
@@ -447,11 +447,11 @@ export const trainingModules: Module[] = [
         options: [
           'Argue back and defend the brand',
           'Stay and try to convince them to claim anyway',
-          'Leave the premises immediately, walk safely to your car, and call your supervisor Tim',
+          'Leave the premises immediately, walk safely to your car, and call your supervisor',
           'Record them on your phone without permission'
         ],
         correctAnswer: 2,
-        explanation: 'Your safety is the absolute priority. Exit immediately and escalate to Tim. Never argue or escalate a conflict.'
+        explanation: 'Your safety is the absolute priority. Exit immediately and escalate to your supervisor. Never argue or escalate a conflict.'
       }
     ],
     assignment: {

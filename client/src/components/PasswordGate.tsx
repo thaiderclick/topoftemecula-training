@@ -73,11 +73,11 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+            className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden"
             style={{ background: 'oklch(0.22 0.01 65)' }}
           >
             <img
-              src="/manus-storage/tot_logo_1dd3a1f8.webp"
+              src="/logo.webp"
               alt="Top of Temecula"
               className="w-16 h-auto"
             />
@@ -110,7 +110,7 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
               <Input
                 id="name"
                 type="text"
-                placeholder="e.g. Dylan"
+                placeholder="Enter your first and last name"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 autoComplete="name"
@@ -127,7 +127,7 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter the password Tim gave you"
+                  placeholder="Enter your training access code"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -163,9 +163,9 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Don't have the password?{' '}
+          Don't have an access code?{' '}
           <span className="font-semibold" style={{ color: 'oklch(0.50 0.12 72)' }}>
-            Contact Tim to get access.
+            Contact your training coordinator to get started.
           </span>
         </p>
       </div>

@@ -75,9 +75,9 @@ const SCENARIOS: Scenario[] = [
         consequence: "Wrong. You don't know their intent. Don't stop and wait alone in a parking lot.",
       },
       {
-        text: "Walk to a populated area (like a nearby store), call Tim, and don't get in your car until you feel safe.",
+        text: "Walk to a populated area (like a nearby store), call your supervisor, and don't get in your car until you feel safe.",
         isCorrect: true,
-        consequence: "Correct. Walk toward people, call Tim immediately, and don't isolate yourself in your car until the situation is clear.",
+        consequence: "Correct. Walk toward people, call your supervisor immediately, and don't isolate yourself in your car until the situation is clear.",
       },
       {
         text: "Quickly get in your car and lock the doors.",
@@ -90,7 +90,7 @@ const SCENARIOS: Scenario[] = [
         consequence: "Wrong. Engaging alone in a parking lot with someone who followed you is a safety risk. Your first move is to get to a populated area.",
       },
     ],
-    correctExplanation: "If someone follows you to your car, walk toward other people — a busy store, a group of shoppers. Call Tim immediately. Don't get in your car until you feel safe. Trust your gut.",
+    correctExplanation: "If someone follows you to your car, walk toward other people — a busy store, a group of shoppers. Call your supervisor immediately. Don't get in your car until you feel safe. Trust your gut.",
   },
   {
     id: 'back_office',
@@ -114,7 +114,7 @@ const SCENARIOS: Scenario[] = [
         consequence: "Acceptable, but you're missing an opportunity. The better move is to offer to show them on your phone right where you are.",
       },
       {
-        text: "Follow them but text Tim your location first.",
+        text: "Follow them but text your supervisor your location first.",
         isCorrect: false,
         consequence: "Wrong. Texting your location is good practice, but it doesn't make going into a back room safe. Stay in public areas.",
       },
@@ -138,23 +138,23 @@ const SCENARIOS: Scenario[] = [
         consequence: "Correct. You declined gracefully, reinforced the free value, and kept the interaction professional. This is exactly right.",
       },
       {
-        text: "Tell them to pay Tim directly if they want to upgrade later.",
+        text: "Tell them that any paid upgrades are handled by the team directly.",
         isCorrect: false,
-        consequence: "Close, but not complete. You need to decline the cash first, then explain that any paid services go through Tim — not you.",
+        consequence: "Close, but not complete. You need to decline the cash first, then explain that any paid services go through the team — not you.",
       },
       {
-        text: "Accept it and report it to Tim later.",
+        text: "Accept it and report it to your supervisor later.",
         isCorrect: false,
         consequence: "Wrong. Accepting cash is the violation — reporting it later doesn't fix it. Decline on the spot.",
       },
     ],
-    correctExplanation: "Never accept cash, gifts, or any payment from business owners. The listing claim is free. Any paid services are handled by Tim directly. Accepting cash — even a small tip — is a compliance violation.",
+    correctExplanation: "Never accept cash, gifts, or any payment from business owners. The listing claim is free. Any paid services are handled by the team directly. Accepting cash — even a small tip — is a compliance violation.",
   },
   {
     id: 'phone_while_driving',
     title: 'Phone Buzzes While Driving',
     emoji: '📱',
-    setup: "You're driving between stops and your phone buzzes with what looks like a new address from Tim. You're on a busy road.",
+        setup: "You're driving between stops and your phone buzzes with what looks like a new address from your supervisor. You're on a busy road.",
     choices: [
       {
         text: "Quickly glance at the message at a red light.",
@@ -174,7 +174,7 @@ const SCENARIOS: Scenario[] = [
       {
         text: "Ignore it until you reach your next stop.",
         isCorrect: false,
-        consequence: "This is acceptable if your next stop is close, but pulling over to check is better. Ignoring a message for a long time could mean missing an important update from Tim.",
+        consequence: "This is acceptable if your next stop is close, but pulling over to check is better. Ignoring a message for a long time could mean missing an important update from your supervisor.",
       },
     ],
     correctExplanation: "California law prohibits using a handheld phone while driving. Our policy is zero tolerance. Pull into a parking lot or safe area before checking any messages. No route update is worth an accident.",
@@ -191,22 +191,22 @@ const SCENARIOS: Scenario[] = [
         consequence: "Wrong. Never override your gut feeling about safety to finish a route. No visit is worth a safety risk.",
       },
       {
-        text: "Skip it and log it as \"closed\" without calling Tim.",
+        text: "Skip it and log it as \"closed\" without notifying your supervisor.",
         isCorrect: false,
-        consequence: "Partially right — skipping is correct — but you must always call or text Tim when you skip a stop so he knows your status.",
+        consequence: "Partially right — skipping is correct — but you must always call or text your supervisor when you skip a stop so he knows your status.",
       },
       {
-        text: "Trust your gut, skip the stop, and text Tim: \"Skipping [business name] — location felt unsafe at this hour. Will try tomorrow morning.\"",
+        text: "Trust your gut, skip the stop, and text your supervisor: \"Skipping [business name] — location felt unsafe at this hour. Will try tomorrow morning.\"",
         isCorrect: true,
-        consequence: "Correct. You trusted your instincts, communicated with Tim, and kept yourself safe. This is exactly the right call.",
+        consequence: "Correct. You trusted your instincts, communicated with your supervisor, and kept yourself safe. This is exactly the right call.",
       },
       {
-        text: "Call Tim first and ask if you should still go in.",
+        text: "Call your supervisor first and ask if you should still go in.",
         isCorrect: false,
-        consequence: "Calling Tim is good, but if something feels unsafe, don't wait for permission to skip it. Trust your gut first, then inform Tim.",
+        consequence: "Calling your supervisor is good, but if something feels unsafe, don't wait for permission to skip it. Trust your gut first, then inform your supervisor.",
       },
     ],
-    correctExplanation: "If a location feels unsafe — at any hour — skip it and text Tim immediately. Your safety is the top priority. Gut feelings are data. Never override them to complete a route.",
+    correctExplanation: "If a location feels unsafe — at any hour — skip it and text your supervisor immediately. Your safety is the top priority. Gut feelings are data. Never override them to complete a route.",
   },
 ];
 
@@ -302,7 +302,7 @@ export default function Safety() {
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 max-w-md text-left">
             <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Remember the core principle:</p>
             <p className="text-sm font-medium text-foreground">
-              No listing, no route, no quota is worth your safety. When in doubt, disengage, leave, and call Tim.
+              No listing, no route, no quota is worth your safety. When in doubt, disengage, leave, and call your supervisor.
             </p>
           </div>
           <div className="flex gap-3">
