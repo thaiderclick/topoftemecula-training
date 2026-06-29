@@ -1000,6 +1000,16 @@ async function createContext(opts) {
 var app = (0, import_express.default)();
 app.use(import_express.default.json({ limit: "50mb" }));
 app.use(import_express.default.urlencoded({ limit: "50mb", extended: true }));
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    node: process.version,
+    env: process.env.NODE_ENV,
+    hasJwt: !!process.env.JWT_SECRET,
+    hasDb: !!process.env.DATABASE_URL,
+    hasTrainingPw: !!process.env.TRAINING_PASSWORD
+  });
+});
 registerOAuthRoutes(app);
 app.use(
   "/api/trpc",
