@@ -121,7 +121,7 @@ var init_email = __esm({
   }
 });
 
-// api/server.ts
+// api/_server.ts
 var server_exports = {};
 __export(server_exports, {
   default: () => server_default
@@ -996,7 +996,7 @@ async function createContext(opts) {
   };
 }
 
-// api/server.ts
+// api/_server.ts
 var app = (0, import_express.default)();
 app.use(import_express.default.json({ limit: "50mb" }));
 app.use(import_express.default.urlencoded({ limit: "50mb", extended: true }));
