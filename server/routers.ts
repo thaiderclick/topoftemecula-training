@@ -120,6 +120,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const systemPrompt = buildOwnerSystemPrompt(input.persona);
         const response = await invokeLLM({
+          model: "gpt-4o-mini",
           messages: [
             { role: "system", content: systemPrompt },
             ...input.messages,
@@ -150,6 +151,7 @@ export const appRouter = router({
           .join("\n");
 
         const response = await invokeLLM({
+          model: "gpt-4o-mini",
           messages: [
             { role: "system", content: EVALUATOR_SYSTEM_PROMPT },
             {

@@ -3,10 +3,13 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   trainingPassword: process.env.TRAINING_PASSWORD ?? "ambassador2024",
   isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // OpenAI API key for AI Roleplay feature
+  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
+  // Legacy aliases kept so llm.ts compiles without changes
+  forgeApiUrl: "https://api.openai.com",
+  forgeApiKey: process.env.OPENAI_API_KEY ?? "",
   // Legacy fields kept for compatibility with shared/const imports
-  appId: process.env.VITE_APP_ID ?? "tot-training",
+  appId: "tot-training",
   oAuthServerUrl: "",
   ownerOpenId: "",
 };

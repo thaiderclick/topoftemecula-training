@@ -55,4 +55,4 @@
 - [x] Configure vercel.json for full-stack Express + Vite deployment
 - [x] 14 Vitest tests passing after auth migration
 - [x] Production build verified (dist/public + api/server.js)
-- [ ] Push to GitHub to trigger Vercel deployment
+- [x] Push to GitHub to trigger Vercel deployment
