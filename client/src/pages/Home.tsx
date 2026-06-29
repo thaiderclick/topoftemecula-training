@@ -31,7 +31,7 @@ import {
   LogIn,
   Loader2,
 } from 'lucide-react';
-import { trainingModules, finalReadinessTest, Module } from '../data/trainingData';
+import { trainingModules, finalReadinessTestBank, Question, Module } from '../data/trainingData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,7 +115,10 @@ export default function Home() {
   const [finalTestAnswers, setFinalTestAnswers] = useState<Record<string, number>>({});
   const [finalTestSubmitted, setFinalTestSubmitted] = useState(false);
   const [finalTestScore, setFinalTestScore] = useState(0);
+  // Randomized 10-from-20 question set with shuffled answer options
+  const [activeTestQuestions, setActiveTestQuestions] = useState<(Question & { shuffledOptions: string[]; mappedCorrect: number })[]>([]);
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [rubricChecked, setRubricChecked] = useState<Record<string, boolean>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [revealedRecall, setRevealedRecall] = useState<Record<string, boolean>>({});
   const [showShift1Debrief, setShowShift1Debrief] = useState(false);
@@ -221,30 +224,44 @@ export default function Home() {
   };
 
   // ── Final Test ──
+  // Build a fresh randomized 10-from-20 question set with shuffled answer options
+  const generateTestQuestions = () => {
+    const shuffled = [...finalReadinessTestBank].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, 10);
+    return selected.map(q => {
+      // Build an array of [option, originalIndex] pairs and shuffle them
+      const indexed = q.options.map((opt, i) => ({ opt, i }));
+      indexed.sort(() => Math.random() - 0.5);
+      const shuffledOptions = indexed.map(x => x.opt);
+      const mappedCorrect = indexed.findIndex(x => x.i === q.correctAnswer);
+      return { ...q, shuffledOptions, mappedCorrect };
+    });
+  };
+
   const handleFinalTestSelect = (questionId: string, optionIndex: number) => {
     if (finalTestSubmitted) return;
     setFinalTestAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
   };
 
   const submitFinalTest = () => {
-    const unanswered = finalReadinessTest.filter(q => finalTestAnswers[q.id] === undefined);
+    const unanswered = activeTestQuestions.filter(q => finalTestAnswers[q.id] === undefined);
     if (unanswered.length > 0) { toast.error('Please answer all 10 questions before submitting.'); return; }
     let correctCount = 0;
-    finalReadinessTest.forEach(q => { if (finalTestAnswers[q.id] === q.correctAnswer) correctCount++; });
+    activeTestQuestions.forEach(q => { if (finalTestAnswers[q.id] === q.mappedCorrect) correctCount++; });
     setFinalTestScore(correctCount);
     setFinalTestSubmitted(true);
-    if (correctCount === finalReadinessTest.length) {
+    if (correctCount === 10) {
       saveProgress({ passedFinalTest: true, finalTestScore: correctCount });
       toast.success('CONGRATULATIONS! You scored 10/10 and passed the Final Readiness Test!');
     } else {
       toast.error(`Score: ${correctCount}/10. You must score 10/10 to pass. Review and retry!`);
     }
   };
-
   const retryFinalTest = () => {
     setFinalTestSubmitted(false);
     setFinalTestAnswers({});
     setFinalTestScore(0);
+    setActiveTestQuestions(generateTestQuestions());
   };
 
   // ── Shift 1 Debrief ──
@@ -465,7 +482,7 @@ export default function Home() {
             {/* Final Test */}
             <button
               disabled={!isFinalTestUnlocked()}
-              onClick={() => { setShowFinalTest(true); setShowShift1Debrief(false); setSidebarOpen(false); }}
+              onClick={() => { setShowFinalTest(true); setShowShift1Debrief(false); setSidebarOpen(false); setActiveTestQuestions(generateTestQuestions()); setFinalTestAnswers({}); setFinalTestSubmitted(false); setFinalTestScore(0); }}
               className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
                 ${!isFinalTestUnlocked() ? 'cursor-not-allowed' : ''}
               `}
@@ -574,18 +591,18 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0 flex flex-col gap-6 max-h-[55vh] overflow-y-auto pr-2">
-                {finalReadinessTest.map((q, idx) => {
+                {activeTestQuestions.map((q, idx) => {
                   const selectedOpt = finalTestAnswers[q.id];
-                  const isCorrect = selectedOpt === q.correctAnswer;
+                  const isCorrect = selectedOpt === q.mappedCorrect;
                   return (
                     <div key={q.id} className="border border-border/60 bg-background/40 rounded-xl p-4 md:p-5 shadow-sm">
                       <h3 className="text-sm md:text-base font-bold text-foreground mb-3">
                         <span className="text-primary mr-1.5">{idx + 1}.</span> {q.text}
                       </h3>
                       <div className="flex flex-col gap-2">
-                        {q.options.map((opt, optIdx) => {
+                        {q.shuffledOptions.map((opt: string, optIdx: number) => {
                           const isSelected = selectedOpt === optIdx;
-                          const showSuccess = finalTestSubmitted && optIdx === q.correctAnswer;
+                          const showSuccess = finalTestSubmitted && optIdx === q.mappedCorrect;
                           const showDanger = finalTestSubmitted && isSelected && !isCorrect;
                           return (
                             <button
@@ -973,15 +990,42 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="p-0 flex flex-col gap-4">
                     {activeModule.assignment.type === 'roleplay' && (
-                      <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 flex items-center gap-3.5 mb-2">
-                        <Video className="w-8 h-8 text-primary shrink-0" />
-                        <div>
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Recording Tip</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                            Use your phone's built-in voice recorder, Loom, or record a quick video. Upload to Google Drive or Dropbox, set the link to "anyone with link can view," and paste it below.
-                          </p>
+                      <>
+                        <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 flex items-center gap-3.5 mb-2">
+                          <Video className="w-8 h-8 text-primary shrink-0" />
+                          <div>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Recording Tip</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                              Use your phone's built-in voice recorder, Loom, or record a quick video. Upload to Google Drive or Dropbox, set the link to "anyone with link can view," and paste it below.
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                        {activeModule.assignment.rubric && activeModule.assignment.rubric.length > 0 && (
+                          <div className="border border-border/60 bg-background/40 rounded-xl p-4">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">Self-Assessment Rubric</h4>
+                            <p className="text-xs text-muted-foreground mb-3">Score yourself honestly before submitting. Check each item you completed.</p>
+                            <div className="flex flex-col gap-2">
+                              {activeModule.assignment.rubric.map((item, i) => {
+                                const key = `${activeModule.id}_rubric_${i}`;
+                                return (
+                                  <label key={i} className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!rubricChecked[key]}
+                                      onChange={e => setRubricChecked(prev => ({ ...prev, [key]: e.target.checked }))}
+                                      className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
+                                    />
+                                    <span className={`text-xs leading-relaxed transition-colors ${rubricChecked[key] ? 'text-foreground line-through opacity-60' : 'text-muted-foreground group-hover:text-foreground'}`}>{item}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-3 font-medium">
+                              {Object.keys(rubricChecked).filter(k => k.startsWith(`${activeModule.id}_rubric_`) && rubricChecked[k]).length} / {activeModule.assignment.rubric.length} completed
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
                     <textarea
                       value={progress.assignmentsData[activeModule.id] || ''}

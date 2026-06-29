@@ -5,10 +5,11 @@
 >
 > **Structure rules:**
 > - Each Day is a Module. Keep the Day/Module structure intact.
-> - Quiz answers are zero-indexed (0 = first option, 1 = second option, etc.).
+> - Quiz answers are marked with a ✅ on the correct option. Keep one correct option per question.
 > - Active Recall prompts use `**Prompt:**` / `**Answer:**` pairs.
 > - Script blocks use `**Label:**` / `**Script:**` pairs.
 > - Do's & Don'ts use `✅ DO:` / `❌ DON'T:` prefixes.
+> - Field Scenario cards use `**Scenario:**` / `**Rung:**` / `**Script:**` (Rung ties the scenario to the Outcome Ladder in Day 3, Slide 1).
 
 ---
 
@@ -143,10 +144,10 @@ Agency 2 Name:
 
 ---
 
-## DAY 2 — Why Claiming Matters: The Dashboard
-**Subtitle:** Learn the real value hook — the AI-citation tracker — and how to handle pricing.
+## DAY 2 — Why Claiming Matters: The Dashboard & The Upgrades
+**Subtitle:** Learn the real value hook — the AI-citation tracker and the free marketing platform — plus the upgrade ladder you'll walk owners through.
 **Duration:** 4 Hours (Paid)
-**Description:** Understand the free local marketing command center that businesses unlock, how to explain AI search recommendations, and how to handle pricing questions gracefully.
+**Description:** Understand the free local marketing command center every business unlocks, the à la carte tools they get even at $0, the paid upgrade ladder, and how to present it confidently without pressure.
 
 ---
 
@@ -160,46 +161,70 @@ The absolute biggest hook is the AI-Citation Tracker:
 
 Most local business owners have no idea how AI views them. This is incredibly unique and valuable.
 
-> **Key Callout:** Lead with the claim and the AI dashboard. It is a modern, high-value tool that is completely free to unlock.
+> **Key Callout:** Lead with the claim and the AI dashboard. It is a modern, high-value tool that is completely free to unlock. It's software — it pulls what AI tools are recommending and shows it to them on screen.
 
 ---
 
-### Slide 2 — What Else Is in the Dashboard?
+### Slide 2 — The Dashboard Is a Free Marketing Platform (Even at $0)
 
-Once claimed, the business owner can:
+The dashboard isn't just a place to *look* at an AI score — it's an active local marketing platform the owner gets for free, just by claiming. Once claimed, the business owner can:
 
-- Monitor their local presence and AI citation scores.
+- Monitor their local presence and AI-citation data.
 - Edit their profile details (hours, services, social links, photos).
-- Access a la carte marketing tools whenever they want them — like press releases, email blasts, and featured placements.
 - Track local visitor traffic and profile views.
+- Use **à la carte marketing options with no subscription and no commitment** — they only pay for what they use, one time:
+  - **Got an event coming up?** Promote it on our platform.
+  - **Want a press release?** Order one and we'll create and syndicate it for them.
+  - **Hiring?** Feature their job listings to attract Temecula talent.
+
+> **Key Callout:** This is a huge part of the free pitch. Even if they never upgrade, claiming gives them a real, free marketing toolkit they can use whenever they want, paying only for the à la carte pieces they choose. "Even if you never upgrade, you've got a free marketing platform."
 
 ---
 
-### Slide 3 — Pricing: What You Need to Know
+### Slide 3 — The Upgrade Ladder (The Big Idea, Not the Specs)
 
-The free claim is your primary focus. If a business is highly interested and asks about paid options, here is what we offer:
+You do **not** need to memorize feature lists. When the owner is on the claim/upgrade screen, every deliverable is listed right there in bullets — let them read it for themselves. Your job is the **big-idea difference** between the tiers and the confidence to walk them through it. Specifics or tough questions go to the screen, or to **questions@topoftemecula.com**.
 
-- **Free Claim Tier ($0/mo):** Basic profile control, business info, and access to the AI-citation dashboard. No credit card ever required.
-- **Standard Featured Tier ($49/mo):** Premium placement in their category, highlighted map pin, and a free social media shoutout on our highly engaged local platforms.
-- **Elite Verified Tier ($79/mo):** Top category ranking, verified local badge, priority email/newsletter placement, and quarterly social media features.
+Here is the whole ladder and the one big idea for each:
 
-**IMPORTANT:** You are NOT a salesperson. Do not push paid tiers. If they ask, explain briefly and keep the focus on the free claim. Any paid upgrade is handled by your supervisor directly — never collect payment yourself.
+- **Free Claim ($0):** Claim and control your profile, and unlock the dashboard — a free local marketing platform with AI-citation data and pay-as-you-go à la carte tools. No credit card, no commitment.
+- **Enhanced ($49/mo):** Get more out of Top of Temecula — stronger presence and visibility on our platform.
+- **Premium ($79/mo):** The main upgrade — the most visibility and presence on Top of Temecula. *This is what you steer an engaged owner toward.*
+- **Growth Partner ($299/mo):** A full **done-for-you AEO service** — not automated. Everything in Premium, **plus a dedicated representative** who works every month to grow how often AI tools recommend you — and it reaches across the **entire AI landscape, not just Top of Temecula.** Built for ambitious businesses with high customer lifetime value.
 
-> **Key Callout:** If they ask about cost: "The claim and the dashboard are 100% free. There are optional featured tiers starting at $49/month if you ever want extra visibility, but the free claim is the main thing today."
+> **Key Callout:** Enhanced and Premium are about getting the most out of Top of Temecula itself. Growth Partner is a different animal — a real human-run AEO service that works everywhere AI looks, not just on our platform.
 
 ---
 
-### Slide 4 — How to Handle Pricing Questions (Scripts)
+### Slide 4 — How to Present the Upgrades (Without Being Pushy)
+
+**Premium is always the goal.** When an owner is engaged and the claim is done, present the upgrades confidently and steer toward Premium as the natural next step. Then present Growth Partner for what it is, and let the owner decide between them. Never pressure.
+
+**When is Growth Partner the right fit?** For businesses that are ambitious, have a high customer lifetime value, or already buy expensive marketing services. For a typical small shop, Premium is the right call.
+
+**You never handle the transaction.** Every upgrade happens on the website, on the owner's own device. You walk them to it, explain the big-idea difference, let the screen show the deliverables, and encourage Premium — but the owner completes the purchase themselves. You never take a card, cash, or payment of any kind.
+
+> **Key Callout:** Lead with free. Steer engaged owners to Premium. Present Growth Partner honestly for the right businesses. Let them decide. Never pressure, never handle payment.
+
+---
+
+### Slide 5 — Pricing Scripts
 
 **Label:** If they ask: "How much does this cost?"
-**Script:** "The claim and the dashboard are 100% free — no credit card required. There are optional featured tiers starting at $49 a month if you ever want extra visibility, but the free claim is the main thing today to make sure your info is correct."
+**Script:** "The claim and the dashboard are 100% free — no credit card required, and you've got free à la carte marketing tools in there too. If you ever want more visibility, there are optional paid tiers — Premium is the popular one — but the free claim is the main thing today to make sure your info is correct."
 
-**Label:** If they ask for exact features of paid tiers:
-**Script:** "The free claim is the best place to start. Once you're in the dashboard, you can see all the optional tiers and features. I can also have someone follow up with you with a complete breakdown if you'd like!"
+**Label:** If an engaged owner asks "What's the upgrade?"
+**Script:** "Premium gets you the most visibility and presence on Top of Temecula — it's what most owners go with when they want more. Right here on the screen you can see exactly what's included. There's also a Growth Partner option, which is a full done-for-you service with a dedicated rep growing your AI recommendations across the board — that one's for businesses really leaning into marketing."
+
+**Label:** If they ask for exact features of a tier:
+**Script:** "It's all listed right here on the screen so you can see exactly what each one includes. If you want a deeper breakdown, you can always email questions@topoftemecula.com and someone will walk you through it."
+
+**Label:** If they want to buy an upgrade:
+**Script:** "Awesome — you can grab that right here on the site on your phone. The free claim is done, so you're all set up; just pick the tier on the screen. I'll hang out in case you have any quick questions." *(You never enter payment info or touch their card.)*
 
 ---
 
-### Slide 5 — Do's and Don'ts of Product Talk
+### Slide 6 — Do's and Don'ts of Product Talk
 
 ❌ DON'T Say: "This will guarantee you rank #1 on Google search."
 ✅ DO Say: "This gives you a dedicated local presence and shows you how AI tools like ChatGPT recommend you."
@@ -210,18 +235,27 @@ The free claim is your primary focus. If a business is highly interested and ask
 ❌ DON'T Say: "I need your credit card to activate the free dashboard."
 ✅ DO Say: "The claim is free and requires no credit card or payment info at all."
 
+❌ DON'T: Take a card, cash, check, or enter payment info for any upgrade.
+✅ DO: Let the owner complete any purchase themselves on the website, on their own device.
+
+❌ DON'T: Make up a feature or a price to answer a tough question.
+✅ DO: Point to the deliverables on the screen, or send them to questions@topoftemecula.com.
+
 ---
 
-### Slide 6 — Active Recall: Day 2 Check
+### Slide 7 — Active Recall: Day 2 Check
 
 **Prompt:** What is the AI-Citation Tracker and why do owners care?
 **Answer:** It tracks how often AI tools like ChatGPT, Gemini, and Perplexity are recommending and citing their business. Most owners have no idea how AI views them — this is a unique, high-value free tool.
 
-**Prompt:** If an owner asks "How much does this cost?" — what do you say?
-**Answer:** The claim and the dashboard are 100% free — no credit card required. There are optional featured tiers starting at $49/month if they ever want extra visibility, but the free claim is the focus today.
+**Prompt:** Name two free à la carte marketing tools an owner gets just by claiming.
+**Answer:** Any two of: promote an upcoming event, order a syndicated press release, feature their job listings to attract local talent — all pay-as-you-go, no subscription.
 
-**Prompt:** What are the three pricing tiers?
-**Answer:** Free Claim ($0/mo), Standard Featured ($49/mo), Elite Verified ($79/mo).
+**Prompt:** Which paid tier do you steer an engaged owner toward, and what's the one above it?
+**Answer:** Premium ($79/mo) is the main upgrade you steer toward. Growth Partner ($299/mo) is the done-for-you AEO service with a dedicated rep, working across the whole AI landscape — present it for what it is and let them decide.
+
+**Prompt:** Do you ever handle the payment for an upgrade?
+**Answer:** Never. Every upgrade happens on the website, on the owner's own device. You guide and encourage, but the owner completes the purchase themselves.
 
 ---
 
@@ -237,42 +271,79 @@ The free claim is your primary focus. If a business is highly interested and ask
 
 ---
 
-**Q2.** What is the starting price for the first paid featured tier?
-- A) $99/month
-- B) $29/month
-- C) ✅ $49/month
-- D) $149/month
+**Q2.** Which paid tier do you steer an engaged, interested owner toward by default?
+- A) Enhanced ($49/mo)
+- B) ✅ Premium ($79/mo)
+- C) Growth Partner ($299/mo)
+- D) You never mention any upgrade
 
-*Explanation: The Standard Featured Tier starts at $49/month. The Elite Verified Tier is $79/month. Always keep the focus on the free claim first.*
+*Explanation: Premium is the main goal. Present Growth Partner ($299/mo) honestly for ambitious, high-value businesses, but let the owner decide — never pressure.*
 
 ---
 
-**Q3.** Does the free claim require a credit card?
-- A) Yes, for verification purposes
-- B) ✅ No, the free claim is 100% free and requires zero payment information
-- C) Only if they are located in Temecula
-- D) Yes, but we refund it immediately
+**Q3.** What does a business get for free, just by claiming, even if they never upgrade?
+- A) Nothing until they pay
+- B) ✅ Profile control plus the dashboard — a free marketing platform with AI-citation data and pay-as-you-go à la carte tools (event promotion, press releases, featured job listings)
+- C) A free company website
+- D) A guaranteed #1 Google ranking
 
-*Explanation: The free claim is completely free and never requires a credit card. Promising this builds high trust.*
+*Explanation: The free claim unlocks a real marketing toolkit. Owners only pay for à la carte pieces they choose — no subscription, no commitment.*
+
+---
+
+**Q4.** What is "Growth Partner" ($299/mo)?
+- A) An automated software setting they toggle on
+- B) A cheaper version of the free claim
+- C) ✅ A full done-for-you AEO service with a dedicated rep who grows their AI recommendations every month, across the whole AI landscape — not just Top of Temecula
+- D) A one-time press release
+
+*Explanation: Growth Partner is human-run, not automated. It includes everything in Premium plus a dedicated rep and reaches beyond Top of Temecula. It's for ambitious, high-lifetime-value businesses.*
+
+---
+
+**Q5.** Do you ever collect payment for an upgrade?
+- A) Yes, cash only
+- B) Yes, you can take their card number and enter it for them
+- C) ✅ No — every upgrade happens on the website on the owner's own device; you never handle payment
+- D) Only for the Growth Partner tier
+
+*Explanation: You guide and encourage, but the owner always completes the purchase themselves on the website. You never take a card, cash, or payment of any kind.*
 
 ---
 
 ### Day 2 Assignment — Write Your Value Pitch
 
-Write a short, 4-sentence pitch explaining why a local insurance agency should claim its free profile on Top of Temecula. Make sure to work in the free claim, the AI-citation tracker in the dashboard, and the low-pressure/no credit card aspect.
+Write a short, 4–5 sentence pitch explaining why a local insurance agency should claim its free profile on Top of Temecula. Make sure to work in: the free claim (no credit card), the AI-citation tracker, the free à la carte marketing tools they get even at $0, and a soft mention that Premium is there if they ever want more visibility.
 
-**Example:** "Hi, we already created a free starter profile for your agency on Top of Temecula to help local residents find you. Claiming it is completely free and takes about a minute, with no credit card required. Once claimed, you unlock a free dashboard that actually tracks how often AI tools like ChatGPT are recommending your business to locals. It's a great free tool to make sure your info is accurate and see your AI search visibility!"
+**Example:** "Hi, we already created a free starter profile for your agency on Top of Temecula to help local residents find you. Claiming it is completely free and takes about a minute, with no credit card required. Once claimed, you unlock a free dashboard that tracks how often AI tools like ChatGPT are recommending your business — plus free marketing tools you can use whenever you want, like promoting an event or featuring a job listing, paying only if you use them. It's a great free way to make sure your info is accurate and see your AI search visibility. And if you ever want more presence on the platform, there's an optional Premium upgrade — but the free claim is the main thing today."
 
 ---
 
-## DAY 3 — Field Operations, Safety & Roleplay
-**Subtitle:** Learn the scripts, handle objections, log your data, and master safety rules.
+## DAY 3 — Field Operations, The Claim, Safety & Roleplay
+**Subtitle:** Master the outcome ladder, conduct the in-person claim and upgrade, handle every scenario, log your data, and stay safe.
 **Duration:** 4 Hours (Paid)
-**Description:** Get fully prepared for the field. Master the scripts, learn how to handle objections, understand strict safety and minor-employment compliance rules, and record your pitch.
+**Description:** Get fully prepared for the field. Learn the full ladder of outcomes from best to fallback, how to walk an owner through claiming and upgrading on the spot, how to handle every scenario you'll meet, strict safety and compliance rules, and how to record and self-assess your pitch.
 
 ---
 
-### Slide 1 — The Script: Your Field Playbook
+### Slide 1 — The Outcome Ladder (Your Mental Model)
+
+Every visit, you try to climb as high as you can, and you only step down as reality forces you to. Memorize the ladder — it turns dozens of situations into one simple idea: **always aim for Rung 1; step down only when you have to.**
+
+1. **Full Win** — Owner is present. You walk them through the claim on the spot, and they choose an upgrade (Premium, or Growth Partner). *This is the target.*
+2. **Claim + Hot Lead** — Owner present, claim done in person, upgrade-curious but not today. Flag it and set a follow-up.
+3. **Clean Claim** — Owner present, claim done in person, free only. Still a win.
+4. **Committed Deferral** — Owner present but won't claim right now ("I'll do it later"). Get a verbal commitment, capture their email, leave the card, log it.
+5. **Email Invite** — Owner is out; a helpful gatekeeper gives you the owner's email. Send the invite, leave the card, log it.
+6. **Card Drop + Intel** — Owner out, gatekeeper won't share an email. Get the owner's name and the best time to return. Leave the card, log it.
+7. **Logged Touch** — Hard no, not interested, or unwelcoming. Leave the card if welcome, log it, move on.
+8. **Data Correction** — No sale possible (closed, moved, wrong info, duplicate listing, or a franchise with no local authority). Don't pitch — log exactly what you found so we can fix the profile. Accurate data is still a win.
+
+> **Key Callout:** Safety overrides every rung. If anyone is aggressive or makes you uncomfortable, you leave immediately — no matter how high on the ladder you were.
+
+---
+
+### Slide 2 — The Script: Your Field Playbook
 
 Depending on how busy the business is, you will use one of three script lengths. Practice these until they feel natural and conversational:
 
@@ -282,46 +353,113 @@ Depending on how busy the business is, you will use one of three script lengths.
 
 ---
 
-### Slide 2 — The Full Pitch & The AI Hook (Script)
+### Slide 3 — The Full Pitch & The AI Hook (Script)
 
 **Label:** The Full Pitch Script
-**Script:** "Hi, I'm [Your Name] with Top of Temecula. We help valley residents discover local businesses, events, deals, and guides. We already created a free starter profile for your business — this QR card goes straight to it so you can review it and claim it free. Once you claim, you also get a free dashboard that shows how often AI tools like ChatGPT are recommending your business to local searchers. No credit card required to claim."
+**Script:** "Hi, I'm [Your Name] with Top of Temecula. We help valley residents discover local businesses, events, deals, and guides. We already created a free starter profile for your business — this QR card goes straight to it so you can review it and claim it free. Once you claim, you also get a free dashboard that shows how often AI tools like ChatGPT are recommending your business to local searchers, plus free marketing tools you can use whenever you want. No credit card required to claim."
 
 > **Key Callout:** Practice delivering this with a warm, friendly, confident, and low-pressure tone.
 
 ---
 
-### Slide 3 — Objection Handling Flashcards
+### Slide 4 — The Ultimate Goal: The In-Person Claim & Upgrade Walkthrough
 
-**Label:** "Is this really free?"
-**Script:** "Yes, the basic claim is completely free — no credit card required. There are optional paid featured tiers if you ever want extra visibility, but the claim and dashboard are free."
+This is the highest rung and your best possible outcome. When the owner is present and willing, **don't just hand them a card — do the claim with them, right there.**
 
-**Label:** "The owner is not here."
-**Script:** "No problem! Would it help if we emailed the owner an invitation to claim their free profile? If you have their best email, we can send the invite directly. I'll leave this card for them too."
+**Step 1 — Get into the flow together.** Hand them the QR card and have them scan it with their phone camera, or pull it up and lean in shoulder-to-shoulder. The card opens their business profile.
 
-**Label:** "We already have Google / Yelp."
-**Script:** "That's great — we don't replace Google. We add a hyper-local discovery channel for Temecula Valley residents, and our dashboard shows you how often AI search tools recommend you. The claim just ensures your local info is accurate."
+**Step 2 — Walk the claim.** Guide them through the on-screen claim steps — the screen prompts each step, so you just point, encourage, and keep it easy: "Tap there... yep, confirm your info looks right... and that's it." Stay at their shoulder. Answer the easy questions; send anything detailed to the screen or questions@topoftemecula.com.
 
-**Label:** "We are not interested."
-**Script:** "No problem at all! I'll leave the card in case you want to review the free profile later. Have a wonderful day!" (Then exit politely — never argue.)
+**Step 3 — Land on the dashboard.** Once it says claimed, they're in their dashboard. Show them the AI-citation data and point out the free à la carte tools (event promotion, press releases, featured jobs). This is the "wow" moment — let them see the value for themselves.
+
+**Step 4 — Tee up the upgrade.** The upgrade options are right there on screen. Walk the big-idea difference: "The free version is yours forever. Premium gets you the most visibility on the platform — most owners who want more go with that. There's also Growth Partner, a full done-for-you service if you're really pushing growth." Encourage Premium for the typical business; present Growth Partner honestly for the ambitious one. **Let the screen show the deliverables. Let them decide.**
+
+**Step 5 — Hand off the transaction.** If they want to upgrade, they complete it themselves on the website, on their own device. You never touch payment. Then log everything.
+
+> **Key Callout:** Your superpower is being the friendly person at their shoulder who makes a slightly intimidating thing feel easy. Walk it with them — don't just point at a card and leave.
 
 ---
 
-### Slide 4 — The Gatekeeper Playbook
+### Slide 5 — When the Claim Hits a Snag (Recovery)
+
+Two things go wrong most often. Handle them smoothly:
+
+- **The QR code won't scan.** "No worries — these sometimes need good light. You can also just go to [their profile URL], or I can pull it up for you right here." Don't let a finicky camera kill the claim.
+- **The owner gets pulled away mid-claim** (a customer walks in, the phone rings). "Totally fine — want me to send you an email invite so you can finish whenever you have a minute?" Capture the email, leave the card, log it as a hot follow-up. You've stepped down from Rung 1 to Rung 4/5 cleanly instead of losing the visit.
+
+> **Key Callout:** A snag is not a no. Recover to the highest rung still available — finish later by email rather than walking away empty-handed.
+
+---
+
+### Slide 6 — Field Scenarios (Objection & Situation Cards)
+
+Each card is tagged to a rung on the Outcome Ladder.
+
+**Scenario:** "Is this really free?"
+**Rung:** 1–3
+**Script:** "Yes, the basic claim is completely free — no credit card required. You even get free marketing tools in the dashboard. There are optional paid tiers if you ever want more visibility, but the claim and dashboard are free."
+
+**Scenario:** "Is this a scam? / Who are you really with?"
+**Rung:** Cross-cutting
+**Script:** "Totally fair to ask. I'm [Your Name], a local summer ambassador with Top of Temecula — we're a Temecula Valley business guide. Your profile is already live; you can pull it up on your phone right now, and claiming it is free. Anything you want to verify, you can email questions@topoftemecula.com."
+
+**Scenario:** "Are you on commission? / What's your cut?"
+**Rung:** Cross-cutting
+**Script:** "I'm a local summer ambassador — I'm just here to help businesses claim their free profile and see the dashboard. The claim costs you nothing either way."
+
+**Scenario:** "We already have Google / Yelp."
+**Rung:** 1–3
+**Script:** "That's great — we don't replace Google. We add a hyper-local discovery channel for Temecula Valley residents, and our dashboard shows you how often AI search tools recommend you. The claim just ensures your local info is accurate."
+
+**Scenario:** "I'll do it later."
+**Rung:** 4
+**Script:** "Totally understand — it honestly takes about a minute, want to knock it out now while I'm here so it's done? ... No problem at all — what's the best email for you? I'll have a claim invite sent so you can finish whenever, and I'll leave this card too." *(Get the commitment, then the email, then leave the card. Log it.)*
+
+**Scenario:** "It's too expensive." (upgrade)
+**Rung:** 1–2
+**Script:** "No pressure at all — the free claim and dashboard are yours regardless, and those free à la carte tools mean you only ever pay for what you actually use. Premium is just there if you ever want more visibility down the road."
+
+**Scenario:** "Let me think about it." (upgrade)
+**Rung:** 2
+**Script:** "Of course. The free claim is yours now either way. The upgrade options live right in your dashboard whenever you're ready — no rush at all."
+
+**Scenario:** "I need to ask my partner." (upgrade)
+**Rung:** 2
+**Script:** "Makes sense. Let's get the free claim done now so you control the profile, and you two can look at the upgrade options together in the dashboard anytime."
+
+**Scenario:** "We already claimed it."
+**Rung:** Cross-cutting
+**Script:** "That's great — you're ahead of the game! Mind if I make sure the info's accurate while I'm here? And have you checked out the AI-citation dashboard yet? Happy to point you to it." *(Verify info, add value, log it.)*
+
+**Scenario:** "The owner is not here."
+**Rung:** 5–6
+**Script:** "No problem! Would it help if we emailed the owner an invitation to claim their free profile? If you have their best email, we can send the invite directly. I'll leave this card for them too." *(If no email: get the owner's name and best time to return, leave the card, log both.)*
+
+**Scenario:** "We are not interested."
+**Rung:** 7
+**Script:** "No problem at all! I'll leave the card in case you want to review the free profile later. Have a wonderful day!" *(Then exit politely — never argue.)*
+
+**Scenario:** Language barrier.
+**Rung:** Any
+**Script:** Keep it simple and visual — smile, show the card and QR, point to the business name on the profile, and offer the email invite. If you can't communicate the claim, leave the card, capture an email if possible, and log it for follow-up.
+
+---
+
+### Slide 7 — The Gatekeeper Playbook
 
 The most common situation you will face: the owner is NOT there. A front-desk employee, receptionist, or manager greets you instead. This is the Gatekeeper.
 
-Your goal shifts: Win the gatekeeper's trust so they help you get the owner's email.
+Your goal shifts: Win the gatekeeper's trust so they help you get the owner's email (Rung 5). If they won't share it, get the owner's name and best time to return (Rung 6).
 
 Key mindset: The gatekeeper is not your obstacle — they are your ally. Make it easy and appealing for them to help you.
 
 The email-invite play: "No problem! Would it be okay if we sent the owner a direct email invitation to claim their free profile? It's a quick link they can review on their own time — no commitment. What's the best email to reach them?"
 
-> **Key Callout:** Capturing a valid owner email is a high-value lead. Treat it like a claim win.
+> **Key Callout:** Capturing a valid owner email is a high-value lead. Treat it like a claim win. If you can't get the email, getting the owner's name and best visit time is still a real win — log it so we can plan a smart return.
 
 ---
 
-### Slide 5 — Gatekeeper Scripts
+### Slide 8 — Gatekeeper Scripts
 
 **Label:** Opening to a gatekeeper
 **Script:** "Hi! I'm [Your Name] with Top of Temecula. We created a free local profile for this business and I'm stopping by to make sure the owner knows about it. Is the owner or manager available today?"
@@ -329,33 +467,57 @@ The email-invite play: "No problem! Would it be okay if we sent the owner a dire
 **Label:** If they say the owner is out
 **Script:** "No problem! Could I get the owner's best email so we can send them a direct invitation to claim their free profile? It's a quick link — no commitment, completely free. It would be a great thing for them to see."
 
-**Label:** If they're hesitant to share the email
-**Script:** "Totally understand — I'll leave this claim card for them too. If you do have a chance to mention it, the profile is already live and the claim is free. Have a great day!"
+**Label:** If they're hesitant to share the email (Rung 6)
+**Script:** "Totally understand — I'll leave this claim card for them too. Who's the best person to ask for, and when's usually a good time to catch them? I'd love to swing back and walk them through it." *(Log the name and best time.)*
 
 ---
 
-### Slide 6 — Safety & Compliance (Non-Negotiable)
+### Slide 9 — Edge Cases & Data Correction (Rung 8)
+
+Sometimes there's no sale to be made — and that's still useful. If the business is **closed, has moved, is under new ownership, has wrong info on the profile, is a duplicate listing, or is a franchise where the local staff has no authority to claim** — don't pitch. Instead, log exactly what you found so we can correct the profile.
+
+> **Key Callout:** Accurate data is a real win. A correction keeps our directory trustworthy, which is the whole point. Log it clearly and move on.
+
+---
+
+### Slide 10 — When You Don't Know the Answer
+
+You will get questions you can't answer. That's expected, and there's one right move every time: **defer — never improvise.**
+
+- "Great question — the full details are right here on the screen so you can see exactly what's included."
+- "I want to make sure you get the exact right answer, so I'd point you to questions@topoftemecula.com — they'll walk you through it."
+- "Let me flag that for my supervisor and we'll follow up with you."
+
+> **Key Callout:** Making up a feature, a price, or a promise to fill a silence is the one thing that can get you and the brand in trouble. A confident "here's where to get the exact answer" is always better than a guess.
+
+---
+
+### Slide 11 — Safety & Compliance (Non-Negotiable)
 
 Your safety is 100x more important than any business claim. Follow these rules strictly:
 
 1. **Driving:** You are authorized to drive your personal vehicle between routes. Obey all traffic laws. NO PHONE USE while moving. Pull over safely to check routes or log visits.
 2. **Public Storefronts Only:** Only enter public commercial spaces during regular business hours. Never enter private homes, warehouses, back rooms, or employee-only areas.
-3. **No Cash/Checks:** Never accept cash, checks, or write down credit card numbers. All upgrades happen securely online.
+3. **No Cash/Checks/Payment:** Never accept cash, checks, or write down credit card numbers, and never enter payment for an upgrade. All upgrades happen securely online, completed by the owner themselves.
 4. **Location Sharing:** You must share your live location with your supervisor at the start of every shift and check out at the end.
 
-> **Key Callout:** If anyone is rude, aggressive, or makes you uncomfortable, leave immediately. No questions asked. Call your supervisor.
+> **Key Callout:** If anyone is rude, aggressive, or makes you uncomfortable, leave immediately. No questions asked. Call your supervisor. This overrides every rung of the Outcome Ladder.
 
 ---
 
-### Slide 7 — CRM Logging: If It Isn't Logged, It Didn't Happen
+### Slide 12 — CRM Logging: If It Isn't Logged, It Didn't Happen
 
-✅ Good CRM Note: "Owner out. Spoke with Sarah (front desk). Got owner email (mike@valleyins.com) for claim invite. Left card. Sarah says owner is in mornings. Interested in the AI dashboard."
+Log every visit before you leave the parking lot. Capture: business name, category, address, date/time, who you spoke to and their role, **which rung you reached (1–8)**, owner available?, **owner email captured for invite?**, **owner name + best time to return?**, card left?, claimed on-site?, **upgrade interest (none / Premium / Growth Partner / follow-up)?**, content captured?, and a specific note.
+
+✅ Good CRM Note: "Rung 2. Owner Mike claimed on-site, walked the dashboard, loved the AI tracker. Curious about Premium but wants to check budget — follow up Friday. Left card."
+
+✅ Good CRM Note: "Rung 5. Owner out. Spoke with Sarah (front desk). Got owner email (mike@valleyins.com) for claim invite. Left card. Sarah says owner is in mornings."
 
 ❌ Useless CRM Note: "Went there. Talked to someone. Busy."
 
 ---
 
-### Slide 8 — Content Capture Checklist
+### Slide 13 — Content Capture Checklist
 
 ✅ Film Vertically: Hold your phone portrait (vertical) for all clips. Horizontal video is not usable for our social platforms.
 ✅ Good Natural Light: Stand near a window or outside. Avoid dark rooms, harsh overhead lighting, or shooting into the sun.
@@ -369,16 +531,38 @@ Your safety is 100x more important than any business claim. Follow these rules s
 
 ---
 
-### Slide 9 — Active Recall: Day 3 Check
+### Slide 14 — Adapting Across Business Types
 
-**Prompt:** What is the Gatekeeper Playbook? What is your goal when the owner isn't there?
-**Answer:** Win the gatekeeper's trust so they help you get the owner's email. The email-invite play: ask if you can send the owner a direct invitation to claim their free profile.
+Your training examples use insurance agencies, but your route may include restaurants, salons, auto shops, med spas, and more. The pitch is the same — only the *example* you reach for changes:
+
+- **Restaurants/cafes:** Lead with events and reservations; "feature your happy hour or live music event."
+- **Salons/med spas:** Lead with visibility and reviews; "show up when locals ask AI for the best spa nearby."
+- **Auto/trades:** Lead with trust and accurate info; "make sure your hours and services are right when someone's in a pinch."
+- **Any business hiring:** Lead with featured job listings to reach Temecula talent.
+
+> **Key Callout:** Same ladder, same claim, same dashboard. Just pick the one free benefit that lands hardest for *that* type of business as your opener.
+
+---
+
+### Slide 15 — Active Recall: Day 3 Check
+
+**Prompt:** What is the Outcome Ladder, and what is Rung 1?
+**Answer:** It's the best-to-fallback list of visit outcomes. Rung 1 is the Full Win: the owner is present, you walk them through the claim on the spot, and they choose an upgrade. Always aim for Rung 1; step down only as reality forces you.
+
+**Prompt:** What are the five steps of the in-person claim & upgrade walkthrough?
+**Answer:** Get into the flow together (scan/lean in), walk the on-screen claim steps, land on the dashboard and show the value, tee up the upgrade (steer to Premium, present Growth Partner), and hand off the transaction to the owner on the website.
+
+**Prompt:** The QR won't scan or the owner gets pulled away mid-claim. What do you do?
+**Answer:** Recover to the highest rung still available. For the QR: use the profile URL or pull it up yourself. If they're pulled away: offer to email an invite so they finish later, capture the email, leave the card, log it.
 
 **Prompt:** What is the strict rule about phone use while driving?
 **Answer:** Zero phone use while moving. Pull over safely to check routes, text, or log visits in the CRM. No exceptions.
 
 **Prompt:** What do you do if a business owner is aggressive or tells you to leave?
-**Answer:** Leave immediately. No arguing, no second pitch. Walk safely to your car and call your supervisor. Your safety is the absolute priority.
+**Answer:** Leave immediately. No arguing, no second pitch. Walk safely to your car and call your supervisor. Safety overrides every rung.
+
+**Prompt:** You don't know the answer to a question. What do you do?
+**Answer:** Defer, never improvise — point to the deliverables on the screen, send them to questions@topoftemecula.com, or flag it for your supervisor.
 
 ---
 
@@ -414,21 +598,71 @@ Your safety is 100x more important than any business claim. Follow these rules s
 
 ---
 
-### Day 3 Assignment — Roleplay Recording
+**Q4.** What is the ultimate goal (Rung 1) when an owner is present and willing?
+- A) Hand them a card and leave quickly
+- B) ✅ Walk them through the claim on the spot, show them the dashboard, and present the upgrade — steering toward Premium
+- C) Sign them up for Growth Partner whether they want it or not
+- D) Collect their credit card for the upgrade
 
-Practice the scripts and objection handling. Then, record a short audio or video clip (1-2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency.
-
-**Include:**
-1. Intro
-2. Free Claim & AI Dashboard Pitch
-3. Response to "Is this really free?" or "We already have Google"
-4. Polite Close
-
-Upload the recording to Google Drive or YouTube (unlisted) and paste the link in the assignment box.
+*Explanation: The best outcome is conducting the claim in person, showing the value live, and teeing up Premium — letting the owner decide and complete any purchase themselves.*
 
 ---
 
-## FINAL READINESS TEST (10/10 Required to Pass)
+**Q5.** During an in-person upgrade, who completes the purchase?
+- A) You enter their card for them to save time
+- B) ✅ The owner completes it themselves on the website, on their own device — you never handle payment
+- C) You collect cash and submit it later
+- D) Your supervisor calls them for the card number on the spot
+
+*Explanation: You guide and encourage, but every transaction happens on the website, completed by the owner. You never take payment of any kind.*
+
+---
+
+**Q6.** An interested owner says "I'll do it later." What's the best move?
+- A) Insist they do it now or leave
+- B) Just drop a card and walk away
+- C) ✅ Encourage doing it now since it's quick; if not, capture their email for a claim invite, leave the card, and log it
+- D) Mark them as not interested
+
+*Explanation: That's Rung 4 — a committed deferral. Get the commitment, capture the email so we can follow up, and leave the card as backup.*
+
+---
+
+**Q7.** The owner's QR code won't scan. What do you do?
+- A) Give up and mark the visit as failed
+- B) ✅ Use the profile URL or pull the profile up yourself, then continue the claim
+- C) Tell them their phone is broken
+- D) Reschedule for another day
+
+*Explanation: A snag is not a no. Recover smoothly so a finicky camera doesn't cost you the claim.*
+
+---
+
+### Day 3 Assignment — Roleplay Recording (with Self-Assessment Rubric)
+
+Practice the scripts and objection handling. Then record a short audio or video clip (1–2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency.
+
+**Include:**
+1. Intro
+2. Free Claim & AI Dashboard Pitch (mention a free à la carte tool)
+3. Response to "Is this really free?" or "We already have Google"
+4. A soft tee-up of the Premium upgrade
+5. Polite Close
+
+Upload the recording to Google Drive or YouTube (unlisted) and paste the link in the assignment box.
+
+**Score yourself honestly (1 point each — aim for 5/5):**
+- [ ] I led with the **free claim**, not the cost.
+- [ ] I hit the **dashboard / AI-citation hook** and at least one free à la carte tool.
+- [ ] I handled the **objection without any forbidden claim** (no Google-ranking guarantee, no false partnership, no deletion threat, no credit-card-for-free-claim).
+- [ ] I **teed up Premium** confidently without pressuring, and made clear the owner decides.
+- [ ] I had a **clean, friendly close** and stayed low-pressure throughout.
+
+---
+
+## FINAL READINESS TEST
+
+> **Developer note:** This is a question **bank**. On each attempt, randomly pull 10 questions from this bank and randomize the order of the answer options. A score of **10/10 is required to pass** and unlock the Field Readiness Certificate. On a retake, re-pull a fresh random set so the trainee is tested on *recall and judgment*, not on memorizing the order of a fixed test.
 
 **F1.** What is Top of Temecula?
 - A) A national search engine competing with Google
@@ -520,26 +754,127 @@ Upload the recording to Google Drive or YouTube (unlisted) and paste the link in
 
 ---
 
-**F10.** What is the correct starting price for the Standard Featured paid tier?
-- A) $29/month
-- B) $99/month
-- C) ✅ $49/month
-- D) $79/month
+**F10.** What are the paid upgrade tiers above the free claim?
+- A) There is only one $10/month tier
+- B) ✅ Enhanced ($49/mo), Premium ($79/mo), and Growth Partner ($299/mo) — the basic claim is always free
+- C) A single $500 one-time fee
+- D) There are no paid tiers
 
-*Explanation: The Standard Featured Tier is $49/month. The Elite Verified Tier is $79/month. The basic claim is always free.*
+*Explanation: The free claim is $0. Paid tiers are Enhanced ($49), Premium ($79), and Growth Partner ($299/mo). The specifics for each are shown on the screen during claiming.*
+
+---
+
+**F11.** When an owner is present and willing, what is the ideal outcome (Rung 1)?
+- A) Leave a card and move to the next stop
+- B) ✅ Walk them through the claim in person, show them the dashboard, and tee up the Premium upgrade — letting them decide
+- C) Force them onto Growth Partner
+- D) Take their phone and claim it for them while they work
+
+*Explanation: The Full Win is conducting the claim on the spot, showing live value, and steering toward Premium without pressure.*
+
+---
+
+**F12.** Which paid tier do you steer an engaged owner toward by default?
+- A) Enhanced ($49/mo)
+- B) ✅ Premium ($79/mo)
+- C) Growth Partner ($299/mo)
+- D) You never mention any upgrade
+
+*Explanation: Premium is the main goal. Growth Partner is presented honestly for ambitious, high-value businesses, but the owner decides.*
+
+---
+
+**F13.** What is "Growth Partner" ($299/mo)?
+- A) A cheaper version of the free claim
+- B) ✅ A full done-for-you AEO service with a dedicated rep who grows the business's AI recommendations every month, across the whole AI landscape — not just Top of Temecula
+- C) An automated toggle in the dashboard
+- D) A one-time event promotion
+
+*Explanation: Growth Partner is human-run and reaches beyond our platform. It includes everything in Premium plus a dedicated rep.*
+
+---
+
+**F14.** During an in-person upgrade, who completes the purchase?
+- A) You enter their card to be helpful
+- B) ✅ The owner completes it themselves on the website, on their own device — you never handle payment
+- C) You collect cash and submit it later
+- D) The gatekeeper handles it
+
+*Explanation: Every transaction happens on the website, completed by the owner. You guide and encourage but never take payment of any kind.*
+
+---
+
+**F15.** What does a business get for free, just by claiming, even if they never upgrade?
+- A) Nothing until they pay
+- B) ✅ Profile control plus the dashboard — a free marketing platform with AI-citation data and pay-as-you-go à la carte tools (event promotion, press releases, featured job listings)
+- C) A guaranteed #1 Google ranking
+- D) A free company website
+
+*Explanation: The free claim unlocks a real marketing toolkit. Owners only pay for à la carte pieces they choose — no subscription, no commitment.*
+
+---
+
+**F16.** An interested owner says "I'll do it later." What's the best move?
+- A) Insist they do it now or leave
+- B) ✅ Encourage doing it now since it's quick; if not, capture their email for a claim invite, leave the card, and log it
+- C) Mark them as not interested and move on
+- D) Just leave a card without saying anything
+
+*Explanation: That's a committed deferral (Rung 4) — get the commitment, capture the email, leave the card as backup.*
+
+---
+
+**F17.** The owner's QR code won't scan during the claim. What do you do?
+- A) Give up and mark the visit failed
+- B) ✅ Use the profile URL or pull the profile up yourself, then continue the claim
+- C) Tell them their phone is broken
+- D) Reschedule for next week
+
+*Explanation: A snag is not a no. Recover smoothly so a finicky camera doesn't cost you the claim.*
+
+---
+
+**F18.** An owner asks, "Is this a scam? Who are you really with?" What's the best response?
+- A) Get defensive and insist you're legitimate
+- B) ✅ Stay calm: introduce yourself as a local Top of Temecula ambassador, point out their profile is already live and free to claim, and offer questions@topoftemecula.com to verify
+- C) Walk away immediately
+- D) Tell them you're with Google
+
+*Explanation: A calm, transparent answer plus an easy way to verify builds trust. Never claim a false affiliation.*
+
+---
+
+**F19.** You get a question you don't know the answer to. What do you do?
+- A) Make up a reasonable-sounding answer
+- B) Guess at a price so you don't look unsure
+- C) ✅ Defer — point to the deliverables on the screen, send them to questions@topoftemecula.com, or flag it for your supervisor
+- D) Promise a feature and hope it exists
+
+*Explanation: Never improvise a feature, price, or promise. Deferring to the screen or questions@ is always the right move.*
+
+---
+
+**F20.** You arrive and the business is closed/moved, or the listing info is clearly wrong. What do you do?
+- A) Pitch the empty storefront anyway
+- B) ✅ Don't pitch — log exactly what you found (closed, moved, wrong info, duplicate, etc.) so we can correct the profile
+- C) Skip it and log nothing
+- D) Mark it as a successful claim
+
+*Explanation: That's a data correction (Rung 8). Accurate data keeps the directory trustworthy — logging the correction is still a real win.*
 
 ---
 
 ## SHIFT 1 DEBRIEF
-*Unlocked after passing the Final Readiness Test.*
+*Unlocked after the trainee completes their FIRST REAL FIELD ROUTE (not at certification). This is a post-field reflection, so it must not appear until an actual shift has been worked.*
 
 Trainees complete a written debrief covering:
 1. What went well on your first shift?
-2. What was the hardest objection you encountered, and how did you handle it?
-3. What would you do differently next time?
-4. Any businesses that seemed especially interested or ready to upgrade?
-5. Any safety concerns or uncomfortable situations to flag?
+2. What was the hardest objection or situation you encountered, and how did you handle it?
+3. What's the highest rung you reached, and where did most of your visits land on the ladder?
+4. What would you do differently next time?
+5. Any businesses that seemed especially interested or ready to upgrade (Premium or Growth Partner)?
+6. Any safety concerns or uncomfortable situations to flag?
 
 ---
 
-*End of Curriculum — v2.0*
+*End of Curriculum — v3.0*
