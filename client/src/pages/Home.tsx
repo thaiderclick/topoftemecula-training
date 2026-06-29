@@ -297,56 +297,59 @@ export default function Home() {
     <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
 
       {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
+      <header className="md:hidden flex items-center justify-between p-4 border-b border-border" style={{ background: 'oklch(0.22 0.01 65)' }}>
         <div className="flex items-center gap-3">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
+            src="/manus-storage/tot_logo_1dd3a1f8.webp"
             alt="Top of Temecula"
-            className="w-8 h-8 rounded-full border border-primary"
+            className="h-7 w-auto"
           />
-          <h1 className="text-lg font-serif font-bold text-foreground">Top of Temecula</h1>
+          <h1 className="text-lg font-serif font-bold text-white">Top of Temecula</h1>
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="border-primary text-primary hover:bg-primary/10"
+          className="border-white/40 text-white hover:bg-white/10"
         >
           {sidebarOpen ? 'Close' : 'Progress'}
         </Button>
       </header>
 
       {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-80 bg-card border-r border-border p-6 flex flex-col justify-between
-        transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-80 p-6 flex flex-col justify-between
+          transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{ background: 'oklch(0.22 0.01 65)', borderRight: '1px solid oklch(0.30 0.01 65)' }}
+      >
         <div className="flex flex-col gap-6 overflow-y-auto pr-2">
           {/* Brand */}
-          <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="flex items-center gap-4 pb-6" style={{ borderBottom: '1px solid oklch(0.32 0.01 65)' }}>
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
+              src="/manus-storage/tot_logo_1dd3a1f8.webp"
               alt="Top of Temecula Logo"
-              className="w-12 h-12 rounded-full border-2 border-primary shadow-sm"
+              className="h-10 w-auto"
             />
             <div>
-              <h2 className="text-xl font-serif font-bold leading-tight">Top of Temecula</h2>
-              <p className="text-xs text-muted-foreground tracking-wider uppercase font-medium">Academy Portal</p>
+              <h2 className="text-xl font-serif font-bold leading-tight text-white">Top of Temecula</h2>
+              <p className="text-xs tracking-wider uppercase font-medium" style={{ color: 'oklch(0.68 0.148 72)' }}>Academy Portal</p>
             </div>
           </div>
 
           {/* Progress widget */}
-          <div className="bg-background/60 rounded-xl p-4 border border-border shadow-sm">
+          <div className="rounded-xl p-4 shadow-sm" style={{ background: 'oklch(0.28 0.01 65)', border: '1px solid oklch(0.35 0.01 65)' }}>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'oklch(0.90 0.01 80)' }}>
+                <Sparkles className="w-4 h-4 animate-pulse" style={{ color: 'oklch(0.68 0.148 72)' }} />
                 Overall Progress
               </span>
-              <span className="text-sm font-bold text-primary">{overallProgress}%</span>
+              <span className="text-sm font-bold" style={{ color: 'oklch(0.68 0.148 72)' }}>{overallProgress}%</span>
             </div>
             <Progress value={overallProgress} className="h-2 bg-muted [&>div]:bg-primary transition-all duration-500" />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-2 font-medium">
+            <div className="flex justify-between text-[10px] mt-2 font-medium" style={{ color: 'oklch(0.60 0.01 65)' }}>
               <span>Day 1 Start</span>
               <span>Cleared for Field 🚀</span>
             </div>
@@ -354,7 +357,7 @@ export default function Home() {
 
           {/* Module nav */}
           <nav className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-1">Training Modules</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider px-2 mb-1" style={{ color: 'oklch(0.55 0.01 65)' }}>Training Modules</h3>
             {trainingModules.map((m) => {
               const unlocked = isModuleUnlocked(m.id);
               const active = activeModuleId === m.id && !showFinalTest && !showShift1Debrief;
@@ -374,27 +377,30 @@ export default function Home() {
                   }}
                   className={`
                     w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
-                    ${active ? 'bg-primary/10 border-primary text-foreground shadow-sm font-medium' :
-                      unlocked ? 'bg-transparent border-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground' :
-                      'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'}
+                    ${active ? 'shadow-sm font-medium' :
+                      unlocked ? 'border-transparent hover:bg-white/5' :
+                      'border-transparent cursor-not-allowed'}
                   `}
+                  style={active ? { background: 'oklch(0.68 0.148 72 / 0.18)', borderColor: 'oklch(0.68 0.148 72 / 0.60)', color: 'white' } :
+                         unlocked ? { color: 'oklch(0.75 0.01 65)' } :
+                         { color: 'oklch(0.40 0.01 65)' }}
                 >
                   <div className="mt-0.5">
-                    {completed ? <CheckCircle className="w-5 h-5 text-primary" /> :
-                     !unlocked ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
-                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${active ? 'border-primary text-primary' : 'border-muted-foreground/40 text-muted-foreground/60'}`}>{m.day}</div>}
+                    {completed ? <CheckCircle className="w-5 h-5" style={{ color: 'oklch(0.68 0.148 72)' }} /> :
+                     !unlocked ? <Lock className="w-5 h-5" style={{ color: 'oklch(0.38 0.01 65)' }} /> :
+                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold`} style={active ? { borderColor: 'oklch(0.68 0.148 72)', color: 'oklch(0.68 0.148 72)' } : { borderColor: 'oklch(0.45 0.01 65)', color: 'oklch(0.55 0.01 65)' }}>{m.day}</div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Day {m.day}</span>
+                      <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>Day {m.day}</span>
                       <span className="text-[10px] text-muted-foreground">{m.duration}</span>
                     </div>
-                    <h4 className="text-sm font-bold truncate text-foreground mt-0.5">{m.title}</h4>
+                    <h4 className="text-sm font-bold truncate mt-0.5" style={{ color: 'inherit' }}>{m.title}</h4>
                     {unlocked && (
                       <div className="flex gap-1 mt-2">
-                        <span className={`h-1 flex-1 rounded-full ${progress.completedModules.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
-                        <span className={`h-1 flex-1 rounded-full ${progress.completedQuizzes.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
-                        <span className={`h-1 flex-1 rounded-full ${progress.completedAssignments.includes(m.id) ? 'bg-primary' : 'bg-muted'}`} />
+                        <span className="h-1 flex-1 rounded-full" style={{ background: progress.completedModules.includes(m.id) ? 'oklch(0.68 0.148 72)' : 'oklch(0.32 0.01 65)' }} />
+                        <span className="h-1 flex-1 rounded-full" style={{ background: progress.completedQuizzes.includes(m.id) ? 'oklch(0.68 0.148 72)' : 'oklch(0.32 0.01 65)' }} />
+                        <span className="h-1 flex-1 rounded-full" style={{ background: progress.completedAssignments.includes(m.id) ? 'oklch(0.68 0.148 72)' : 'oklch(0.32 0.01 65)' }} />
                       </div>
                     )}
                   </div>
@@ -406,20 +412,22 @@ export default function Home() {
             <Link
               href="/safety"
               onClick={() => setSidebarOpen(false)}
-              className={`
-                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
-                ${!isSafetyUnlocked() ? 'border-transparent text-muted-foreground/40 cursor-not-allowed pointer-events-none' :
-                  progress.safetyCompleted ? 'border-emerald-200 bg-emerald-50/30 text-foreground dark:border-emerald-900/40 dark:bg-emerald-950/10' :
-                  'border-transparent text-primary hover:bg-primary/10'}
+              className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
+                ${!isSafetyUnlocked() ? 'cursor-not-allowed pointer-events-none' : ''}
               `}
+              style={
+                !isSafetyUnlocked() ? { borderColor: 'transparent', color: 'oklch(0.40 0.01 65)' } :
+                progress.safetyCompleted ? { borderColor: 'oklch(0.68 0.148 72 / 0.40)', background: 'oklch(0.68 0.148 72 / 0.10)', color: 'white' } :
+                { borderColor: 'transparent', color: 'oklch(0.75 0.01 65)' }
+              }
             >
               <div className="mt-0.5">
-                {progress.safetyCompleted ? <CheckCircle className="w-5 h-5 text-emerald-600" /> :
-                 !isSafetyUnlocked() ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
-                 <Shield className="w-5 h-5 text-primary" />}
+                {progress.safetyCompleted ? <CheckCircle className="w-5 h-5" style={{ color: 'oklch(0.68 0.148 72)' }} /> :
+                 !isSafetyUnlocked() ? <Lock className="w-5 h-5" style={{ color: 'oklch(0.38 0.01 65)' }} /> :
+                 <Shield className="w-5 h-5" style={{ color: 'oklch(0.68 0.148 72)' }} />}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Required</span>
+                <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>Required</span>
                 <h4 className="text-sm font-bold truncate mt-0.5">Safety Scenarios</h4>
               </div>
             </Link>
@@ -428,18 +436,17 @@ export default function Home() {
             <Link
               href="/roleplay"
               onClick={() => setSidebarOpen(false)}
-              className={`
-                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
-                ${!isSafetyUnlocked() ? 'border-transparent text-muted-foreground/40 cursor-not-allowed pointer-events-none' :
-                  'border-transparent text-primary hover:bg-primary/10'}
+              className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3
+                ${!isSafetyUnlocked() ? 'cursor-not-allowed pointer-events-none' : 'hover:bg-white/5'}
               `}
+              style={!isSafetyUnlocked() ? { borderColor: 'transparent', color: 'oklch(0.40 0.01 65)' } : { borderColor: 'transparent', color: 'oklch(0.75 0.01 65)' }}
             >
               <div className="mt-0.5">
-                {!isSafetyUnlocked() ? <Lock className="w-5 h-5 text-muted-foreground/30" /> :
-                 <MessageSquare className="w-5 h-5 text-primary" />}
+                {!isSafetyUnlocked() ? <Lock className="w-5 h-5" style={{ color: 'oklch(0.38 0.01 65)' }} /> :
+                 <MessageSquare className="w-5 h-5" style={{ color: 'oklch(0.68 0.148 72)' }} />}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold tracking-wide uppercase text-primary/80">Practice</span>
+                <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>Practice</span>
                 <h4 className="text-sm font-bold truncate mt-0.5">AI Roleplay Simulator</h4>
               </div>
             </Link>
@@ -448,19 +455,21 @@ export default function Home() {
             <button
               disabled={!isFinalTestUnlocked()}
               onClick={() => { setShowFinalTest(true); setShowShift1Debrief(false); setSidebarOpen(false); }}
-              className={`
-                w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
-                ${showFinalTest ? 'bg-primary/15 border-primary text-foreground shadow-sm font-medium' :
-                  isFinalTestUnlocked() ? 'bg-transparent border-transparent text-primary hover:bg-primary/10' :
-                  'bg-transparent border-transparent text-muted-foreground/40 cursor-not-allowed'}
+              className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-start gap-3 mt-2
+                ${!isFinalTestUnlocked() ? 'cursor-not-allowed' : ''}
               `}
+              style={
+                showFinalTest ? { background: 'oklch(0.68 0.148 72 / 0.18)', borderColor: 'oklch(0.68 0.148 72 / 0.60)', color: 'white' } :
+                isFinalTestUnlocked() ? { borderColor: 'transparent', color: 'oklch(0.75 0.01 65)' } :
+                { borderColor: 'transparent', color: 'oklch(0.40 0.01 65)' }
+              }
             >
               <div className="mt-0.5">
-                {progress.passedFinalTest ? <Award className="w-5 h-5 text-primary animate-bounce" /> :
-                 <Lock className={`w-5 h-5 ${isFinalTestUnlocked() ? 'text-primary' : 'text-muted-foreground/30'}`} />}
+                {progress.passedFinalTest ? <Award className="w-5 h-5 animate-bounce" style={{ color: 'oklch(0.68 0.148 72)' }} /> :
+                 <Lock className="w-5 h-5" style={{ color: isFinalTestUnlocked() ? 'oklch(0.68 0.148 72)' : 'oklch(0.38 0.01 65)' }} />}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold tracking-wide uppercase text-primary">Final Stage</span>
+                <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>Final Stage</span>
                 <h4 className="text-sm font-bold truncate mt-0.5">Readiness Certificate</h4>
               </div>
             </button>
@@ -490,15 +499,15 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border pt-4 mt-6 flex justify-between items-center">
-          <div className="text-xs text-muted-foreground">
-            <span>Ambassador: <strong>{user?.name ?? 'Dylan'}</strong></span>
+        <div className="pt-4 mt-6 flex justify-between items-center" style={{ borderTop: '1px solid oklch(0.32 0.01 65)' }}>
+          <div className="text-xs" style={{ color: 'oklch(0.55 0.01 65)' }}>
+            <span>Ambassador: <strong style={{ color: 'oklch(0.75 0.01 65)' }}>{user?.name ?? 'Dylan'}</strong></span>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={resetProgress} className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-1 p-1 h-auto">
+            <Button variant="ghost" size="sm" onClick={resetProgress} className="text-[10px] flex items-center gap-1 p-1 h-auto" style={{ color: 'oklch(0.45 0.01 65)' }}>
               <RefreshCw className="w-3 h-3" /> Reset
             </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 p-1 h-auto">
+            <Button variant="ghost" size="sm" onClick={logout} className="text-[10px] flex items-center gap-1 p-1 h-auto" style={{ color: 'oklch(0.55 0.01 65)' }}>
               Sign Out
             </Button>
           </div>

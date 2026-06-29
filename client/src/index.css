@@ -40,78 +40,77 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* TOT Brand fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 }
 
+/* ============================================================
+   TOP OF TEMECULA BRAND PALETTE
+   Warm sandy/cream tones, gold accent, dark olive text
+   Matches topoftemecula.com visual identity
+   ============================================================ */
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
+  --radius: 0.75rem;
+
+  /* TOT Brand Colors (OKLCH equivalents of the warm sandy palette) */
+  /* Background: warm cream/off-white  #f5f0e8 */
+  --background: oklch(0.965 0.012 80);
+  /* Foreground: dark charcoal/olive   #2d2d2d */
+  --foreground: oklch(0.22 0.01 65);
+
+  /* Card: slightly warmer white */
+  --card: oklch(0.99 0.006 80);
+  --card-foreground: oklch(0.22 0.01 65);
+
+  --popover: oklch(0.99 0.006 80);
+  --popover-foreground: oklch(0.22 0.01 65);
+
+  /* Primary: TOT Gold/Amber  #c9961a → #d4a017 */
+  --primary: oklch(0.68 0.148 72);
+  --primary-foreground: oklch(0.99 0.006 80);
+
+  /* Secondary: warm taupe/sand  #e8dfd0 */
+  --secondary: oklch(0.91 0.018 78);
+  --secondary-foreground: oklch(0.35 0.02 65);
+
+  /* Muted: lighter sand */
+  --muted: oklch(0.94 0.014 78);
+  --muted-foreground: oklch(0.52 0.02 65);
+
+  /* Accent: warm gold tint for hover states */
+  --accent: oklch(0.91 0.025 78);
+  --accent-foreground: oklch(0.22 0.01 65);
+
+  /* Destructive: warm red */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+
+  /* Border: soft warm tan */
+  --border: oklch(0.87 0.018 78);
+  --input: oklch(0.87 0.018 78);
+  --ring: oklch(0.68 0.148 72);
+
+  /* Charts: warm gold range */
+  --chart-1: oklch(0.68 0.148 72);
+  --chart-2: oklch(0.60 0.12 72);
+  --chart-3: oklch(0.52 0.10 72);
+  --chart-4: oklch(0.44 0.08 72);
+  --chart-5: oklch(0.36 0.06 72);
+
+  /* Sidebar: sandy taupe  #c4b5a5 range */
+  --sidebar: oklch(0.78 0.028 72);
+  --sidebar-foreground: oklch(0.22 0.01 65);
+  --sidebar-primary: oklch(0.68 0.148 72);
+  --sidebar-primary-foreground: oklch(0.99 0.006 80);
+  --sidebar-accent: oklch(0.72 0.022 72);
+  --sidebar-accent-foreground: oklch(0.22 0.01 65);
+  --sidebar-border: oklch(0.70 0.025 72);
+  --sidebar-ring: oklch(0.68 0.148 72);
 }
 
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
-}
+/* No dark mode — training portal is light-only to match TOT brand */
 
 @layer base {
   * {
@@ -119,6 +118,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-serif);
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -134,24 +137,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -160,18 +150,34 @@
     min-width: 0;
   }
 
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
-    }
+  /* TOT brand card style — warm white with soft shadow */
+  .tot-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 12px oklch(0.22 0.01 65 / 0.08);
   }
 
-  @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
-    }
+  /* TOT gold badge */
+  .tot-badge {
+    background: oklch(0.68 0.148 72 / 0.15);
+    color: oklch(0.50 0.12 72);
+    border: 1px solid oklch(0.68 0.148 72 / 0.35);
+    border-radius: 9999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* TOT section label (e.g. "RANKED BY LOCALS, UPDATED DAILY") */
+  .tot-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: oklch(0.50 0.12 72);
   }
 }

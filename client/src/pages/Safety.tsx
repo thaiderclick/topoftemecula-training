@@ -319,20 +319,20 @@ export default function Safety() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+      <header className="px-4 py-3 flex items-center justify-between sticky top-0 z-10" style={{ background: 'oklch(0.22 0.01 65)', borderBottom: '1px solid oklch(0.30 0.01 65)' }}>
         <div className="flex items-center gap-3">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1">
+            <Button variant="ghost" size="sm" className="gap-1 hover:bg-white/10" style={{ color: 'oklch(0.75 0.01 65)' }}>
               <ArrowLeft className="w-4 h-4" /> Training Portal
             </Button>
           </Link>
-          <div className="hidden sm:block w-px h-5 bg-border" />
+          <div className="hidden sm:block w-px h-5" style={{ background: 'oklch(0.35 0.01 65)' }} />
           <div className="hidden sm:flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold">Safety Scenarios</span>
+            <Shield className="w-4 h-4" style={{ color: 'oklch(0.68 0.148 72)' }} />
+            <span className="text-sm font-bold text-white">Safety Scenarios</span>
           </div>
         </div>
-        <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+        <Badge variant="outline" className="text-xs" style={{ borderColor: 'oklch(0.68 0.148 72 / 0.50)', color: 'oklch(0.68 0.148 72)' }}>
           {currentScenarioIdx + 1} of {SCENARIOS.length}
         </Badge>
       </header>

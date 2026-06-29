@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
@@ -44,7 +43,6 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
         return;
       }
 
-      // Refresh auth state then notify parent
       await utils.auth.me.invalidate();
       onSuccess();
     } catch {
@@ -55,22 +53,60 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="max-w-md w-full flex flex-col items-center gap-6">
-        <img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
-          alt="Top of Temecula"
-          className="w-16 h-16 rounded-full border-2 border-primary shadow-md"
-        />
-        <div className="text-center">
-          <h1 className="text-2xl font-serif font-extrabold text-foreground">Top of Temecula</h1>
-          <p className="text-sm text-muted-foreground mt-1">Ambassador Training Portal</p>
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{
+        background: 'linear-gradient(160deg, oklch(0.82 0.032 72) 0%, oklch(0.965 0.012 80) 55%, oklch(0.94 0.018 78) 100%)',
+      }}
+    >
+      {/* Decorative wave at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 pointer-events-none overflow-hidden h-32 opacity-30">
+        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full">
+          <path
+            d="M0,60 C360,120 1080,0 1440,60 L1440,120 L0,120 Z"
+            fill="oklch(0.68 0.148 72)"
+          />
+        </svg>
+      </div>
+
+      <div className="max-w-md w-full flex flex-col items-center gap-8 relative z-10">
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+            style={{ background: 'oklch(0.22 0.01 65)' }}
+          >
+            <img
+              src="/manus-storage/tot_logo_1dd3a1f8.webp"
+              alt="Top of Temecula"
+              className="w-16 h-auto"
+            />
+          </div>
+          <div className="text-center">
+            <p className="tot-eyebrow mb-1">Welcome to</p>
+            <h1 className="text-3xl font-serif font-bold text-foreground leading-tight">
+              Top of Temecula
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 font-medium tracking-wide">
+              Ambassador Training Portal
+            </p>
+          </div>
         </div>
 
-        <Card className="w-full border-border bg-card p-6">
+        {/* Card */}
+        <div
+          className="w-full rounded-2xl p-7 shadow-xl"
+          style={{
+            background: 'oklch(0.99 0.006 80)',
+            border: '1px solid oklch(0.87 0.018 78)',
+          }}
+        >
+          <h2 className="text-lg font-serif font-bold text-foreground mb-5">Sign In to Start Training</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name" className="text-sm font-semibold">Your Name</Label>
+              <Label htmlFor="name" className="text-sm font-semibold text-foreground">
+                Your Name
+              </Label>
               <Input
                 id="name"
                 type="text"
@@ -79,12 +115,14 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
                 onChange={e => setName(e.target.value)}
                 autoComplete="name"
                 disabled={loading}
-                className="rounded-xl"
+                className="rounded-xl bg-background border-border focus-visible:ring-primary"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password" className="text-sm font-semibold">Training Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-foreground">
+                Training Password
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -94,12 +132,12 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={loading}
-                  className="rounded-xl pr-10"
+                  className="rounded-xl pr-10 bg-background border-border focus-visible:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -110,7 +148,11 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-5 font-bold gap-2 mt-1"
+              className="w-full rounded-xl py-5 font-bold gap-2 mt-2 text-sm tracking-wide transition-all active:scale-[0.98]"
+              style={{
+                background: 'oklch(0.68 0.148 72)',
+                color: 'oklch(0.99 0.006 80)',
+              }}
             >
               {loading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
@@ -118,10 +160,13 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
               }
             </Button>
           </form>
-        </Card>
+        </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Don't have the password? Contact Tim to get access.
+          Don't have the password?{' '}
+          <span className="font-semibold" style={{ color: 'oklch(0.50 0.12 72)' }}>
+            Contact Tim to get access.
+          </span>
         </p>
       </div>
     </div>
