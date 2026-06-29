@@ -743,9 +743,14 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Script flashcards */}
+                    {/* Script flashcards — show content paragraphs first if present, then flashcards */}
                     {activeModule.slides[currentSlideIndex].type === 'script' && (
                       <div className="flex flex-col gap-4 my-2">
+                        {activeModule.slides[currentSlideIndex].content && activeModule.slides[currentSlideIndex].content!.length > 0 && (
+                          <div className="flex flex-col gap-2 text-sm md:text-base text-muted-foreground leading-relaxed mb-2 pb-4 border-b border-border/40">
+                            {activeModule.slides[currentSlideIndex].content!.map((p, idx) => <p key={idx}>{p}</p>)}
+                          </div>
+                        )}
                         {activeModule.slides[currentSlideIndex].scripts?.map((s, idx) => {
                           const cardId = `${activeModule.id}_s_${idx}`;
                           const isFlipped = flippedCards[cardId];
@@ -978,7 +983,7 @@ export default function Home() {
               )}
 
               {/* Assignment */}
-              {showAssignment && (
+              {showAssignment && activeModule.assignment && (
                 <Card className="border border-border bg-card/90 shadow-md p-6 md:p-8">
                   <CardHeader className="p-0 mb-6">
                     <div className="flex items-center gap-2 text-primary mb-1">
