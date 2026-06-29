@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { InsertUser, users, roleplayAttempts, trainingProgress, InsertRoleplayAttempt, InsertTrainingProgress } from "../drizzle/schema";
+import { InsertUser, users, roleplayAttempts, trainingProgress, traineeFeedback, InsertRoleplayAttempt, InsertTrainingProgress, InsertTraineeFeedback } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -147,6 +147,20 @@ export async function countRoleplayAttempts(userId: number) {
   if (!db) return 0;
   const result = await db.select({ count: sql<number>`count(*)` }).from(roleplayAttempts).where(eq(roleplayAttempts.userId, userId));
   return Number(result[0]?.count ?? 0);
+}
+
+// ─── Trainee Feedback ────────────────────────────────────────────────────────
+
+export async function submitFeedback(data: InsertTraineeFeedback) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(traineeFeedback).values(data);
+}
+
+export async function getAllFeedback() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(traineeFeedback).orderBy(traineeFeedback.createdAt);
 }
 
 // ─── Admin Queries ────────────────────────────────────────────────────────────

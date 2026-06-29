@@ -5,9 +5,11 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   countRoleplayAttempts,
   createRoleplayAttempt,
+  getAllFeedback,
   getAllTrainees,
   getRoleplayAttempts,
   getTrainingProgress,
+  submitFeedback,
   upsertTrainingProgress,
 } from "./db";
 import { ENV } from "./_core/env";
@@ -137,6 +139,37 @@ export const appRouter = router({
           throw new Error("Unauthorized");
         }
         return getAllTrainees();
+      }),
+  }),
+
+  // Trainee Feedback
+  feedback: router({
+    submit: protectedProcedure
+      .input(z.object({
+        moduleId: z.string(),
+        slideIndex: z.number().optional(),
+        context: z.string().optional(),
+        message: z.string().min(1).max(1000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await submitFeedback({
+          userId: ctx.user.id,
+          traineeName: ctx.user.name ?? "Anonymous",
+          moduleId: input.moduleId,
+          slideIndex: input.slideIndex ?? null,
+          context: input.context ?? null,
+          message: input.message,
+        });
+        return { success: true };
+      }),
+
+    getAll: publicProcedure
+      .input(z.object({ adminPassword: z.string() }))
+      .query(async ({ input }) => {
+        if (input.adminPassword !== ENV.adminPassword) {
+          throw new Error("Unauthorized");
+        }
+        return getAllFeedback();
       }),
   }),
 

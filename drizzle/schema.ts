@@ -67,3 +67,21 @@ export const trainingProgress = pgTable("training_progress", {
 
 export type TrainingProgress = typeof trainingProgress.$inferSelect;
 export type InsertTrainingProgress = typeof trainingProgress.$inferInsert;
+
+/**
+ * Trainee feedback on individual slides and assignments.
+ * Used to continuously improve the training content.
+ */
+export const traineeFeedback = pgTable("trainee_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  traineeName: text("traineeName"),
+  moduleId: varchar("moduleId", { length: 64 }).notNull(),
+  slideIndex: integer("slideIndex"),
+  context: text("context"), // e.g. "Day 1 – Slide 3: Mission Statement"
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TraineeFeedback = typeof traineeFeedback.$inferSelect;
+export type InsertTraineeFeedback = typeof traineeFeedback.$inferInsert;

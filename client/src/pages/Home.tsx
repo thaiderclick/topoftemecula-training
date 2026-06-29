@@ -120,6 +120,18 @@ export default function Home() {
   const [revealedRecall, setRevealedRecall] = useState<Record<string, boolean>>({});
   const [showShift1Debrief, setShowShift1Debrief] = useState(false);
   const [shift1DebriefAnswers, setShift1DebriefAnswers] = useState<Record<string, string>>({});
+  const [quizFeedback, setQuizFeedback] = useState<string>('');
+  const [quizFeedbackSubmitted, setQuizFeedbackSubmitted] = useState<boolean>(false);
+
+  const submitFeedbackMutation = trpc.feedback.submit.useMutation({
+    onSuccess: () => {
+      setQuizFeedbackSubmitted(true);
+      setQuizFeedback('');
+    },
+    onError: () => {
+      toast.error('Failed to submit feedback. Please try again.');
+    },
+  });
 
   // Sync local assignment data to textarea
   const activeModule = trainingModules.find(m => m.id === activeModuleId) || trainingModules[0];
@@ -882,7 +894,39 @@ export default function Home() {
                       );
                     })}
                   </CardContent>
-                  <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex flex-col gap-4">
+                    {quizSubmitted && quizScore === activeModule.quiz.length && !quizFeedbackSubmitted && (
+                      <div className="w-full border border-primary/30 bg-primary/5 rounded-xl p-4 flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-bold text-primary uppercase tracking-wider">Before you continue — Quick Feedback</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Any part of this lesson confusing or something you'd improve? Your input helps make this training better. (Required to proceed)</p>
+                        <textarea
+                          value={quizFeedback}
+                          onChange={e => setQuizFeedback(e.target.value)}
+                          placeholder="e.g. The pricing slide was unclear, or I wish there was more detail on objection handling..."
+                          rows={3}
+                          className="w-full p-3 border border-border rounded-xl text-xs bg-background/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none"
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            disabled={quizFeedback.trim().length < 5}
+                            onClick={() => {
+                              submitFeedbackMutation.mutate({
+                                moduleId: activeModule.id,
+                                context: `Day ${activeModule.day} – ${activeModule.title} Quiz`,
+                                message: quizFeedback.trim(),
+                              });
+                            }}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 py-4 text-xs font-bold"
+                          >
+                            Submit Feedback
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     {quizSubmitted ? (
                       <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
                         <div className="text-sm font-bold text-foreground flex items-center gap-2 flex-1">
@@ -893,11 +937,15 @@ export default function Home() {
                           )}
                         </div>
                         {quizScore === activeModule.quiz.length ? (
-                          <Button onClick={() => setShowAssignment(true)} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
-                            Go to Day {activeModule.day} Assignment <ArrowRight className="w-4 h-4" />
+                          <Button
+                            disabled={!quizFeedbackSubmitted}
+                            onClick={() => { setShowAssignment(true); }}
+                            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {quizFeedbackSubmitted ? <><span>Go to Day {activeModule.day} Assignment</span> <ArrowRight className="w-4 h-4" /></> : <><Lock className="w-4 h-4" /> Submit feedback to continue</>}
                           </Button>
                         ) : (
-                          <Button onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); }} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
+                          <Button onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); setQuizFeedback(''); setQuizFeedbackSubmitted(false); }} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
                             Retry Quiz <RefreshCw className="w-4 h-4" />
                           </Button>
                         )}
@@ -942,13 +990,15 @@ export default function Home() {
                       className="w-full min-h-[25vh] p-4 border border-border rounded-xl text-xs md:text-sm bg-background/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                     />
                   </CardContent>
-                  <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex justify-between items-center">
-                    <Button variant="ghost" onClick={() => setShowAssignment(false)} className="text-muted-foreground hover:text-foreground rounded-xl px-3 py-5">
-                      Back to Quiz
-                    </Button>
-                    <Button onClick={() => handleAssignmentSubmit(progress.assignmentsData[activeModule.id] || '')} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
-                      Submit Assignment <CheckCircle className="w-4 h-4" />
-                    </Button>
+                  <CardFooter className="p-0 border-t border-border pt-6 mt-6 flex flex-col gap-4">
+                    <div className="flex justify-between items-center w-full">
+                      <Button variant="ghost" onClick={() => setShowAssignment(false)} className="text-muted-foreground hover:text-foreground rounded-xl px-3 py-5">
+                        Back to Quiz
+                      </Button>
+                      <Button onClick={() => handleAssignmentSubmit(progress.assignmentsData[activeModule.id] || '')} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
+                        Submit Assignment <CheckCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
               )}

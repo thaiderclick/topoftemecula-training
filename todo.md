@@ -64,3 +64,11 @@
 - [x] Add ADMIN_PASSWORD env var for dashboard access gate
 - [x] Wire Resend email completion alert when trainee scores 10/10 on final test
 - [x] Push to GitHub
+
+## Phase 9: Trainee Feedback System
+- [x] Add feedback table to drizzle schema (userId, moduleId, slideIndex, context, message, createdAt)
+- [x] Add submitFeedback and getFeedback tRPC procedures
+- [x] Replace FeedbackButton with required inline feedback field after each quiz (gates Go to Assignment)
+- [x] Wire feedback submission into Home.tsx quiz passed state
+- [x] Add Feedback tab to /admin supervisor dashboard
+- [x] Push to GitHub

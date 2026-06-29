@@ -2,7 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Users, Award, Shield, Zap, ChevronDown, ChevronUp, LogOut } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Users, Award, Shield, Zap, ChevronDown, ChevronUp, LogOut, MessageSquare, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -215,6 +215,12 @@ function AdminLoginGate({ onAuth }: { onAuth: (pwd: string) => void }) {
 
 export default function Admin() {
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const { data: feedback } = trpc.feedback.getAll.useQuery(
+    { adminPassword: adminPassword ?? "" },
+    { enabled: !!adminPassword && showFeedback }
+  );
 
   const { data: trainees, isLoading, error } = trpc.admin.getTrainees.useQuery(
     { adminPassword: adminPassword ?? "" },
@@ -289,6 +295,50 @@ export default function Admin() {
           {(trainees ?? []).map(t => (
             <TraineeRow key={t.id} trainee={t as Trainee} />
           ))}
+        </div>
+
+        {/* Feedback Section */}
+        <div className="mt-10">
+          <button
+            onClick={() => setShowFeedback(v => !v)}
+            className="flex items-center gap-2 font-serif font-bold text-slate-800 text-xl mb-4 hover:text-amber-700 transition-colors"
+          >
+            <MessageSquare className="w-5 h-5" />
+            Trainee Feedback & Suggestions
+            <ChevronRight className={`w-4 h-4 transition-transform ${showFeedback ? 'rotate-90' : ''}`} />
+          </button>
+
+          {showFeedback && (
+            <div className="flex flex-col gap-3">
+              {!feedback && (
+                <div className="text-center py-8 bg-white rounded-xl border border-slate-200">
+                  <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-400 text-sm">Loading feedback...</p>
+                </div>
+              )}
+              {feedback && feedback.length === 0 && (
+                <div className="text-center py-8 bg-white rounded-xl border border-slate-200">
+                  <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-500 font-medium">No feedback yet</p>
+                  <p className="text-slate-400 text-sm mt-1">Suggestions from trainees will appear here.</p>
+                </div>
+              )}
+              {(feedback ?? []).map((fb) => (
+                <div key={fb.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-amber-700 mb-1">{fb.context ?? 'General'}</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">{fb.message}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-semibold text-slate-600">{fb.traineeName ?? 'Anonymous'}</p>
+                      <p className="text-xs text-slate-400">{new Date(fb.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
