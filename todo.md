@@ -56,3 +56,11 @@
 - [x] 14 Vitest tests passing after auth migration
 - [x] Production build verified (dist/public + api/server.js)
 - [x] Push to GitHub to trigger Vercel deployment
+
+## Phase 8: Supervisor Dashboard & Completion Alert
+- [x] Add getAllTrainees DB query helper
+- [x] Add admin tRPC procedures (getTrainees, admin.login)
+- [x] Build /admin supervisor dashboard page (trainee table with progress, scores, assignments)
+- [x] Add ADMIN_PASSWORD env var for dashboard access gate
+- [x] Wire Resend email completion alert when trainee scores 10/10 on final test
+- [x] Push to GitHub

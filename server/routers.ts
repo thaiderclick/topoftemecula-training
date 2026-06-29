@@ -5,10 +5,12 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   countRoleplayAttempts,
   createRoleplayAttempt,
+  getAllTrainees,
   getRoleplayAttempts,
   getTrainingProgress,
   upsertTrainingProgress,
 } from "./db";
+import { ENV } from "./_core/env";
 
 // ─── Persona system prompts ───────────────────────────────────────────────────
 
@@ -93,8 +95,48 @@ export const appRouter = router({
         shift1DebriefData: z.record(z.string(), z.string()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Check if this is a new final test pass — fire completion alert
+        if (input.passedFinalTest === true && input.finalTestScore === 10) {
+          const existing = await getTrainingProgress(ctx.user.id);
+          if (!existing?.passedFinalTest) {
+            // Send completion email alert (non-blocking)
+            try {
+              const { sendCompletionAlert } = await import("./_core/email");
+              await sendCompletionAlert({
+                traineeName: ctx.user.name ?? "Ambassador",
+                traineeId: ctx.user.openId,
+                score: input.finalTestScore ?? 10,
+              });
+            } catch {
+              // Email failure is non-fatal
+            }
+          }
+        }
         await upsertTrainingProgress(ctx.user.id, input as Parameters<typeof upsertTrainingProgress>[1]);
         return { success: true };
+      }),
+  }),
+
+  // Admin / Supervisor Dashboard
+  admin: router({
+    // Verify admin password and return a token
+    login: publicProcedure
+      .input(z.object({ password: z.string() }))
+      .mutation(({ input }) => {
+        if (input.password !== ENV.adminPassword) {
+          throw new Error("Invalid admin password");
+        }
+        return { success: true };
+      }),
+
+    // Get all trainees with their progress (requires admin password in header)
+    getTrainees: publicProcedure
+      .input(z.object({ adminPassword: z.string() }))
+      .query(async ({ input }) => {
+        if (input.adminPassword !== ENV.adminPassword) {
+          throw new Error("Unauthorized");
+        }
+        return getAllTrainees();
       }),
   }),
 

@@ -148,3 +148,42 @@ export async function countRoleplayAttempts(userId: number) {
   const result = await db.select({ count: sql<number>`count(*)` }).from(roleplayAttempts).where(eq(roleplayAttempts.userId, userId));
   return Number(result[0]?.count ?? 0);
 }
+
+// ─── Admin Queries ────────────────────────────────────────────────────────────
+
+export async function getAllTrainees() {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Join users with their training progress and roleplay attempt counts
+  const allUsers = await db
+    .select()
+    .from(users)
+    .orderBy(users.createdAt);
+
+  const allProgress = await db
+    .select()
+    .from(trainingProgress);
+
+  const roleplayCounts = await db
+    .select({ userId: roleplayAttempts.userId, count: sql<number>`count(*)` })
+    .from(roleplayAttempts)
+    .groupBy(roleplayAttempts.userId);
+
+  const roleplayPassCounts = await db
+    .select({ userId: roleplayAttempts.userId, count: sql<number>`count(*)` })
+    .from(roleplayAttempts)
+    .where(eq(roleplayAttempts.result, "PASS"))
+    .groupBy(roleplayAttempts.userId);
+
+  const progressMap = new Map(allProgress.map(p => [p.userId, p]));
+  const countMap = new Map(roleplayCounts.map(r => [r.userId, Number(r.count)]));
+  const passMap = new Map(roleplayPassCounts.map(r => [r.userId, Number(r.count)]));
+
+  return allUsers.map(u => ({
+    ...u,
+    progress: progressMap.get(u.id) ?? null,
+    roleplayAttempts: countMap.get(u.id) ?? 0,
+    roleplayPasses: passMap.get(u.id) ?? 0,
+  }));
+}

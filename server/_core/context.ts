@@ -15,7 +15,13 @@ function getSessionSecret() {
   return new TextEncoder().encode(ENV.cookieSecret);
 }
 
-async function verifySessionCookie(cookieHeader: string | undefined): Promise<string | null> {
+interface JwtPayload {
+  openId?: string;
+  name?: string;
+  appId?: string;
+}
+
+async function verifySessionCookie(cookieHeader: string | undefined): Promise<JwtPayload | null> {
   if (!cookieHeader) return null;
   const cookies = parseCookieHeader(cookieHeader);
   const token = cookies["tot_session"];
@@ -24,7 +30,11 @@ async function verifySessionCookie(cookieHeader: string | undefined): Promise<st
   try {
     const { payload } = await jwtVerify(token, getSessionSecret(), { algorithms: ["HS256"] });
     const openId = payload["openId"];
-    return typeof openId === "string" ? openId : null;
+    if (typeof openId !== "string") return null;
+    return {
+      openId,
+      name: typeof payload["name"] === "string" ? payload["name"] : undefined,
+    };
   } catch {
     return null;
   }
@@ -36,9 +46,27 @@ export async function createContext(
   let user: User | null = null;
 
   try {
-    const openId = await verifySessionCookie(opts.req.headers.cookie);
-    if (openId) {
-      user = await getUserByOpenId(openId) ?? null;
+    const jwtData = await verifySessionCookie(opts.req.headers.cookie);
+    if (jwtData?.openId) {
+      // Try DB lookup first; fall back to a minimal user built from JWT payload
+      const dbUser = await getUserByOpenId(jwtData.openId).catch(() => null);
+      if (dbUser) {
+        user = dbUser;
+      } else {
+        // No DB available — construct a minimal user from JWT claims so protected
+        // routes still work (progress will be stored in-memory / localStorage only)
+        user = {
+          id: 0,
+          openId: jwtData.openId,
+          name: jwtData.name ?? "Ambassador",
+          email: null,
+          loginMethod: "password",
+          role: "user",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastSignedIn: new Date(),
+        } as User;
+      }
     }
   } catch {
     user = null;
