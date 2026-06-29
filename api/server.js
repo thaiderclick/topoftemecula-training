@@ -1009,3 +1009,5 @@ app.use(
   })
 );
 var server_default = app;
+
+module.exports = module.exports.default || module.exports;
