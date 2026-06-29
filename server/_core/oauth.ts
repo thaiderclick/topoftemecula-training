@@ -30,16 +30,14 @@ export function registerOAuthRoutes(app: Express) {
     const safeName = (name ?? "ambassador").trim().toLowerCase().replace(/\s+/g, "_");
     const openId = `pwd_${safeName}`;
 
-    // Persist user to DB only when a database is configured
-    if (process.env.DATABASE_URL) {
-      await upsertUser({
-        openId,
-        name: name ?? "Ambassador",
-        email: null,
-        loginMethod: "password",
-        lastSignedIn: new Date(),
-      });
-    }
+    // Always persist the user to the database
+    await upsertUser({
+      openId,
+      name: name ?? "Ambassador",
+      email: null,
+      loginMethod: "password",
+      lastSignedIn: new Date(),
+    });
 
     const issuedAt = Date.now();
     const expiresInMs = ONE_YEAR_MS;
