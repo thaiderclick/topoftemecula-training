@@ -328,17 +328,14 @@ export default function Home() {
       >
         <div className="flex flex-col gap-6 overflow-y-auto pr-2">
           {/* Brand */}
-          <div className="flex items-center gap-4 pb-6" style={{ borderBottom: '1px solid oklch(0.32 0.01 65)' }}>
+          <div className="flex flex-col items-start gap-2 pb-6" style={{ borderBottom: '1px solid oklch(0.32 0.01 65)' }}>
             <img
               src="/logo-dark.png"
               alt="Top of Temecula Logo"
-              className="h-10 w-auto"
+              className="h-9 w-auto max-w-full"
               style={{ filter: 'invert(1) brightness(2)' }}
             />
-            <div>
-              <h2 className="text-xl font-serif font-bold leading-tight text-white">Top of Temecula</h2>
-              <p className="text-xs tracking-wider uppercase font-medium" style={{ color: 'oklch(0.68 0.148 72)' }}>Academy Portal</p>
-            </div>
+            <p className="text-xs tracking-widest uppercase font-semibold" style={{ color: 'oklch(0.68 0.148 72)' }}>Academy Portal</p>
           </div>
 
           {/* Progress widget */}

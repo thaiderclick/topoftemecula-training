@@ -81,8 +81,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet as Partial<InsertUser>,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
+    console.warn("[Database] Failed to upsert user (non-fatal):", (error as Error).message);
+    // Non-fatal: login still succeeds via JWT cookie even if DB write fails
   }
 }
 
