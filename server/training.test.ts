@@ -28,20 +28,20 @@ import {
 import { invokeLLM } from "./_core/llm";
 
 // ─── Auth context factory ─────────────────────────────────────────────────────
-function makeCtx(overrides: Partial<TrpcContext["user"]> = {}): TrpcContext {
+function makeCtx(user?: TrpcContext["user"] | null): TrpcContext {
+  const defaultUser: TrpcContext["user"] = {
+    id: 42,
+    openId: "pwd_testuser",
+    email: null,
+    name: "Test Ambassador",
+    loginMethod: "password",
+    role: "user",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  };
   return {
-    user: {
-      id: 42,
-      openId: "test-open-id",
-      email: "test@example.com",
-      name: "Test Ambassador",
-      loginMethod: "manus",
-      role: "user",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastSignedIn: new Date(),
-      ...overrides,
-    },
+    user: user === undefined ? defaultUser : user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
@@ -252,12 +252,19 @@ describe("roleplay.evaluate", () => {
   });
 });
 
-// ─── auth.logout ──────────────────────────────────────────────────────────────
-describe("auth.logout", () => {
-  it("clears session cookie and returns success", async () => {
+// ─── auth.me ─────────────────────────────────────────────────────────────────
+describe("auth.me", () => {
+  it("returns user from context when authenticated", async () => {
     const ctx = makeCtx();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.auth.logout();
-    expect(result.success).toBe(true);
+    const result = await caller.auth.me();
+    expect(result?.openId).toBe("pwd_testuser");
+  });
+
+  it("returns null when no user in context", async () => {
+    const ctx = makeCtx(null);
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.auth.me();
+    expect(result).toBeNull();
   });
 });

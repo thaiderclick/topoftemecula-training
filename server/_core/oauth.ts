@@ -1,53 +1,62 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import type { Express, Request, Response } from "express";
-import * as db from "../db";
+/**
+ * Simple password-based auth routes.
+ * Replaces Manus OAuth — no external auth service required.
+ * POST /api/auth/login  — checks TRAINING_PASSWORD, issues a JWT session cookie
+ * POST /api/auth/logout — clears the session cookie
+ */
+import type { Express } from "express";
+import { SignJWT } from "jose";
+import { upsertUser } from "../db";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
+import { ENV } from "./env";
 
-function getQueryParam(req: Request, key: string): string | undefined {
-  const value = req.query[key];
-  return typeof value === "string" ? value : undefined;
+function getSessionSecret() {
+  return new TextEncoder().encode(ENV.cookieSecret);
 }
 
-export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
+export function registerOAuthRoutes(app: Express) {
+  // POST /api/auth/login
+  app.post("/api/auth/login", async (req, res) => {
+    const { password, name } = req.body as { password?: string; name?: string };
+
+    if (!password || password !== ENV.trainingPassword) {
+      res.status(401).json({ error: "Incorrect password" });
       return;
     }
 
-    try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+    // Use a stable openId derived from the name (or a default)
+    const safeName = (name ?? "ambassador").trim().toLowerCase().replace(/\s+/g, "_");
+    const openId = `pwd_${safeName}`;
 
-      if (!userInfo.openId) {
-        res.status(400).json({ error: "openId missing from user info" });
-        return;
-      }
+    // Ensure user exists in DB
+    await upsertUser({
+      openId,
+      name: name ?? "Ambassador",
+      email: null,
+      loginMethod: "password",
+      lastSignedIn: new Date(),
+    });
 
-      await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: new Date(),
-      });
+    const issuedAt = Date.now();
+    const expiresInMs = ONE_YEAR_MS;
+    const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
-      });
+    const token = await new SignJWT({ openId, appId: "tot-training", name: name ?? "Ambassador" })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setExpirationTime(expirationSeconds)
+      .sign(getSessionSecret());
 
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+    const cookieOptions = getSessionCookieOptions(req);
+    res.cookie("tot_session", token, { ...cookieOptions, maxAge: expiresInMs });
+    res.json({ success: true, name: name ?? "Ambassador" });
+  });
 
-      res.redirect(302, "/");
-    } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
-    }
+  // POST /api/auth/logout
+  app.post("/api/auth/logout", (req, res) => {
+    const cookieOptions = getSessionCookieOptions(req);
+    res.clearCookie("tot_session", { ...cookieOptions, maxAge: -1 });
+    res.json({ success: true });
   });
 }

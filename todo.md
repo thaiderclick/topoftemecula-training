@@ -45,3 +45,14 @@
 - [x] Mobile-responsive layout throughout
 - [x] Sign-in gate on all protected pages
 - [x] 12 Vitest tests passing (training progress + roleplay + auth)
+
+## Phase 7: Vercel Deployment
+- [x] Migrate database from MySQL to PostgreSQL (Supabase-compatible)
+- [x] Replace Manus OAuth with simple shared password gate
+- [x] Create PasswordGate component with name + password form
+- [x] Update server auth routes (POST /api/auth/login, POST /api/auth/logout)
+- [x] Strip all Manus-specific env vars from the app
+- [x] Configure vercel.json for full-stack Express + Vite deployment
+- [x] 14 Vitest tests passing after auth migration
+- [x] Production build verified (dist/public + api/server.js)
+- [ ] Push to GitHub to trigger Vercel deployment

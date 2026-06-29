@@ -1,6 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { invokeLLM } from "./_core/llm";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -60,13 +58,10 @@ Return this exact JSON schema:
 
 export const appRouter = router({
   system: systemRouter,
+
   auth: router({
+    // Returns the current user from the session cookie (null if not logged in)
     me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
-    }),
   }),
 
   // Training Progress

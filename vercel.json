@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "pnpm build",
   "installCommand": "pnpm install",
+  "outputDirectory": "dist/public",
   "framework": null,
   "functions": {
     "api/server.js": {
@@ -15,12 +16,8 @@
       "destination": "/api/server"
     },
     {
-      "source": "/manus-storage/:path*",
-      "destination": "/api/server"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/api/server"
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { PasswordGate } from '@/components/PasswordGate';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,6 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
-import { getLoginUrl } from '@/const';
 import {
   BookOpen,
   CheckCircle,
@@ -288,31 +288,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="max-w-md w-full text-center flex flex-col items-center gap-6">
-          <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663030168626/3JzrLh3y46yJi63KZRjP8V/tot_logo-kAwXxxQ6sfY63udqAkMtVv.webp"
-            alt="Top of Temecula"
-            className="w-16 h-16 rounded-full border-2 border-primary shadow-md"
-          />
-          <div>
-            <h1 className="text-2xl font-serif font-extrabold text-foreground">Top of Temecula</h1>
-            <p className="text-sm text-muted-foreground mt-1">Ambassador Training Portal</p>
-          </div>
-          <Card className="w-full border-border bg-card p-6 text-left">
-            <p className="text-sm text-muted-foreground mb-4">
-              Sign in to access your paid training modules, track your progress, and unlock your Field Clearance Certificate.
-            </p>
-            <a href={getLoginUrl()}>
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-5 font-bold gap-2">
-                <LogIn className="w-4 h-4" /> Sign In to Start Training
-              </Button>
-            </a>
-          </Card>
-        </div>
-      </div>
-    );
+    return <PasswordGate onSuccess={() => progressQuery.refetch()} />;
   }
 
   // ─── Main Training Portal ──────────────────────────────────────────────────
