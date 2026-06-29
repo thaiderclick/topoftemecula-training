@@ -30,7 +30,7 @@ export function registerOAuthRoutes(app: Express) {
     const safeName = (name ?? "ambassador").trim().toLowerCase().replace(/\s+/g, "_");
     const openId = `pwd_${safeName}`;
 
-    // Ensure user exists in DB
+    // Persist user to DB
     await upsertUser({
       openId,
       name: name ?? "Ambassador",

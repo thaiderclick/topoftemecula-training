@@ -73,9 +73,9 @@ export function PasswordGate({ onSuccess }: PasswordGateProps) {
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/logo.webp"
+            src="/logo-dark.png"
             alt="Top of Temecula"
-            className="w-64 h-auto drop-shadow-md"
+            className="w-64 h-auto"
           />
           <div className="text-center">
             <p className="tot-eyebrow mb-1">Ambassador Training Portal</p>

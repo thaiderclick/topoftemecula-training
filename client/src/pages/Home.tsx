@@ -300,9 +300,10 @@ export default function Home() {
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border" style={{ background: 'oklch(0.22 0.01 65)' }}>
         <div className="flex items-center gap-3">
           <img
-            src="/logo.webp"
+            src="/logo-dark.png"
             alt="Top of Temecula"
             className="h-7 w-auto"
+            style={{ filter: 'invert(1) brightness(2)' }}
           />
           <h1 className="text-lg font-serif font-bold text-white">Top of Temecula</h1>
         </div>
@@ -329,9 +330,10 @@ export default function Home() {
           {/* Brand */}
           <div className="flex items-center gap-4 pb-6" style={{ borderBottom: '1px solid oklch(0.32 0.01 65)' }}>
             <img
-              src="/logo.webp"
+              src="/logo-dark.png"
               alt="Top of Temecula Logo"
               className="h-10 w-auto"
+              style={{ filter: 'invert(1) brightness(2)' }}
             />
             <div>
               <h2 className="text-xl font-serif font-bold leading-tight text-white">Top of Temecula</h2>
