@@ -31,8 +31,8 @@
 | — | Break | 10 min |
 | 4 | Entities, knowledge graph & E-E-A-T (Slides 7–8) | 30 min |
 | 5 | **Activity F1 — Read Real Schema Markup** (hands-on) | 25 min |
-| 6 | GEO tactics + measuring AI visibility (Slides 9–10) | 30 min |
-| 7 | Owner-translation + how ToT implements this (Slides 11–12) | 20 min |
+| 6 | GEO tactics, measuring + how the engines differ (Slides 9–11) | 35 min |
+| 7 | Owner-translation + how ToT implements this (Slides 12–13) | 20 min |
 | 8 | Active Recall + Foundations Quiz | 25 min |
 
 > **Facilitator:** This is heavier than the field days — it's deliberately a real course. Don't rush it. The payoff is ambassadors who sound like they actually understand the field, not people reciting a script. If trainees push back that it's "too technical," remind them this is exactly the knowledge that makes the certification worth putting on a résumé.
@@ -241,7 +241,25 @@ This is exactly the workflow a professional AI-visibility analyst runs — and i
 
 ---
 
-### Slide 11 — The Owner-Translation Layer (and the Ethics Line)
+### Slide 11 — The Engines Aren't the Same (and Why Results Move)
+
+A beginner thinks "the AI" is one thing. A foundation-level understanding knows the major engines retrieve and decide *differently* — which is exactly why you test all of them and why no one can promise a result. As a general picture (the specifics shift over time, so hold them loosely):
+
+- **Perplexity** is built as an "answer engine" first — it almost always searches the live web at query time and shows its sources prominently. Fresh, findable, citable information matters most here.
+- **Google's Gemini / AI Overviews** lean heavily on Google's own search index and Knowledge Graph. Strong traditional search presence and a clean entity tend to carry over.
+- **ChatGPT** uses integrated web search when it decides browsing is needed; otherwise it can fall back on its training memory. So both live findability *and* general reputation play in.
+- **Claude** reasons carefully over whatever context it's given or retrieves, with web access that's more conditional. It rewards clear, unambiguous, well-structured information.
+
+Two honest truths fall out of this:
+
+1. **The same question gives different answers on different engines** — and a business can show up on one but not another. That's normal, not a bug. It's why measurement spans all four.
+2. **Results move over time.** Retrieval sources and rankings change week to week, and models can even mis-cite or hallucinate a source. You influence the *inputs* — clean, consistent, findable, structured data — but you never control the model's output. That's the real reason "guaranteed #1" is a lie no honest practitioner makes.
+
+> **Key Callout:** The engines retrieve differently (Perplexity = live web, Gemini = Google's index, ChatGPT = browse-or-memory, Claude = reasoned over context), and results shift over time. You shape the inputs; you don't control the output.
+
+---
+
+### Slide 12 — The Owner-Translation Layer (and the Ethics Line)
 
 Knowing the concepts is half the skill. The other half is translating them so a busy owner *feels* it in one sentence — without jargon, and without overpromising. Keep these conversions ready:
 
@@ -256,7 +274,7 @@ Knowing the concepts is half the skill. The other half is translating them so a 
 
 ---
 
-### Slide 12 — How Top of Temecula Puts This Into Practice
+### Slide 13 — How Top of Temecula Puts This Into Practice
 
 Now connect the entire field to what you'll actually offer. Top of Temecula is, in concrete terms, an AEO/GEO asset built on every concept in this module:
 
@@ -271,7 +289,7 @@ So when you help an owner claim and complete their profile, you're not "adding a
 
 ---
 
-### Slide 13 — Active Recall: Foundations Check
+### Slide 14 — Active Recall: Foundations Check
 
 **Prompt:** What do SEO, AEO, and GEO each optimize for?
 **Answer:** SEO optimizes to rank a page in a list of results. AEO optimizes to be the answer an answer engine gives (voice, AI Overviews). GEO optimizes to be named and cited inside a generative AI's response. SEO is about ranking; AEO/GEO are about being chosen.
@@ -293,6 +311,9 @@ So when you help an owner claim and complete their profile, you're not "adding a
 
 **Prompt:** How do you measure a business's AI visibility?
 **Answer:** Prompt-test the same questions across ChatGPT, Gemini, Claude, and Perplexity; record who gets named and cited; track share-of-voice over time.
+
+**Prompt:** Why can the same question give different answers on different engines?
+**Answer:** The engines retrieve and decide differently — Perplexity searches the live web, Gemini leans on Google's index, ChatGPT browses or uses memory, Claude reasons over given context. Results also shift over time, so you test all of them and never promise a fixed result.
 
 **Prompt:** What's the one thing you must never promise an owner?
 **Answer:** A guaranteed ranking or that a specific AI will recommend them. You can say "more likely to be found and recommended," never "guaranteed."
@@ -398,6 +419,36 @@ So when you help an owner claim and complete their profile, you're not "adding a
 - D) It only stores a phone number and nothing else
 
 *Explanation: A claimed ToT profile outputs LocalBusiness JSON-LD, is an authoritative local source AI can ground answers in, cleans up the business's entity, and measures AI visibility via the AI-Citation Tracker (ChatGPT, Claude, Perplexity, Gemini — refreshed monthly).*
+
+---
+
+**Q11.** A Temecula bakery is listed three ways online: "Sweet Spot Bakery, 100 Main St" on its website, "Sweet Spot Bakery LLC, 100 Main Street #B" on a directory, and an old phone number on a third site. From an AEO/GEO standpoint, what's the core problem and the fix?
+- A) Nothing's wrong; more listings is always better
+- B) The problem is too few photos; the fix is to add images
+- C) ✅ The Name/Address/Phone are inconsistent, so machines may not recognize it as one trusted entity — the fix is to make NAP identical everywhere and link the profiles (sameAs)
+- D) The problem is the bakery isn't paying for ads; the fix is to buy placement
+
+*Explanation: This is a NAP-consistency failure. Conflicting Name/Address/Phone make entity disambiguation harder and erode trust. The fix is identical NAP across the web plus sameAs links so the listings resolve to one entity.*
+
+---
+
+**Q12.** You prompt-test "best taco shop in Temecula." A business appears and is cited in Perplexity but never shows up in ChatGPT. What's the most likely explanation?
+- A) ChatGPT has secretly banned the business
+- B) ✅ The engines retrieve differently — Perplexity searches the live web by default, while ChatGPT may not have browsed for that query or weighted different sources — so showing up on one but not another is normal
+- C) The business must have deleted its website
+- D) Perplexity is the only real AI; the others don't count
+
+*Explanation: Different engines retrieve and decide differently, so cross-engine differences are expected. It's exactly why you test all four and track share-of-voice rather than trusting a single check.*
+
+---
+
+**Q13.** Two competing auto shops both claim and complete their profiles. Shop A also gets a dozen genuine recent reviews and is referenced in a local "best mechanics" guide; Shop B has no reviews and no outside mentions. Using E-E-A-T, who is an AI more likely to trust and recommend, and why?
+- A) Shop B, because fewer reviews means less to verify
+- B) They're exactly equal; reviews and mentions don't matter to AI
+- C) ✅ Shop A, because real reviews (Experience) and an authoritative local reference (Authoritativeness/Trust) are stronger trust signals than a complete-but-bare profile alone
+- D) Whichever shop pays the AI company more
+
+*Explanation: A complete profile is the baseline. Genuine reviews and authoritative local mentions add Experience, Authoritativeness, and Trust — the E-E-A-T signals that make AI more confident recommending a business.*
 
 ---
 
