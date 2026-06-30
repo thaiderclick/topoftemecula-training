@@ -7,59 +7,43 @@
  * Usage:
  *   node scripts/parse-curriculum.mjs
  *
- * The script is intentionally verbose in its parsing so that CURRICULUM.md
- * remains the single source of truth. Edit the markdown, run this script,
- * and the TypeScript data file is updated automatically.
+ * CURRICULUM.md is the single source of truth. Edit the markdown, run this
+ * script, and the TypeScript data file is updated automatically.
  *
- * ─── CURRICULUM.md format rules this parser depends on ───────────────────────
+ * ─── Supported markdown blocks ───────────────────────────────────────────────
  *
- * MODULE HEADER (starts a new Day/Module):
- *   ## DAY N — Title
- *   **Subtitle:** ...
- *   **Duration:** ...
- *   **Description:** ...
+ * MODULE HEADER (starts a new Day/Module) — single or double #:
+ *   # DAY N — Title      (or ## DAY N — Title)
+ *   **Subtitle:** ... / **Duration:** ... / **Description:** ...
  *
- * SLIDE HEADER:
- *   ### Slide N — Title
- *   (type is inferred from content; see SLIDE TYPE DETECTION below)
+ * RUN-OF-DAY (facilitator pacing table, one per day):
+ *   ### Run-of-Day ...
+ *   | Block | Activity | Time |  (markdown table)
  *
- * SLIDE TYPE DETECTION (in priority order):
- *   1. Contains "**Label:**" / "**Script:**" pairs  → type: 'script'
- *   2. Contains "✅ DO" / "❌ DON'T" lines          → type: 'dosdonts'
- *   3. Contains "**Prompt:**" / "**Answer:**" pairs → type: 'recall'
- *   4. Contains "**Objection:**" / "**Response:**"  → type: 'objection'
- *   5. Everything else                              → type: 'text'
+ * SLIDE HEADER:  ### Slide N — Title   (type inferred from content)
+ *   Slide type detection (priority order):
+ *     1. **Scenario:** + **Script:**            → 'scenarios'
+ *     2. **Label:** + **Script:**               → 'script'
+ *     3. ✅ DO / ❌ DON'T                         → 'dosdonts'
+ *     4. **Prompt:** + **Answer:**              → 'recall'
+ *     5. **Objection:** + **Response:**         → 'objection'
+ *     6. everything else                        → 'text'
+ *   Text/script slides keep paragraphs, ordered/unordered lists, and tables.
  *
- * BLOCKQUOTE (> ...) → highlight field on the slide
- * ITALIC BLOCKQUOTE (> *"..."*) → also highlight
+ * ACTIVITY BLOCK:  ### Activity NX — Title
+ *   **Activity:** / **Time:** / **Goal:** / **Steps:** (list) / **Template:** (```code```) / **Done when:** / **Rubric...:** (list)
  *
- * QUIZ:
- *   ### Day N Quiz
- *   **Q1.** Question text
- *   - A) option text
- *   - B) ✅ correct option text   ← ✅ marks the correct answer
- *   *Explanation: ...*
+ * DRILL BLOCK:  ### Drill NX — Title
+ *   **Drill:** / **Time:** / **How:** + lists / etc.
  *
- * ASSIGNMENT:
- *   ### Day N Assignment — Title
- *   Description paragraphs
- *   **Include:** or numbered list → stored in description
- *   **Score yourself honestly...** checklist → rubric array
- *   - [ ] rubric item
+ * FIELD SCENARIO CARDS (inside a slide):  **Scenario:** / **Rung:** / **Script:**
  *
- * FINAL READINESS TEST:
- *   ## FINAL READINESS TEST
- *   **F1.** Question text
- *   - A) option  - B) ✅ correct  etc.
- *   *Explanation: ...*
+ * FACILITATOR NOTES:  > **Facilitator:** ...   → excluded (not trainee-facing)
+ * KEY CALLOUT:        > **Key Callout:** ...   → slide.highlight
  *
- * SAFETY MODULE:
- *   ## SAFETY & FIELD PROTOCOL
- *   (treated as a special module with id 'safety')
- *
- * SHIFT 1 DEBRIEF:
- *   ## SHIFT 1 DEBRIEF
- *   (treated as a special section, not a training module)
+ * QUIZ:  ### Day N Quiz  → **Q1.** ... / - A) option / - B) ✅ correct / *Explanation: ...*
+ * ASSIGNMENT:  ### Day N Assignment — Title
+ * FINAL TEST:  ## FINAL READINESS TEST   |   SHIFT DEBRIEF: ## SHIFT 1 DEBRIEF (skipped)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -76,14 +60,15 @@ const OUTPUT_PATH = resolve(ROOT, 'client/src/data/trainingData.ts');
 
 function stripInlineMarkdown(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '$1')  // bold
+    .replace(/^#{1,6}\s+/, '')         // leading heading hashes
+    .replace(/\*\*(.*?)\*\*/g, '$1')   // bold
     .replace(/\*(.*?)\*/g, '$1')       // italic
     .replace(/`(.*?)`/g, '$1')         // code
     .trim();
 }
 
-function slugify(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+function stripQuotes(text) {
+  return text.replace(/^[""“”]+|[""“”]+$/g, '').trim();
 }
 
 function escapeTs(str) {
@@ -133,11 +118,10 @@ function parseScripts(lines) {
   let label = null;
   for (const line of lines) {
     const labelMatch = line.match(/^\*\*Label:\*\*\s+(.+)/);
-    if (labelMatch) { label = labelMatch[1].trim(); continue; }
+    if (labelMatch) { label = stripInlineMarkdown(labelMatch[1]); continue; }
     const scriptMatch = line.match(/^\*\*Script:\*\*\s+(.+)/);
     if (scriptMatch && label) {
-      // Strip surrounding quotes if present
-      let text = scriptMatch[1].trim().replace(/^[""]|[""]$/g, '');
+      const text = stripQuotes(stripInlineMarkdown(scriptMatch[1]));
       scripts.push({ label, text });
       label = null;
     }
@@ -145,13 +129,34 @@ function parseScripts(lines) {
   return scripts;
 }
 
+function parseScenarios(lines) {
+  const cards = [];
+  let cur = null;
+  for (const line of lines) {
+    const s = line.match(/^\*\*Scenario:\*\*\s+(.+)/);
+    if (s) {
+      if (cur) cards.push(cur);
+      const rawScenario = stripInlineMarkdown(s[1]).replace(/^"(.+?)"\s*/, '$1 ').trim();
+      cur = { scenario: stripQuotes(rawScenario), rung: '', script: '' };
+      continue;
+    }
+    if (!cur) continue;
+    const r = line.match(/^\*\*Rung:\*\*\s+(.+)/);
+    if (r) { cur.rung = stripInlineMarkdown(r[1]); continue; }
+    const sc = line.match(/^\*\*Script:\*\*\s+(.+)/);
+    if (sc) { cur.script = stripQuotes(stripInlineMarkdown(sc[1])); }
+  }
+  if (cur) cards.push(cur);
+  return cards;
+}
+
 function parseDosDonts(lines) {
   const items = [];
   for (const line of lines) {
     const doMatch = line.match(/^✅\s+DO(?:\s+Say)?:\s+"?(.+?)"?$/);
-    if (doMatch) { items.push({ bad: false, label: 'DO', text: doMatch[1].trim() }); continue; }
+    if (doMatch) { items.push({ bad: false, label: 'DO', text: stripInlineMarkdown(doMatch[1]) }); continue; }
     const dontMatch = line.match(/^❌\s+DON'T(?:\s+Say)?:\s+"?(.+?)"?$/);
-    if (dontMatch) { items.push({ bad: true, label: "DON'T", text: dontMatch[1].trim() }); }
+    if (dontMatch) { items.push({ bad: true, label: "DON'T", text: stripInlineMarkdown(dontMatch[1]) }); }
   }
   return items;
 }
@@ -161,10 +166,10 @@ function parseRecallPrompts(lines) {
   let prompt = null;
   for (const line of lines) {
     const pMatch = line.match(/^\*\*Prompt:\*\*\s+(.+)/);
-    if (pMatch) { prompt = pMatch[1].trim(); continue; }
+    if (pMatch) { prompt = stripInlineMarkdown(pMatch[1]); continue; }
     const aMatch = line.match(/^\*\*Answer:\*\*\s+(.+)/);
     if (aMatch && prompt) {
-      prompts.push({ prompt, answer: aMatch[1].trim() });
+      prompts.push({ prompt, answer: stripInlineMarkdown(aMatch[1]) });
       prompt = null;
     }
   }
@@ -172,24 +177,135 @@ function parseRecallPrompts(lines) {
 }
 
 function parseHighlight(lines) {
-  for (const line of lines) {
-    const bqMatch = line.match(/^>\s+\*?\*?\*?Key Callout:\*?\*?\*?\s+(.*)/);
-    if (bqMatch) return bqMatch[1].replace(/\*+/g, '').trim();
-    const bqGeneral = line.match(/^>\s+\*?"?(.+?)"?\*?$/);
-    if (bqGeneral) return bqGeneral[1].trim();
+  let fallback = null;
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (!t.startsWith('>')) continue;
+    if (/\*\*Facilitator/i.test(t)) continue; // facilitator notes are not trainee-facing
+    const key = t.match(/^>\s+\*?\*?\*?Key Callout:\*?\*?\*?\s+(.*)/i);
+    if (key) return stripInlineMarkdown(key[1]);
+    if (!fallback) {
+      const gen = t.match(/^>\s+(.+?)\s*$/);
+      if (gen) fallback = stripQuotes(stripInlineMarkdown(gen[1]));
+    }
   }
-  return null;
+  return fallback;
 }
 
+// Pull markdown tables out of a block of lines. Returns { tables, rest }.
+function isTableSeparator(cells) {
+  return cells.length > 0 && cells.every(c => /^:?-{1,}:?$/.test(c.trim()));
+}
+
+function parseTableLines(tableLines) {
+  const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map(c => stripInlineMarkdown(c).trim());
+  const rows = tableLines.map(cells).filter(r => !isTableSeparator(r));
+  if (rows.length < 1) return null;
+  const headers = rows[0];
+  const body = rows.slice(1);
+  return { headers, rows: body };
+}
+
+function extractTables(lines) {
+  const tables = [];
+  const rest = [];
+  let buf = [];
+  const flush = () => {
+    if (buf.length) {
+      const t = parseTableLines(buf);
+      if (t) tables.push(t);
+      buf = [];
+    }
+  };
+  for (const l of lines) {
+    if (l.trim().startsWith('|')) buf.push(l);
+    else { flush(); rest.push(l); }
+  }
+  flush();
+  return { tables, rest };
+}
+
+// Rich content: ordered list of paragraph / list blocks.
 function parseContent(lines) {
-  return lines
-    .filter(l => l.trim() && !l.startsWith('>') && !l.startsWith('**Label:') && !l.startsWith('**Script:') && !l.startsWith('**Prompt:') && !l.startsWith('**Answer:') && !l.startsWith('✅') && !l.startsWith('❌') && !l.startsWith('-') && !l.match(/^\*Explanation:/))
-    .map(l => stripInlineMarkdown(l))
-    .filter(Boolean);
+  const blocks = [];
+  let para = [];
+  let list = null;
+  const flushPara = () => { if (para.length) { blocks.push({ kind: 'p', text: para.join(' ') }); para = []; } };
+  const flushList = () => { if (list) { blocks.push({ kind: 'list', items: list.items, ordered: list.ordered }); list = null; } };
+
+  for (const raw of lines) {
+    const l = raw.trim();
+    if (!l) { flushPara(); flushList(); continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(l)) { flushPara(); flushList(); continue; } // horizontal rule
+    if (l.startsWith('>') || l.startsWith('|') || l.startsWith('```')) { flushPara(); flushList(); continue; }
+    if (/^\*\*(Label|Script|Prompt|Answer|Scenario|Rung):/.test(l) || l.startsWith('✅') || l.startsWith('❌') || /^\*Explanation:/.test(l)) {
+      flushPara(); flushList();
+      continue;
+    }
+    const num = l.match(/^\d+\.\s+(.*)/);
+    const bul = l.match(/^[-*]\s+(?:\[[ xX]\]\s+)?(.*)/);
+    if (num) { flushPara(); if (!list || !list.ordered) { flushList(); list = { ordered: true, items: [] }; } list.items.push(stripInlineMarkdown(num[1])); continue; }
+    if (bul) { flushPara(); if (!list || list.ordered) { flushList(); list = { ordered: false, items: [] }; } list.items.push(stripInlineMarkdown(bul[1])); continue; }
+    flushList();
+    para.push(stripInlineMarkdown(l));
+  }
+  flushPara();
+  flushList();
+  return blocks.filter(b => (b.kind === 'p' ? b.text : b.items.length));
+}
+
+// Activity / Drill: an ordered list of labelled fields, each with text, list items, or a code block.
+function parsePracticeBlock(lines) {
+  const fields = [];
+  let current = null;
+  let inCode = false;
+  let codeLines = [];
+
+  for (const raw of lines) {
+    if (raw.trim().startsWith('```')) {
+      if (!inCode) { inCode = true; codeLines = []; }
+      else { inCode = false; if (current) current.code = codeLines.join('\n'); }
+      continue;
+    }
+    if (inCode) { codeLines.push(raw); continue; }
+
+    const l = raw.trim();
+    if (!l) continue;
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(l)) { current = null; continue; } // horizontal rule ends a block
+    if (l.startsWith('>')) continue; // facilitator notes
+
+    const fieldMatch = l.match(/^\*\*(.+?):\*\*\s*(.*)$/);
+    if (fieldMatch) {
+      const label = fieldMatch[1].trim();
+      const inline = stripInlineMarkdown(fieldMatch[2]).trim();
+      current = { label, text: inline || undefined, items: [] };
+      fields.push(current);
+      continue;
+    }
+    if (!current) continue;
+
+    const num = l.match(/^\d+\.\s+(.*)/);
+    const bul = l.match(/^[-*]\s+(?:\[[ xX]\]\s+)?(.*)/);
+    if (num) { current.items.push(stripInlineMarkdown(num[1])); continue; }
+    if (bul) { current.items.push(stripInlineMarkdown(bul[1])); continue; }
+    current.text = (current.text ? current.text + ' ' : '') + stripInlineMarkdown(l);
+  }
+
+  // Drop the redundant **Activity:** / **Drill:** name field (the slide title already shows it).
+  return fields
+    .filter(f => !/^(Activity|Drill)$/i.test(f.label))
+    .map(f => {
+      const out = { label: f.label };
+      if (f.text) out.text = f.text;
+      if (f.items && f.items.length) out.items = f.items;
+      if (f.code) out.code = f.code;
+      return out;
+    });
 }
 
 function detectSlideType(lines) {
   const joined = lines.join('\n');
+  if (joined.includes('**Scenario:**') && joined.includes('**Script:**')) return 'scenarios';
   if (joined.includes('**Label:**') && joined.includes('**Script:**')) return 'script';
   if (joined.includes('✅ DO') || joined.includes("❌ DON'T")) return 'dosdonts';
   if (joined.includes('**Prompt:**') && joined.includes('**Answer:**')) return 'recall';
@@ -197,26 +313,48 @@ function detectSlideType(lines) {
   return 'text';
 }
 
-function buildSlide(title, lines) {
-  const type = detectSlideType(lines);
+function buildSlide(title, lines, forcedType) {
   const highlight = parseHighlight(lines);
+
+  // Forced facilitator-block slides
+  if (forcedType === 'runofday') {
+    const { tables } = extractTables(lines);
+    const slide = { title, type: 'runofday' };
+    if (tables.length) slide.table = tables[0];
+    return slide;
+  }
+  if (forcedType === 'activity' || forcedType === 'drill') {
+    const slide = { title, type: forcedType, block: { fields: parsePracticeBlock(lines) } };
+    if (highlight) slide.highlight = highlight;
+    return slide;
+  }
+
+  const type = detectSlideType(lines);
   const slide = { title, type };
 
   if (type === 'script') {
-    const content = parseContent(lines);
+    const { tables, rest } = extractTables(lines);
+    const content = parseContent(rest);
     if (content.length) slide.content = content;
+    if (tables.length) slide.tables = tables;
     slide.scripts = parseScripts(lines);
+  } else if (type === 'scenarios') {
+    const { rest } = extractTables(lines);
+    const content = parseContent(rest);
+    if (content.length) slide.content = content;
+    slide.scenarios = parseScenarios(lines);
   } else if (type === 'dosdonts') {
     slide.items = parseDosDonts(lines);
   } else if (type === 'recall') {
-    slide.type = 'recall';
     slide.recallPrompts = parseRecallPrompts(lines);
   } else if (type === 'objection') {
     slide.scripts = parseScripts(lines);
   } else {
-    const content = parseContent(lines);
+    const { tables, rest } = extractTables(lines);
+    const content = parseContent(rest);
     if (content.length) slide.content = content;
-    if (type === 'text') delete slide.type; // text is the default, omit for cleanliness
+    if (tables.length) slide.tables = tables;
+    delete slide.type; // text is the default, omit for cleanliness
   }
 
   if (highlight) slide.highlight = highlight;
@@ -237,8 +375,7 @@ function parseAssignment(lines, title) {
     .map(l => stripInlineMarkdown(l))
     .filter(Boolean);
 
-  // Determine type: if title mentions "Roleplay" or "Recording" → roleplay, else text
-  const type = /roleplay|recording/i.test(title) ? 'roleplay' : 'text';
+  const type = /roleplay|record/i.test(title) ? 'roleplay' : 'text';
   const placeholder = type === 'roleplay'
     ? 'Paste your Google Drive, YouTube, or Loom link here...'
     : 'Type your response here...';
@@ -255,8 +392,8 @@ function parseCurriculum(md) {
   let currentModule = null;
   let currentSlideLines = [];
   let currentSlideTitle = null;
+  let currentSlideForcedType = null;
   let inFinalTest = false;
-  let inSafety = false;
   let inShiftDebrief = false;
   let quizLines = [];
   let inQuiz = false;
@@ -266,9 +403,10 @@ function parseCurriculum(md) {
 
   function flushSlide() {
     if (!currentSlideTitle || !currentModule) return;
-    currentModule.slides.push(buildSlide(currentSlideTitle, currentSlideLines));
+    currentModule.slides.push(buildSlide(currentSlideTitle, currentSlideLines, currentSlideForcedType));
     currentSlideTitle = null;
     currentSlideLines = [];
+    currentSlideForcedType = null;
   }
 
   function flushQuiz() {
@@ -291,11 +429,8 @@ function parseCurriculum(md) {
 
     // ── Final Readiness Test ──
     if (line.match(/^## FINAL READINESS TEST/)) {
-      flushSlide();
-      flushQuiz();
-      flushAssignment();
+      flushSlide(); flushQuiz(); flushAssignment();
       inFinalTest = true;
-      inSafety = false;
       inShiftDebrief = false;
       currentModule = null;
       continue;
@@ -303,46 +438,36 @@ function parseCurriculum(md) {
 
     // ── Shift 1 Debrief ──
     if (line.match(/^## SHIFT 1 DEBRIEF/)) {
-      flushSlide();
-      flushQuiz();
-      flushAssignment();
+      flushSlide(); flushQuiz(); flushAssignment();
       inShiftDebrief = true;
       inFinalTest = false;
       currentModule = null;
       continue;
     }
 
-    if (inFinalTest) {
-      finalTestLines.push(line);
-      continue;
-    }
+    if (inFinalTest) { finalTestLines.push(line); continue; }
+    if (inShiftDebrief) continue;
 
-    if (inShiftDebrief) continue; // skip debrief lines
-
-    // ── New Module (## DAY N or ## SAFETY) ──
-    const moduleMatch = line.match(/^## (DAY \d+[^\n]*|SAFETY[^#]*)/iu);
+    // ── New Module (# DAY N / ## DAY N / SAFETY) ──
+    const moduleMatch = line.match(/^#{1,2} (DAY \d+[^\n]*|SAFETY[^#]*)/iu);
     if (moduleMatch) {
-      flushSlide();
-      flushQuiz();
-      flushAssignment();
+      flushSlide(); flushQuiz(); flushAssignment();
 
       const headerText = moduleMatch[1].trim();
-      const dayMatch = headerText.match(/DAY (\d+)\s*[\u2014\u2013-]\s*(.+)/i);
-      // Only treat as safety module if the header starts with SAFETY (not Day 3 which mentions Safety in the title)
+      const dayMatch = headerText.match(/DAY (\d+)\s*[—–-]\s*(.+)/i);
       const isSafety = /^SAFETY/i.test(headerText);
 
       if (dayMatch || isSafety) {
         let subtitle = '', duration = '', description = '';
-        // Peek ahead for metadata lines
         let j = i + 1;
-        while (j < lines.length && !lines[j].startsWith('##') && !lines[j].startsWith('###')) {
+        while (j < lines.length && !/^#{1,3} /.test(lines[j])) {
           const sl = lines[j];
           const subMatch = sl.match(/^\*\*Subtitle:\*\*\s+(.+)/);
           const durMatch = sl.match(/^\*\*Duration:\*\*\s+(.+)/);
           const descMatch = sl.match(/^\*\*Description:\*\*\s+(.+)/);
-          if (subMatch) subtitle = subMatch[1].trim();
-          if (durMatch) duration = durMatch[1].trim();
-          if (descMatch) description = descMatch[1].trim();
+          if (subMatch) subtitle = stripInlineMarkdown(subMatch[1]);
+          if (durMatch) duration = stripInlineMarkdown(durMatch[1]);
+          if (descMatch) description = stripInlineMarkdown(descMatch[1]);
           j++;
         }
 
@@ -352,7 +477,6 @@ function parseCurriculum(md) {
 
         currentModule = { id, day, title, subtitle, duration, description, slides: [], quiz: [], assignment: null };
         modules.push(currentModule);
-        inSafety = isSafety;
         inQuiz = false;
         inAssignment = false;
       }
@@ -362,35 +486,61 @@ function parseCurriculum(md) {
     if (!currentModule) continue;
 
     // ── Quiz section ──
-    const quizHeaderMatch = line.match(/^### Day \d+ Quiz|^### Safety Quiz/i);
-    if (quizHeaderMatch) {
+    if (line.match(/^### Day \d+ Quiz|^### Safety Quiz/i)) {
       flushSlide();
-      inQuiz = true;
-      inAssignment = false;
+      inQuiz = true; inAssignment = false;
       continue;
     }
 
     // ── Assignment section ──
     const assignMatch = line.match(/^### Day \d+ Assignment\s*[—-]\s*(.+)|^### Safety Assignment\s*[—-]\s*(.+)/i);
     if (assignMatch) {
-      flushSlide();
-      flushQuiz();
-      inAssignment = true;
-      inQuiz = false;
+      flushSlide(); flushQuiz();
+      inAssignment = true; inQuiz = false;
       assignmentTitle = (assignMatch[1] || assignMatch[2] || '').trim();
+      continue;
+    }
+
+    // ── Run-of-Day block ──
+    if (line.match(/^### Run-of-Day\b/i)) {
+      flushSlide(); flushQuiz(); flushAssignment();
+      currentSlideTitle = 'Run of Day';
+      currentSlideForcedType = 'runofday';
+      currentSlideLines = [];
+      inQuiz = false; inAssignment = false;
+      continue;
+    }
+
+    // ── Activity block ──
+    const actMatch = line.match(/^### (Activity\b.+)/i);
+    if (actMatch) {
+      flushSlide(); flushQuiz(); flushAssignment();
+      currentSlideTitle = actMatch[1].trim();
+      currentSlideForcedType = 'activity';
+      currentSlideLines = [];
+      inQuiz = false; inAssignment = false;
+      continue;
+    }
+
+    // ── Drill block ──
+    const drillMatch = line.match(/^### (Drill\b.+)/i);
+    if (drillMatch) {
+      flushSlide(); flushQuiz(); flushAssignment();
+      currentSlideTitle = drillMatch[1].trim();
+      currentSlideForcedType = 'drill';
+      currentSlideLines = [];
+      inQuiz = false; inAssignment = false;
       continue;
     }
 
     // ── Slide header ──
     const slideMatch = line.match(/^### Slide \d+\s*[—-]\s*(.+)/);
     if (slideMatch) {
-      flushSlide();
-      flushQuiz();
-      flushAssignment();
+      flushSlide(); flushQuiz(); flushAssignment();
       currentSlideTitle = slideMatch[1].trim();
+      currentSlideForcedType = null;
       currentSlideLines = [];
-      inQuiz = false;
-      inAssignment = false;
+      inQuiz = false; inAssignment = false;
       continue;
     }
 
@@ -400,10 +550,7 @@ function parseCurriculum(md) {
     if (currentSlideTitle) { currentSlideLines.push(line); }
   }
 
-  // Flush any remaining
-  flushSlide();
-  flushQuiz();
-  flushAssignment();
+  flushSlide(); flushQuiz(); flushAssignment();
 
   const finalReadinessTestBank = parseQuizBlock(finalTestLines);
 
@@ -421,16 +568,27 @@ function emitTs({ modules, finalReadinessTestBank }) {
   lines.push(`// Edit CURRICULUM.md and run: node scripts/parse-curriculum.mjs`);
   lines.push(`// ─────────────────────────────────────────────────────────────────────────────`);
   lines.push(``);
+  lines.push(`export type ContentBlock =`);
+  lines.push(`  | { kind: 'p'; text: string }`);
+  lines.push(`  | { kind: 'list'; items: string[]; ordered?: boolean };`);
   lines.push(`export interface RecallPrompt { prompt: string; answer: string; }`);
   lines.push(`export interface ScriptItem { label: string; text: string; }`);
   lines.push(`export interface DosDontsItem { bad: boolean; label: string; text: string; }`);
+  lines.push(`export interface ScenarioCard { scenario: string; rung: string; script: string; }`);
+  lines.push(`export interface TableBlock { headers: string[]; rows: string[][]; }`);
+  lines.push(`export interface BlockField { label: string; text?: string; items?: string[]; code?: string; }`);
+  lines.push(`export interface PracticeBlock { fields: BlockField[]; }`);
   lines.push(`export interface Slide {`);
   lines.push(`  title: string;`);
-  lines.push(`  type?: 'text' | 'script' | 'objection' | 'dosdonts' | 'recall';`);
-  lines.push(`  content?: string[];`);
+  lines.push(`  type?: 'text' | 'script' | 'objection' | 'dosdonts' | 'recall' | 'activity' | 'drill' | 'runofday' | 'scenarios';`);
+  lines.push(`  content?: ContentBlock[];`);
   lines.push(`  scripts?: ScriptItem[];`);
   lines.push(`  items?: DosDontsItem[];`);
   lines.push(`  recallPrompts?: RecallPrompt[];`);
+  lines.push(`  scenarios?: ScenarioCard[];`);
+  lines.push(`  block?: PracticeBlock;`);
+  lines.push(`  table?: TableBlock;`);
+  lines.push(`  tables?: TableBlock[];`);
   lines.push(`  highlight?: string;`);
   lines.push(`}`);
   lines.push(`export interface Question {`);
@@ -460,10 +618,29 @@ function emitTs({ modules, finalReadinessTestBank }) {
   lines.push(`}`);
   lines.push(``);
 
-  function emitStr(s) { return ts(s); }
-  function emitStrArr(arr) {
-    if (!arr || !arr.length) return '[]';
-    return `[\n${arr.map(s => `    ${ts(s)},`).join('\n')}\n  ]`;
+  function emitContent(blocks) {
+    const parts = blocks.map(b => {
+      if (b.kind === 'list') {
+        const items = b.items.map(it => `        ${ts(it)},`).join('\n');
+        return `      { kind: 'list',${b.ordered ? ' ordered: true,' : ''} items: [\n${items}\n      ] },`;
+      }
+      return `      { kind: 'p', text: ${ts(b.text)} },`;
+    }).join('\n');
+    return `[\n${parts}\n    ]`;
+  }
+
+  function emitTable(t) {
+    const headers = `[${t.headers.map(ts).join(', ')}]`;
+    const rows = t.rows.map(r => `        [${r.map(ts).join(', ')}],`).join('\n');
+    return `{ headers: ${headers}, rows: [\n${rows}\n      ] }`;
+  }
+
+  function emitField(f) {
+    const inner = [`label: ${ts(f.label)}`];
+    if (f.text) inner.push(`text: ${ts(f.text)}`);
+    if (f.items && f.items.length) inner.push(`items: [${f.items.map(ts).join(', ')}]`);
+    if (f.code) inner.push(`code: ${ts(f.code)}`);
+    return `      { ${inner.join(', ')} },`;
   }
 
   function emitSlide(slide) {
@@ -471,7 +648,7 @@ function emitTs({ modules, finalReadinessTestBank }) {
     parts.push(`    title: ${ts(slide.title)}`);
     if (slide.type) parts.push(`    type: ${ts(slide.type)}`);
     if (slide.content && slide.content.length) {
-      parts.push(`    content: [\n${slide.content.map(s => `      ${ts(s)},`).join('\n')}\n    ]`);
+      parts.push(`    content: ${emitContent(slide.content)}`);
     }
     if (slide.scripts && slide.scripts.length) {
       parts.push(`    scripts: [\n${slide.scripts.map(s => `      { label: ${ts(s.label)}, text: ${ts(s.text)} },`).join('\n')}\n    ]`);
@@ -481,6 +658,18 @@ function emitTs({ modules, finalReadinessTestBank }) {
     }
     if (slide.recallPrompts && slide.recallPrompts.length) {
       parts.push(`    recallPrompts: [\n${slide.recallPrompts.map(rp => `      { prompt: ${ts(rp.prompt)}, answer: ${ts(rp.answer)} },`).join('\n')}\n    ]`);
+    }
+    if (slide.scenarios && slide.scenarios.length) {
+      parts.push(`    scenarios: [\n${slide.scenarios.map(s => `      { scenario: ${ts(s.scenario)}, rung: ${ts(s.rung)}, script: ${ts(s.script)} },`).join('\n')}\n    ]`);
+    }
+    if (slide.block && slide.block.fields.length) {
+      parts.push(`    block: { fields: [\n${slide.block.fields.map(emitField).join('\n')}\n    ] }`);
+    }
+    if (slide.table) {
+      parts.push(`    table: ${emitTable(slide.table)}`);
+    }
+    if (slide.tables && slide.tables.length) {
+      parts.push(`    tables: [\n${slide.tables.map(t => `      ${emitTable(t)},`).join('\n')}\n    ]`);
     }
     if (slide.highlight) parts.push(`    highlight: ${ts(slide.highlight)}`);
     return `  {\n${parts.join(',\n')}\n  }`;
@@ -539,7 +728,9 @@ const parsed = parseCurriculum(md);
 
 console.log(`Parsed ${parsed.modules.length} modules:`);
 for (const m of parsed.modules) {
-  console.log(`  Day ${m.day}: ${m.title} — ${m.slides.length} slides, ${m.quiz.length} quiz Qs, assignment: ${m.assignment ? m.assignment.type : 'none'}`);
+  const counts = m.slides.reduce((acc, s) => { acc[s.type || 'text'] = (acc[s.type || 'text'] || 0) + 1; return acc; }, {});
+  console.log(`  Day ${m.day}: ${m.title}`);
+  console.log(`    ${m.slides.length} slides ${JSON.stringify(counts)}, ${m.quiz.length} quiz Qs, assignment: ${m.assignment ? m.assignment.type : 'none'}`);
 }
 console.log(`  Final test bank: ${parsed.finalReadinessTestBank.length} questions`);
 

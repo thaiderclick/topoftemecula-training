@@ -30,8 +30,14 @@ import {
   EyeOff,
   LogIn,
   Loader2,
+  CalendarClock,
+  ListChecks,
+  Dumbbell,
+  Clock,
+  Target,
+  Flag,
 } from 'lucide-react';
-import { trainingModules, finalReadinessTestBank, Question, Module } from '../data/trainingData';
+import { trainingModules, finalReadinessTestBank, Question, Module, ContentBlock, TableBlock } from '../data/trainingData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +62,52 @@ const DEFAULT_PROGRESS: ProgressState = {
   finalTestScore: null,
   shift1DebriefData: null,
 };
+
+// ─── Rich content renderers ─────────────────────────────────────────────────
+
+function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
+  if (!blocks || !blocks.length) return null;
+  return (
+    <>
+      {blocks.map((b, idx) => {
+        if (b.kind === 'list') {
+          const ListTag = b.ordered ? 'ol' : 'ul';
+          return (
+            <ListTag key={idx} className={`flex flex-col gap-1.5 pl-5 ${b.ordered ? 'list-decimal' : 'list-disc'} marker:text-primary`}>
+              {b.items.map((it, i) => <li key={i} className="pl-1">{it}</li>)}
+            </ListTag>
+          );
+        }
+        return <p key={idx}>{b.text}</p>;
+      })}
+    </>
+  );
+}
+
+function DataTable({ table }: { table: TableBlock }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-border my-2">
+      <table className="w-full text-xs md:text-sm border-collapse">
+        <thead>
+          <tr className="bg-primary/5">
+            {table.headers.map((h, i) => (
+              <th key={i} className="text-left font-bold text-foreground p-2.5 border-b border-border">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, ri) => (
+            <tr key={ri} className="even:bg-background/40">
+              {row.map((cell, ci) => (
+                <td key={ci} className="align-top p-2.5 border-b border-border/50 text-muted-foreground">{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -739,16 +791,100 @@ export default function Home() {
                     {/* Text slide */}
                     {(!activeModule.slides[currentSlideIndex].type || activeModule.slides[currentSlideIndex].type === 'text') && (
                       <div className="flex flex-col gap-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-                        {activeModule.slides[currentSlideIndex].content?.map((p, idx) => <p key={idx}>{p}</p>)}
+                        <ContentBlocks blocks={activeModule.slides[currentSlideIndex].content} />
+                        {activeModule.slides[currentSlideIndex].tables?.map((t, idx) => <DataTable key={idx} table={t} />)}
+                      </div>
+                    )}
+
+                    {/* Run-of-Day pacing table */}
+                    {activeModule.slides[currentSlideIndex].type === 'runofday' && (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-primary">
+                          <CalendarClock className="w-4 h-4" />
+                          <span className="text-xs font-bold uppercase tracking-wider">Facilitator Pacing — ~4 Hour Session</span>
+                        </div>
+                        {activeModule.slides[currentSlideIndex].table && (
+                          <DataTable table={activeModule.slides[currentSlideIndex].table!} />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Activity / Drill practice block */}
+                    {(activeModule.slides[currentSlideIndex].type === 'activity' || activeModule.slides[currentSlideIndex].type === 'drill') && (
+                      <div className="flex flex-col gap-4">
+                        <div className={`flex items-center gap-2 ${activeModule.slides[currentSlideIndex].type === 'drill' ? 'text-amber-600 dark:text-amber-500' : 'text-primary'}`}>
+                          {activeModule.slides[currentSlideIndex].type === 'drill'
+                            ? <Dumbbell className="w-4 h-4" />
+                            : <ListChecks className="w-4 h-4" />}
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {activeModule.slides[currentSlideIndex].type === 'drill' ? 'Hands-On Drill' : 'Hands-On Activity'}
+                          </span>
+                        </div>
+                        {activeModule.slides[currentSlideIndex].block?.fields.map((f, idx) => {
+                          const isTime = /^time$/i.test(f.label);
+                          const isGoal = /^goal$/i.test(f.label);
+                          return (
+                            <div key={idx} className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground">
+                                {isTime && <Clock className="w-3.5 h-3.5 text-primary" />}
+                                {isGoal && <Target className="w-3.5 h-3.5 text-primary" />}
+                                {f.label}
+                              </div>
+                              {f.text && <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{f.text}</p>}
+                              {f.items && f.items.length > 0 && (
+                                <ul className="flex flex-col gap-1.5 pl-5 list-disc marker:text-primary text-sm md:text-base text-muted-foreground leading-relaxed">
+                                  {f.items.map((it, i) => <li key={i} className="pl-1">{it}</li>)}
+                                </ul>
+                              )}
+                              {f.code && (
+                                <pre className="text-xs bg-background/60 border border-border rounded-xl p-3 overflow-x-auto whitespace-pre-wrap text-muted-foreground">{f.code}</pre>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Field Scenario cards */}
+                    {activeModule.slides[currentSlideIndex].type === 'scenarios' && (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-2 text-sm md:text-base text-muted-foreground leading-relaxed">
+                          <ContentBlocks blocks={activeModule.slides[currentSlideIndex].content} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+                          {activeModule.slides[currentSlideIndex].scenarios?.map((s, idx) => {
+                            const cardId = `${activeModule.id}_scn_${idx}`;
+                            const isFlipped = flippedCards[cardId];
+                            return (
+                              <div key={idx} onClick={() => toggleCardFlip(cardId)} className="group cursor-pointer perspective-1000 h-36 w-full">
+                                <div className={`relative w-full h-full duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+                                  <div className="absolute inset-0 backface-hidden border border-secondary-foreground/20 bg-secondary/50 rounded-xl p-4 flex flex-col justify-between shadow-sm hover:border-primary transition-colors">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-secondary-foreground uppercase tracking-wider">Scenario</span>
+                                      {s.rung && <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Flag className="w-3 h-3" /> Rung {s.rung}</span>}
+                                    </div>
+                                    <h4 className="text-sm font-bold text-foreground leading-snug">{s.scenario}</h4>
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-0.5">Tap to reveal <ChevronRight className="w-3 h-3" /></span>
+                                  </div>
+                                  <div className="absolute inset-0 backface-hidden rotate-y-180 border border-primary bg-card rounded-xl p-4 flex flex-col justify-center shadow-md overflow-y-auto">
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Your Response:</span>
+                                    <p className="text-xs text-foreground font-medium italic leading-relaxed">"{s.script}"</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
                     {/* Script flashcards — show content paragraphs first if present, then flashcards */}
                     {activeModule.slides[currentSlideIndex].type === 'script' && (
                       <div className="flex flex-col gap-4 my-2">
-                        {activeModule.slides[currentSlideIndex].content && activeModule.slides[currentSlideIndex].content!.length > 0 && (
+                        {((activeModule.slides[currentSlideIndex].content?.length ?? 0) > 0 || (activeModule.slides[currentSlideIndex].tables?.length ?? 0) > 0) && (
                           <div className="flex flex-col gap-2 text-sm md:text-base text-muted-foreground leading-relaxed mb-2 pb-4 border-b border-border/40">
-                            {activeModule.slides[currentSlideIndex].content!.map((p, idx) => <p key={idx}>{p}</p>)}
+                            <ContentBlocks blocks={activeModule.slides[currentSlideIndex].content} />
+                            {activeModule.slides[currentSlideIndex].tables?.map((t, idx) => <DataTable key={idx} table={t} />)}
                           </div>
                         )}
                         {activeModule.slides[currentSlideIndex].scripts?.map((s, idx) => {
