@@ -17,6 +17,402 @@
 
 ---
 
+# FOUNDATIONS — Answer Engine & Generative Engine Optimization (AEO/GEO)
+**Subtitle:** The vendor-neutral knowledge base behind the job: how AI answer engines decide who to recommend, and the structured-data, entity, and authority concepts that make a business findable by machines.
+**Duration:** 2.5 Hours (Self-Paced Knowledge Module — complete before Day 1)
+**Description:** This module is a real, standalone foundation in Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO) — an emerging discipline in digital marketing. You'll learn how large language models and answer engines actually work, what structured data and schema.org markup are, how entities and knowledge graphs drive recommendations, and how to measure AI visibility. The concepts here are not specific to Top of Temecula — they're the same ideas a search strategist, SEO specialist, or AI-marketing consultant works with. Once you understand them, the rest of your training (and your conversations with business owners) will make far more sense, and you'll be able to speak about this field with genuine credibility.
+
+### Run-of-Day (Facilitator Pacing)
+| Block | Topic | Time |
+|---|---|---|
+| 1 | Why this module / the field & the credential (Slides 1–2) | 20 min |
+| 2 | How answer engines work: training vs. retrieval (Slides 3–4) | 35 min |
+| 3 | Structured data & schema.org deep-dive (Slides 5–6) | 35 min |
+| — | Break | 10 min |
+| 4 | Entities, knowledge graph & E-E-A-T (Slides 7–8) | 30 min |
+| 5 | **Activity F1 — Read Real Schema Markup** (hands-on) | 25 min |
+| 6 | GEO tactics + measuring AI visibility (Slides 9–10) | 30 min |
+| 7 | Owner-translation + how ToT implements this (Slides 11–12) | 20 min |
+| 8 | Active Recall + Foundations Quiz | 25 min |
+
+> **Facilitator:** This is heavier than the field days — it's deliberately a real course. Don't rush it. The payoff is ambassadors who sound like they actually understand the field, not people reciting a script. If trainees push back that it's "too technical," remind them this is exactly the knowledge that makes the certification worth putting on a résumé.
+
+---
+
+### Slide 1 — What This Module Is (and Why It's Worth Your Time)
+
+AEO and GEO are new enough that very few people can explain them well. That's the opportunity. By the end of this module you'll understand a genuinely emerging field in digital marketing — the same concepts that SEO specialists, content strategists, and AI-visibility consultants are scrambling to learn right now.
+
+This matters for two reasons:
+
+1. **For the job:** When you understand *why* a claimed, structured, consistent profile makes a business recommendable by AI, you can explain Top of Temecula's value to an owner with real conviction instead of a memorized line.
+2. **For you:** "Answer Engine Optimization" and "Generative Engine Optimization" are real, growing specialties. Understanding them — and being able to prove it — is a legitimate, current skill. This module is built to give you that knowledge for keeps, whether or not you stay in this exact role.
+
+We'll keep it honest throughout. Nobody can *guarantee* an AI will name a specific business. What you *can* do is understand the signals that make a business more likely to be recommended, and influence those signals. That's the whole discipline.
+
+> **Key Callout:** This is a real foundation in an emerging field, not platform trivia. Learn it for keeps — it's knowledge that travels with you.
+
+---
+
+### Slide 2 — The Three-Letter Shift: SEO → AEO → GEO
+
+These three acronyms describe twenty years of how people find things online, and where it's headed. Know them precisely:
+
+- **SEO — Search Engine Optimization.** Optimizing so a *web page ranks* in a list of results (the classic Google "ten blue links"). The unit of success is a ranking position.
+- **AEO — Answer Engine Optimization.** Optimizing to be the *answer* an answer engine gives — voice assistants (Siri, Alexa), Google's AI Overviews, featured snippets. The unit of success is *being the spoken or featured answer*, often with no list at all.
+- **GEO — Generative Engine Optimization.** Optimizing to be *named and cited inside the generated response* of a large language model — ChatGPT, Gemini, Claude, Perplexity. The unit of success is appearing in the AI's actual recommendation.
+
+The throughline: **SEO is about ranking; AEO and GEO are about being chosen.** A list gives the user ten options and lets them pick. An answer engine picks one (or a few) on the user's behalf. That single change — from a list to a recommendation — is the entire reason this field exists.
+
+> **Key Callout:** SEO = rank in a list. AEO = be the answer. GEO = be the name the AI generates and cites. The shift is from ranking to being chosen.
+
+---
+
+### Slide 3 — How Answer Engines Work, Part 1: Two Kinds of Knowledge
+
+To influence AI recommendations you have to know where the AI's "knowledge" comes from. A modern AI tool draws on two very different sources:
+
+1. **Parametric knowledge (training).** A large language model (LLM) is trained on an enormous snapshot of text. Whatever it absorbed during training is baked into its parameters — its "memory." This knowledge is frozen at a **training cutoff date** and is fuzzy: the model has a general sense of who's well-known, but it doesn't store a clean, current database of every local business.
+2. **Retrieved knowledge (live lookup).** Increasingly, AI tools don't rely on memory alone. When you ask "best insurance agent in Temecula," the tool can *retrieve* fresh information from the web or a connected data source at the moment you ask, then write its answer using what it just found.
+
+Why this distinction matters for a local business: a small Temecula shop is almost never famous enough to live in the model's frozen training memory. So the *only* realistic way for it to show up is through **retrieval** — the AI finding clean, current, trustworthy information about it at answer time. That's the door a local business actually walks through.
+
+> **Key Callout:** Training memory favors the already-famous. Local businesses get recommended through *retrieval* — so giving AI clean, current, findable information is the whole game.
+
+---
+
+### Slide 4 — How Answer Engines Work, Part 2: RAG, Grounding & Citations
+
+The technique behind "look it up while answering" has a name: **RAG — Retrieval-Augmented Generation.** It's worth understanding because it explains *exactly* why structured, consistent data wins.
+
+Here's the loop, in plain terms:
+
+1. **Retrieve.** The system searches its sources for material relevant to the question and pulls back the most relevant passages.
+2. **Augment.** Those retrieved passages are handed to the language model alongside the user's question.
+3. **Generate.** The model writes its answer **grounded** in that retrieved material — and often shows **citations** (the sources it leaned on).
+
+Two consequences follow directly:
+
+- **The AI can only recommend what it can retrieve and trust.** If a business's information is missing, contradictory, or buried, it won't make it into the retrieved set — so it can't be in the answer. It's not punished; it's simply invisible.
+- **Clean, structured, consistent sources get retrieved more reliably.** Machine-readable facts (covered next) and consistent details across the web make a business *easy to retrieve and easy to trust* — which is precisely what RAG rewards.
+
+> **Key Callout:** RAG = Retrieve → Augment → Generate. The AI grounds its answer in what it can pull at that moment. If your data isn't clean and findable, you're not in the retrieval set — and you can't be the answer.
+
+---
+
+### Slide 5 — Structured Data & schema.org: Teaching Machines What Your Page Means
+
+Humans read a web page and instantly understand "this is a med spa in Murrieta, open till 7, phone number right there." A machine sees a wall of text. **Structured data** fixes that: it's a standardized way to label the meaning of information so machines read it cleanly and confidently.
+
+The shared vocabulary everyone uses is **schema.org** — a standard, backed by Google, Microsoft, and others, that defines types (like `LocalBusiness`, `Restaurant`, `Product`, `Event`) and properties (like `name`, `address`, `telephone`, `openingHours`).
+
+The most common format for expressing it is **JSON-LD** (JSON for Linking Data) — a small block of code placed in a page's HTML. Here's a real, simplified example for a local business:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Valley Auto Care",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "123 Front St",
+    "addressLocality": "Temecula",
+    "addressRegion": "CA",
+    "postalCode": "92590"
+  },
+  "telephone": "+1-951-555-0123",
+  "openingHours": "Mo-Fr 08:00-17:00",
+  "priceRange": "$$",
+  "url": "https://valleyautocare.example.com"
+}
+```
+
+You don't have to write this by hand — but you should recognize it and know what it does. That block tells any machine, unambiguously: *this is a local business, here's its exact name, address, phone, hours, and price range.* No guessing required.
+
+> **Key Callout:** Structured data = labeling meaning for machines. schema.org is the shared vocabulary; JSON-LD is the code format. It turns a fuzzy page into facts an AI can trust.
+
+---
+
+### Slide 6 — The LocalBusiness Schema: The Properties That Matter
+
+`LocalBusiness` is the schema.org type that matters most for the businesses you'll work with. Knowing its key properties makes you genuinely conversant. The high-value ones:
+
+- **`name`** — the exact, canonical business name.
+- **`address`** (a `PostalAddress`) — street, city, region, postal code.
+- **`telephone`** — the business phone, ideally in a consistent format.
+- **`openingHours`** — when they're open.
+- **`geo`** — latitude/longitude, so "near me" queries can place them.
+- **`priceRange`** — a rough price signal (e.g., `$$`).
+- **`sameAs`** — links to the business's other official profiles (their website, Google profile, social pages). This is how a machine confirms "all these listings are the *same* entity."
+- **`aggregateRating`** / **`review`** — structured review and rating data.
+
+Two ideas to lock in: first, **more complete and accurate structured data = a stronger, more trustworthy signal.** Second, the `sameAs` property is the bridge to the next concept — *entities* — because it's literally how a business says "these scattered listings are all me."
+
+> **Key Callout:** For local, `LocalBusiness` is the type that counts. Name, address, phone, hours, geo, and `sameAs` are the workhorses. Complete + accurate = trusted.
+
+---
+
+### Slide 7 — Entities, the Knowledge Graph & NAP Consistency
+
+Search and AI systems increasingly think in terms of **entities**, not keywords. An entity is a distinct real-world thing — a specific business, person, or place — that the system recognizes and stores facts about in a **knowledge graph** (a giant web of "this thing is related to that thing"). Google's knowledge panels are the visible tip of this.
+
+For a local business, two related ideas decide whether it's a clean entity:
+
+- **NAP consistency.** NAP = **N**ame, **A**ddress, **P**hone. When these are *identical* everywhere the business appears online, machines confidently merge all those listings into one trusted entity. When they conflict — "Suite 5" on one site, "#5" on another, an old phone number on a third — the system can't tell if it's one business or several, and trust drops. **Inconsistency is the silent killer of machine trust.**
+- **Entity disambiguation.** Helping systems tell *this* "Valley Auto" (in Temecula) apart from a dozen others nationwide. Consistent NAP plus `sameAs` links plus a clear local context is how disambiguation happens.
+
+This is why "claiming and correcting a profile" isn't busywork — it's directly strengthening the business's entity so machines stop second-guessing it.
+
+> **Key Callout:** AI thinks in entities, not keywords. Consistent Name/Address/Phone everywhere = one trusted entity. Conflicting info = confusion and lost trust.
+
+---
+
+### Slide 8 — E-E-A-T: Why Trust Is a Ranking and Recommendation Signal
+
+AI and search systems don't just ask "is this findable?" — they ask "is this *trustworthy*?" The framework for that, drawn from Google's own quality guidelines, is **E-E-A-T**:
+
+- **Experience** — is there genuine first-hand experience behind the content (real reviews, real photos, a real track record)?
+- **Expertise** — does the source actually know the subject?
+- **Authoritativeness** — is this a recognized, referenced source in its space?
+- **Trustworthiness** — is the information accurate, consistent, and verifiable?
+
+For a local business, E-E-A-T shows up as: authentic reviews, consistent and accurate information, a complete profile, and being referenced by *authoritative local sources*. A trusted, hyper-local directory that clearly covers a specific region is exactly the kind of authoritative, location-specific source these systems weight heavily — which is why *where* a business is listed matters, not just *that* it's listed.
+
+> **Key Callout:** E-E-A-T = Experience, Expertise, Authoritativeness, Trust. AI recommends what it trusts. Accurate info, real reviews, and authoritative local mentions all build that trust.
+
+---
+
+### Activity F1 — Read Real Schema Markup
+
+**Activity:** Read Real Schema Markup
+**Time:** 25 min
+**Goal:** Make structured data concrete by finding it in the wild, so you can say "I've actually looked at this" with confidence.
+**Steps:**
+1. Pick a well-known business with a good website (a chain restaurant or a polished local site works well).
+2. Open the page, right-click, and choose "View Page Source." Use Find (Ctrl/Cmd-F) to search the source for `schema.org`.
+3. When you find a JSON-LD block, read it. Identify the `@type` and as many properties as you can (name, address, telephone, openingHours).
+4. Now try a site with little or no structured data (often a small, un-maintained local business). Notice the difference.
+5. Optional: paste a page's URL into Google's Rich Results Test (search "Google Rich Results Test") to see the structured data a machine detects.
+
+**Template:**
+```
+Business 1 (has schema):
+  @type found:
+  Properties you spotted:
+Business 2 (little/no schema):
+  What was missing:
+One sentence: why would an AI trust Business 1 more?
+```
+
+**Done when:** You've located a real JSON-LD block, named its type and at least three properties, and can explain in one sentence why structured data makes a business easier for AI to trust.
+
+> **Facilitator:** This is the "it's real" moment. Once a trainee sees actual `LocalBusiness` JSON-LD in a page they use every day, the abstract becomes concrete and the whole module clicks. Walk anyone through View Source who's never done it.
+
+---
+
+### Slide 9 — GEO Tactics: How You Actually Influence a Generative Answer
+
+Put the pieces together. You can't *make* an AI name a business, but the discipline of GEO is about stacking the signals that make it likely. The honest, effective levers:
+
+1. **Be retrievable.** Have clear, factual, up-to-date information in places AI tools pull from. (Remember RAG — if you're not findable, you're not in the answer.)
+2. **Be structured.** Use schema.org / JSON-LD so machines read the facts cleanly instead of guessing.
+3. **Be consistent.** Lock NAP consistency so the business reads as one trusted entity.
+4. **Be authoritative-adjacent.** Be present and accurate in trusted, relevant, local sources — the kind of citations a grounded answer is built from.
+5. **Be substantive.** Real reviews, complete details, genuine specifics (E-E-A-T) beat thin, empty listings.
+
+Notice none of these are tricks. There's no "hack the AI." GEO is mostly **making a business genuinely clear, consistent, complete, and trustworthy to machines** — and then being present in the sources those machines read.
+
+> **Key Callout:** GEO levers: be retrievable, structured, consistent, authoritative-adjacent, and substantive. No tricks — just making a business genuinely clear and trustworthy to machines.
+
+---
+
+### Slide 10 — Measuring AI Visibility: You Can't Improve What You Don't Track
+
+A real discipline needs measurement. Here's how AI visibility is actually assessed — and it's something you can do by hand today:
+
+- **Prompt testing.** Ask the same realistic question across multiple engines — "Who are the best [category] in [city]?" — in **ChatGPT, Gemini, Claude, and Perplexity.** Record which businesses get named and cited. Different engines retrieve differently, so test more than one.
+- **Share of voice.** Across a set of relevant prompts, how often does a given business appear versus its competitors? That percentage is its "share of voice" in AI answers — the AEO/GEO equivalent of a ranking.
+- **Tracking over time.** A single check is a snapshot. Real insight comes from running the same prompts on a schedule and watching the trend as a business improves its signals.
+- **Citations.** Note not just whether a business is *named* but whether it's *cited* (linked as a source). Citations are the strongest form of AI visibility.
+
+This is exactly the workflow a professional AI-visibility analyst runs — and it's the workflow that turns "AI is recommending businesses now" from a claim into a measurable number.
+
+> **Key Callout:** Measure AI visibility by prompt-testing the same questions across ChatGPT, Gemini, Claude, and Perplexity, tracking who gets named/cited, and watching share-of-voice over time.
+
+---
+
+### Slide 11 — The Owner-Translation Layer (and the Ethics Line)
+
+Knowing the concepts is half the skill. The other half is translating them so a busy owner *feels* it in one sentence — without jargon, and without overpromising. Keep these conversions ready:
+
+- **"Structured data / schema" →** "We make sure your business info is written in a way computers read perfectly, so AI doesn't get your hours or address wrong."
+- **"NAP consistency / entity" →** "AI gets confused when your info doesn't match across the web. We make it consistent so it's clear you're one real, trusted business."
+- **"RAG / retrieval" →** "When someone asks AI for the best [business type] around here, the AI looks things up on the spot. We make sure you're findable and clear when it looks."
+- **"Measuring visibility" →** "We actually track how often AI tools mention you, so you can see it working instead of guessing."
+
+**The ethics line — never cross it:** You may say a business will be *more likely* to be found and recommended. You may **never** guarantee a #1 spot, a specific ranking, or that a particular AI "will" recommend them. The systems are probabilistic and outside anyone's control. Honesty here protects the business, the brand, and you.
+
+> **Key Callout:** Translate every concept into one plain sentence an owner feels. And never guarantee rankings or a specific AI result — "more likely," never "guaranteed."
+
+---
+
+### Slide 12 — How Top of Temecula Puts This Into Practice
+
+Now connect the entire field to what you'll actually offer. Top of Temecula is, in concrete terms, an AEO/GEO asset built on every concept in this module:
+
+- **It emits structured data.** Claimed profiles output schema.org `LocalBusiness` markup (JSON-LD) — the exact machine-readable signal from Slides 5–6 — so AI reads the business's facts cleanly.
+- **It's a hyper-local authoritative source.** A directory that clearly and specifically covers the Temecula Valley is the kind of trusted, location-specific source (Slide 8) that grounded AI answers are built from.
+- **It strengthens the entity.** Claiming and correcting a profile fixes NAP consistency and adds `sameAs`-style links — turning scattered listings into one trusted entity (Slide 7).
+- **It measures visibility for them.** The **AI-Citation Tracker** runs the prompt-testing workflow from Slide 10 across **ChatGPT, Claude, Perplexity, and Gemini**, and **refreshes the data monthly** — so the owner sees their AI visibility as real numbers, trending over time.
+
+So when you help an owner claim and complete their profile, you're not "adding a listing." You're applying real AEO/GEO practice on their behalf: clean structured data, a stronger entity, presence in an authoritative local source, and measurable tracking.
+
+> **Key Callout:** ToT is AEO/GEO in practice: it emits LocalBusiness JSON-LD, is a trusted hyper-local source, strengthens the business's entity, and tracks AI citations across ChatGPT, Claude, Perplexity & Gemini — refreshed monthly.
+
+---
+
+### Slide 13 — Active Recall: Foundations Check
+
+**Prompt:** What do SEO, AEO, and GEO each optimize for?
+**Answer:** SEO optimizes to rank a page in a list of results. AEO optimizes to be the answer an answer engine gives (voice, AI Overviews). GEO optimizes to be named and cited inside a generative AI's response. SEO is about ranking; AEO/GEO are about being chosen.
+
+**Prompt:** What are the two kinds of knowledge an AI tool uses, and which one gets local businesses recommended?
+**Answer:** Parametric (frozen training memory) and retrieved (live lookup at answer time). Local businesses are almost never in training memory, so they get recommended through retrieval — by being clean, current, and findable.
+
+**Prompt:** What does RAG stand for and what are its three steps?
+**Answer:** Retrieval-Augmented Generation: Retrieve relevant sources, Augment the prompt with them, Generate a grounded, often-cited answer. The AI can only recommend what it can retrieve and trust.
+
+**Prompt:** What is structured data, what's the vocabulary, and what's the format?
+**Answer:** A standardized way to label the meaning of information for machines. The vocabulary is schema.org; the common format is JSON-LD. For local businesses the key type is LocalBusiness.
+
+**Prompt:** What is NAP consistency and why does it matter?
+**Answer:** Name, Address, Phone being identical everywhere online. Consistency lets machines merge listings into one trusted entity; conflicting info causes confusion and lost trust.
+
+**Prompt:** What does E-E-A-T stand for?
+**Answer:** Experience, Expertise, Authoritativeness, Trustworthiness — the qualities that make AI and search trust a source.
+
+**Prompt:** How do you measure a business's AI visibility?
+**Answer:** Prompt-test the same questions across ChatGPT, Gemini, Claude, and Perplexity; record who gets named and cited; track share-of-voice over time.
+
+**Prompt:** What's the one thing you must never promise an owner?
+**Answer:** A guaranteed ranking or that a specific AI will recommend them. You can say "more likely to be found and recommended," never "guaranteed."
+
+---
+
+### Foundations Quiz
+
+**Q1.** What is the key difference between SEO and AEO/GEO?
+- A) SEO is free and AEO/GEO are paid
+- B) ✅ SEO is about ranking in a list; AEO/GEO are about being the chosen answer or recommendation
+- C) SEO is for websites and AEO/GEO are only for social media
+- D) There is no real difference; they're the same thing
+
+*Explanation: SEO optimizes for ranking position in a list. AEO and GEO optimize for being the single answer an engine gives or the business a generative AI names and cites — being chosen, not just ranked.*
+
+---
+
+**Q2.** Why are local businesses usually recommended through *retrieval* rather than an AI's training memory?
+- A) Retrieval is cheaper for the AI company
+- B) Training memory is illegal to use for businesses
+- C) ✅ Small local businesses are rarely "famous" enough to be in the model's frozen training data, so the AI finds them by looking up clean, current information at answer time
+- D) AI tools never use training memory at all
+
+*Explanation: Parametric (training) memory favors well-known entities and is frozen at a cutoff. A local shop realistically appears only when the AI retrieves clean, current, findable information about it.*
+
+---
+
+**Q3.** What does RAG (Retrieval-Augmented Generation) describe?
+- A) A way to rank websites in Google
+- B) ✅ The loop where an AI retrieves relevant sources, augments the prompt with them, and generates a grounded, often-cited answer
+- C) A type of structured data format
+- D) A paid advertising program for AI tools
+
+*Explanation: RAG = Retrieve → Augment → Generate. It's why findable, structured, trustworthy data wins: the AI can only recommend what it can retrieve and trust.*
+
+---
+
+**Q4.** What is JSON-LD?
+- A) A programming language for building websites
+- B) A type of AI model
+- C) ✅ A code format for expressing structured data (schema.org) so machines can read a page's meaning cleanly
+- D) A social media scheduling tool
+
+*Explanation: JSON-LD (JSON for Linking Data) is the common format for placing schema.org structured data in a page, labeling facts like name, address, and hours for machines.*
+
+---
+
+**Q5.** Which schema.org type matters most for the businesses you'll work with?
+- A) Product
+- B) ✅ LocalBusiness
+- C) Article
+- D) VideoObject
+
+*Explanation: LocalBusiness (and its properties like name, address, telephone, openingHours, geo, and sameAs) is the type that describes the local businesses an ambassador helps.*
+
+---
+
+**Q6.** What is "NAP consistency" and why does it matter?
+- A) A nap schedule for productivity; it doesn't matter for AI
+- B) ✅ Identical Name, Address, and Phone across the web, which lets machines merge listings into one trusted entity instead of getting confused
+- C) A type of AI citation
+- D) The number of pages a website has
+
+*Explanation: When NAP is consistent everywhere, systems confidently recognize one trusted entity. Conflicting info causes disambiguation problems and erodes machine trust.*
+
+---
+
+**Q7.** What does E-E-A-T stand for?
+- A) Engagement, Email, Ads, Traffic
+- B) Entities, Engines, Answers, Tracking
+- C) ✅ Experience, Expertise, Authoritativeness, Trustworthiness
+- D) Efficiency, Economy, Accuracy, Timing
+
+*Explanation: E-E-A-T is the quality framework — Experience, Expertise, Authoritativeness, Trustworthiness — that drives whether AI and search trust a source enough to recommend it.*
+
+---
+
+**Q8.** How should you measure a business's AI visibility?
+- A) Count its Instagram followers
+- B) Check its Google ad spend
+- C) ✅ Prompt-test the same realistic questions across ChatGPT, Gemini, Claude, and Perplexity, record who gets named and cited, and track share-of-voice over time
+- D) Ask the business owner to guess
+
+*Explanation: AI visibility is measured by running consistent prompts across multiple engines, tracking which businesses are named and cited, and watching the trend — exactly what Top of Temecula's AI-Citation Tracker does monthly.*
+
+---
+
+**Q9.** Which of the following is an acceptable thing to tell a business owner?
+- A) "We guarantee you'll be the #1 result in ChatGPT."
+- B) "We can make sure a specific AI will always recommend you."
+- C) ✅ "Doing this makes you more likely to be found and recommended by AI tools."
+- D) "We can delete your competitors from AI answers."
+
+*Explanation: AI systems are probabilistic and outside anyone's control. You may honestly say a business is "more likely" to be found and recommended — never guarantee a ranking or a specific AI outcome.*
+
+---
+
+**Q10.** In concrete terms, how does Top of Temecula apply these AEO/GEO concepts for an owner?
+- A) It writes their website for them
+- B) ✅ It emits schema.org LocalBusiness structured data, acts as a trusted hyper-local source, strengthens the business's entity/NAP consistency, and tracks AI citations across major engines monthly
+- C) It pays AI companies to rank the business first
+- D) It only stores a phone number and nothing else
+
+*Explanation: A claimed ToT profile outputs LocalBusiness JSON-LD, is an authoritative local source AI can ground answers in, cleans up the business's entity, and measures AI visibility via the AI-Citation Tracker (ChatGPT, Claude, Perplexity, Gemini — refreshed monthly).*
+
+---
+
+### Foundations Assignment — Teach AEO/GEO in Your Own Words
+
+Create a short knowledge artifact that proves you understand the field — something you could genuinely show someone to demonstrate the concept. Write it in two parts:
+
+**Part 1 — The explainer (5–7 sentences).** In your own words, explain to an imaginary friend who knows nothing about marketing: what AEO/GEO is, how AI decides which local businesses to recommend (mention retrieval and structured data), and why being consistent and findable matters. No copying the slides — put it in your own voice.
+
+**Part 2 — The owner pitch (2–3 sentences).** Now compress it into how you'd say it to a busy business owner standing in their shop. Plain English, no acronyms, no guarantees, and end with why it's worth doing now.
+
+**Example (Part 2):** "When someone asks ChatGPT or Siri for the best shop like yours around here, the AI looks your info up on the spot — and it can only recommend you if your details are clear, correct, and consistent. We make sure they are, and we actually track how often AI mentions you. It's free to get set up, and the businesses that get clear now are the ones AI learns to trust first."
+
+---
+
 # DAY 1 — The Platform, The Ecosystem & The New Search Landscape
 **Subtitle:** Understand the mission, who we serve, how we compare to the tech giants, and why AI is rewriting local search right now.
 **Duration:** 4 Hours (Paid)

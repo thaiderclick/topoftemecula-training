@@ -225,19 +225,28 @@ function extractTables(lines) {
   return { tables, rest };
 }
 
-// Rich content: ordered list of paragraph / list blocks.
+// Rich content: ordered list of paragraph / list / code blocks.
 function parseContent(lines) {
   const blocks = [];
   let para = [];
   let list = null;
+  let inCode = false;
+  let codeLines = [];
   const flushPara = () => { if (para.length) { blocks.push({ kind: 'p', text: para.join(' ') }); para = []; } };
   const flushList = () => { if (list) { blocks.push({ kind: 'list', items: list.items, ordered: list.ordered }); list = null; } };
 
   for (const raw of lines) {
+    if (raw.trim().startsWith('```')) {
+      if (!inCode) { flushPara(); flushList(); inCode = true; codeLines = []; }
+      else { inCode = false; blocks.push({ kind: 'code', text: codeLines.join('\n') }); }
+      continue;
+    }
+    if (inCode) { codeLines.push(raw); continue; }
+
     const l = raw.trim();
     if (!l) { flushPara(); flushList(); continue; }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(l)) { flushPara(); flushList(); continue; } // horizontal rule
-    if (l.startsWith('>') || l.startsWith('|') || l.startsWith('```')) { flushPara(); flushList(); continue; }
+    if (l.startsWith('>') || l.startsWith('|')) { flushPara(); flushList(); continue; }
     if (/^\*\*(Label|Script|Prompt|Answer|Scenario|Rung):/.test(l) || l.startsWith('✅') || l.startsWith('❌') || /^\*Explanation:/.test(l)) {
       flushPara(); flushList();
       continue;
@@ -251,7 +260,11 @@ function parseContent(lines) {
   }
   flushPara();
   flushList();
-  return blocks.filter(b => (b.kind === 'p' ? b.text : b.items.length));
+  return blocks.filter(b => {
+    if (b.kind === 'p') return b.text;
+    if (b.kind === 'code') return b.text;
+    return b.items.length;
+  });
 }
 
 // Activity / Drill: an ordered list of labelled fields, each with text, list items, or a code block.
@@ -448,16 +461,17 @@ function parseCurriculum(md) {
     if (inFinalTest) { finalTestLines.push(line); continue; }
     if (inShiftDebrief) continue;
 
-    // ── New Module (# DAY N / ## DAY N / SAFETY) ──
-    const moduleMatch = line.match(/^#{1,2} (DAY \d+[^\n]*|SAFETY[^#]*)/iu);
+    // ── New Module (# DAY N / ## DAY N / FOUNDATIONS / SAFETY) ──
+    const moduleMatch = line.match(/^#{1,2} (DAY \d+[^\n]*|FOUNDATIONS[^#]*|SAFETY[^#]*)/iu);
     if (moduleMatch) {
       flushSlide(); flushQuiz(); flushAssignment();
 
       const headerText = moduleMatch[1].trim();
       const dayMatch = headerText.match(/DAY (\d+)\s*[—–-]\s*(.+)/i);
       const isSafety = /^SAFETY/i.test(headerText);
+      const isFoundations = /^FOUNDATIONS/i.test(headerText);
 
-      if (dayMatch || isSafety) {
+      if (dayMatch || isSafety || isFoundations) {
         let subtitle = '', duration = '', description = '';
         let j = i + 1;
         while (j < lines.length && !/^#{1,3} /.test(lines[j])) {
@@ -471,9 +485,13 @@ function parseCurriculum(md) {
           j++;
         }
 
-        const id = isSafety ? 'safety' : `day${dayMatch[1]}`;
-        const title = isSafety ? headerText.replace(/^SAFETY\s*[—&]\s*/i, '').trim() : dayMatch[2].trim();
-        const day = isSafety ? 99 : parseInt(dayMatch[1]);
+        const id = isSafety ? 'safety' : isFoundations ? 'foundations' : `day${dayMatch[1]}`;
+        const title = isSafety
+          ? headerText.replace(/^SAFETY\s*[—&]\s*/i, '').trim()
+          : isFoundations
+            ? headerText.replace(/^FOUNDATIONS\s*[—–-]\s*/i, '').trim()
+            : dayMatch[2].trim();
+        const day = isSafety ? 99 : isFoundations ? 0 : parseInt(dayMatch[1]);
 
         currentModule = { id, day, title, subtitle, duration, description, slides: [], quiz: [], assignment: null };
         modules.push(currentModule);
@@ -486,18 +504,18 @@ function parseCurriculum(md) {
     if (!currentModule) continue;
 
     // ── Quiz section ──
-    if (line.match(/^### Day \d+ Quiz|^### Safety Quiz/i)) {
+    if (line.match(/^### Day \d+ Quiz|^### Safety Quiz|^### Foundations Quiz/i)) {
       flushSlide();
       inQuiz = true; inAssignment = false;
       continue;
     }
 
     // ── Assignment section ──
-    const assignMatch = line.match(/^### Day \d+ Assignment\s*[—-]\s*(.+)|^### Safety Assignment\s*[—-]\s*(.+)/i);
+    const assignMatch = line.match(/^### Day \d+ Assignment\s*[—–-]\s*(.+)|^### Safety Assignment\s*[—–-]\s*(.+)|^### Foundations Assignment\s*[—–-]\s*(.+)/i);
     if (assignMatch) {
       flushSlide(); flushQuiz();
       inAssignment = true; inQuiz = false;
-      assignmentTitle = (assignMatch[1] || assignMatch[2] || '').trim();
+      assignmentTitle = (assignMatch[1] || assignMatch[2] || assignMatch[3] || '').trim();
       continue;
     }
 
@@ -570,7 +588,8 @@ function emitTs({ modules, finalReadinessTestBank }) {
   lines.push(``);
   lines.push(`export type ContentBlock =`);
   lines.push(`  | { kind: 'p'; text: string }`);
-  lines.push(`  | { kind: 'list'; items: string[]; ordered?: boolean };`);
+  lines.push(`  | { kind: 'list'; items: string[]; ordered?: boolean }`);
+  lines.push(`  | { kind: 'code'; text: string };`);
   lines.push(`export interface RecallPrompt { prompt: string; answer: string; }`);
   lines.push(`export interface ScriptItem { label: string; text: string; }`);
   lines.push(`export interface DosDontsItem { bad: boolean; label: string; text: string; }`);
@@ -623,6 +642,9 @@ function emitTs({ modules, finalReadinessTestBank }) {
       if (b.kind === 'list') {
         const items = b.items.map(it => `        ${ts(it)},`).join('\n');
         return `      { kind: 'list',${b.ordered ? ' ordered: true,' : ''} items: [\n${items}\n      ] },`;
+      }
+      if (b.kind === 'code') {
+        return `      { kind: 'code', text: ${ts(b.text)} },`;
       }
       return `      { kind: 'p', text: ${ts(b.text)} },`;
     }).join('\n');

@@ -65,6 +65,18 @@ const DEFAULT_PROGRESS: ProgressState = {
 
 // ─── Rich content renderers ─────────────────────────────────────────────────
 
+function moduleLabel(day: number): string {
+  if (day === 0) return 'Foundations';
+  if (day === 99) return 'Safety';
+  return `Day ${day}`;
+}
+
+function moduleBadge(day: number): string {
+  if (day === 0) return 'F';
+  if (day === 99) return 'S';
+  return String(day);
+}
+
 function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
   if (!blocks || !blocks.length) return null;
   return (
@@ -76,6 +88,13 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
             <ListTag key={idx} className={`flex flex-col gap-1.5 pl-5 ${b.ordered ? 'list-decimal' : 'list-disc'} marker:text-primary`}>
               {b.items.map((it, i) => <li key={i} className="pl-1">{it}</li>)}
             </ListTag>
+          );
+        }
+        if (b.kind === 'code') {
+          return (
+            <pre key={idx} className="overflow-x-auto rounded-xl border border-border bg-background/60 p-3 text-xs leading-relaxed font-mono text-foreground my-1">
+              <code>{b.text}</code>
+            </pre>
           );
         }
         return <p key={idx}>{b.text}</p>;
@@ -156,7 +175,7 @@ export default function Home() {
   };
 
   // ── Navigation state ──
-  const [activeModuleId, setActiveModuleId] = useState<string>('day1');
+  const [activeModuleId, setActiveModuleId] = useState<string>('foundations');
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
@@ -221,7 +240,7 @@ export default function Home() {
     } else {
       if (!progress.completedModules.includes(activeModule.id)) {
         saveProgress({ completedModules: [...progress.completedModules, activeModule.id] });
-        toast.success(`Day ${activeModule.day} Content Completed! Moving to Knowledge Check.`);
+        toast.success(`${moduleLabel(activeModule.day)} Content Completed! Moving to Knowledge Check.`);
       }
       setShowQuiz(true);
       setQuizAnswers({});
@@ -264,7 +283,7 @@ export default function Home() {
       ? progress.completedAssignments
       : [...progress.completedAssignments, activeModule.id];
     saveProgress({ assignmentsData: updatedData, completedAssignments: updatedAssignments });
-    toast.success(`Day ${activeModule.day} Assignment Submitted!`);
+    toast.success(`${moduleLabel(activeModule.day)} Assignment Submitted!`);
     setShowAssignment(false);
     const currentIndex = trainingModules.findIndex(m => m.id === activeModule.id);
     if (currentIndex < trainingModules.length - 1) {
@@ -343,7 +362,7 @@ export default function Home() {
       safetyCompleted: false,
       passedFinalTest: false,
     });
-    setActiveModuleId('day1');
+    setActiveModuleId('foundations');
     setCurrentSlideIndex(0);
     setShowQuiz(false);
     setShowAssignment(false);
@@ -468,11 +487,11 @@ export default function Home() {
                   <div className="mt-0.5">
                     {completed ? <CheckCircle className="w-5 h-5" style={{ color: 'oklch(0.68 0.148 72)' }} /> :
                      !unlocked ? <Lock className="w-5 h-5" style={{ color: 'oklch(0.38 0.01 65)' }} /> :
-                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold`} style={active ? { borderColor: 'oklch(0.68 0.148 72)', color: 'oklch(0.68 0.148 72)' } : { borderColor: 'oklch(0.45 0.01 65)', color: 'oklch(0.55 0.01 65)' }}>{m.day}</div>}
+                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold`} style={active ? { borderColor: 'oklch(0.68 0.148 72)', color: 'oklch(0.68 0.148 72)' } : { borderColor: 'oklch(0.45 0.01 65)', color: 'oklch(0.55 0.01 65)' }}>{moduleBadge(m.day)}</div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>Day {m.day}</span>
+                      <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>{moduleLabel(m.day)}</span>
                       <span className="text-[10px] text-muted-foreground">{m.duration}</span>
                     </div>
                     <h4 className="text-sm font-bold truncate mt-0.5" style={{ color: 'inherit' }}>{m.title}</h4>
@@ -770,7 +789,7 @@ export default function Home() {
               <div className="mb-2">
                 <div className="flex items-center gap-2 text-primary mb-1">
                   <BookOpen className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Day {activeModule.day} Module</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{moduleLabel(activeModule.day)} Module</span>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-serif font-extrabold text-foreground">{activeModule.title}</h1>
                 <p className="text-sm text-muted-foreground mt-1">{activeModule.subtitle}</p>
@@ -1002,11 +1021,11 @@ export default function Home() {
                   <CardHeader className="p-0 mb-6">
                     <div className="flex items-center gap-2 text-primary mb-1">
                       <HelpCircle className="w-4 h-4 animate-bounce" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Day {activeModule.day} Knowledge Check</span>
+                      <span className="text-xs font-bold uppercase tracking-wider">{moduleLabel(activeModule.day)} Knowledge Check</span>
                     </div>
                     <CardTitle className="text-xl font-serif font-bold">Verify Your Understanding</CardTitle>
                     <CardDescription className="text-sm text-muted-foreground">
-                      Score 100% to unlock the Day {activeModule.day} practical assignment.
+                      Score 100% to unlock the {moduleLabel(activeModule.day)} practical assignment.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0 flex flex-col gap-6">
@@ -1074,7 +1093,7 @@ export default function Home() {
                             onClick={() => {
                               submitFeedbackMutation.mutate({
                                 moduleId: activeModule.id,
-                                context: `Day ${activeModule.day} – ${activeModule.title} Quiz`,
+                                context: `${moduleLabel(activeModule.day)} – ${activeModule.title} Quiz`,
                                 message: quizFeedback.trim(),
                               });
                             }}
@@ -1100,7 +1119,7 @@ export default function Home() {
                             onClick={() => { setShowAssignment(true); }}
                             className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {quizFeedbackSubmitted ? <><span>Go to Day {activeModule.day} Assignment</span> <ArrowRight className="w-4 h-4" /></> : <><Lock className="w-4 h-4" /> Submit feedback to continue</>}
+                            {quizFeedbackSubmitted ? <><span>Go to {moduleLabel(activeModule.day)} Assignment</span> <ArrowRight className="w-4 h-4" /></> : <><Lock className="w-4 h-4" /> Submit feedback to continue</>}
                           </Button>
                         ) : (
                           <Button onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); setQuizFeedback(''); setQuizFeedbackSubmitted(false); }} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 py-5 font-bold shadow-md flex items-center gap-1">
@@ -1124,7 +1143,7 @@ export default function Home() {
                   <CardHeader className="p-0 mb-6">
                     <div className="flex items-center gap-2 text-primary mb-1">
                       <FileText className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Day {activeModule.day} Practical Assignment</span>
+                      <span className="text-xs font-bold uppercase tracking-wider">{moduleLabel(activeModule.day)} Practical Assignment</span>
                     </div>
                     <CardTitle className="text-xl font-serif font-bold">{activeModule.assignment.title}</CardTitle>
                     <CardDescription className="text-sm text-muted-foreground mt-1">{activeModule.assignment.description}</CardDescription>
