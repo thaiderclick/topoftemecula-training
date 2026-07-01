@@ -774,10 +774,16 @@ Agency 2 Name:
   },
     ],
     assignment: {
-  title: `Explain the Shift in Your Own Words`,
-  description: `Write a short, plain-English explanation (3–4 sentences) you could say to a busy restaurant owner about why AI search matters and why claiming now is smart. No acronyms allowed — imagine the owner has never heard "SEO" in their life. Then write the one-sentence, ten-second version. Example (one-sentence): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute."`,
+  title: `Interview a Real Person About How They Search`,
+  description: `Find one real person who doesn't work in marketing (a friend, roommate, family member). Ask them two questions and write down their actual words: 1. "When you want to find a good [plumber / taco spot / hair salon] around here, what do you actually do first?" 2. "Have you ever asked ChatGPT, Siri, Alexa, or Google's AI a question like that — and did you just take the answer it gave?" Part 1 — What they said (quote them). 2–3 sentences capturing their real answers. Part 2 — Explain the shift to them (3–4 sentences, no acronyms). Using how this person actually searches, explain why local search is moving from a list of links to one AI answer, and why a business claiming now is smart. Then write the 10-second version you'd say out loud. Example (10-second version): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute."`,
   type: `text`,
-  placeholder: `Type your response here...`
+  placeholder: `Type your response here...`,
+  rubric: [
+    `You quoted a real person's actual answers (not a hypothetical)`,
+    `Your explanation responds to how that specific person searches, not a generic script`,
+    `Zero acronyms — a person who's never heard "SEO" would fully get it`,
+    `Your 10-second version is something you could actually say in a doorway`,
+  ]
 },
   },
   {
@@ -999,9 +1005,15 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Record Your Dashboard Walkthrough`,
-  description: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
+  description: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Do the walkthrough with the dashboard visible on screen (screen-record or film your screen) — don't narrate from memory. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
   type: `roleplay`,
-  placeholder: `Paste your Google Drive, YouTube, or Loom link here...`
+  placeholder: `Paste your Google Drive, YouTube, or Loom link here...`,
+  rubric: [
+    `The real dashboard was on screen as I walked through it`,
+    `I showed where the AI-citation tracker is and said plainly what it means`,
+    `I named the three free à la carte tools correctly`,
+    `I teed up Premium softly and pointed to the on-screen price instead of quoting from memory`,
+  ]
 },
   },
   {
