@@ -412,17 +412,19 @@ function parseRubric(lines) {
 
 function parseAssignment(lines, title) {
   const rubric = parseRubric(lines);
-  const descLines = lines
-    .filter(l => l.trim() && !l.match(/^-\s+\[[ x]\]/) && !l.match(/^\*\*Score yourself/) && !/^(-{3,}|\*{3,}|_{3,})$/.test(l.trim()))
-    .map(l => stripInlineMarkdown(l))
-    .filter(Boolean);
+  // Keep paragraph/list structure; drop only the rubric checkboxes and its header.
+  const bodyLines = lines.filter(l =>
+    !l.match(/^-\s+\[[ x]\]/) &&
+    !l.match(/^\*\*Score yourself/i),
+  );
+  const description = parseContent(bodyLines);
 
   const type = /roleplay|record/i.test(title) ? 'roleplay' : 'text';
   const placeholder = type === 'roleplay'
     ? 'Paste your Google Drive, YouTube, or Loom link here...'
     : 'Type your response here...';
 
-  return { title, description: descLines.join(' '), type, placeholder, rubric };
+  return { title, description, type, placeholder, rubric };
 }
 
 // ─── Main parser ──────────────────────────────────────────────────────────────
@@ -649,7 +651,7 @@ function emitTs({ modules, finalReadinessTestBank }) {
   lines.push(`}`);
   lines.push(`export interface Assignment {`);
   lines.push(`  title: string;`);
-  lines.push(`  description: string;`);
+  lines.push(`  description: ContentBlock[];`);
   lines.push(`  type: 'text' | 'roleplay';`);
   lines.push(`  placeholder: string;`);
   lines.push(`  rubric?: string[];`);
@@ -740,7 +742,7 @@ function emitTs({ modules, finalReadinessTestBank }) {
     const rubricStr = a.rubric && a.rubric.length
       ? `,\n  rubric: [\n${a.rubric.map(r => `    ${ts(r)},`).join('\n')}\n  ]`
       : '';
-    return `{\n  title: ${ts(a.title)},\n  description: ${ts(a.description)},\n  type: ${ts(a.type)},\n  placeholder: ${ts(a.placeholder)}${rubricStr}\n}`;
+    return `{\n  title: ${ts(a.title)},\n  description: ${emitContent(a.description)},\n  type: ${ts(a.type)},\n  placeholder: ${ts(a.placeholder)}${rubricStr}\n}`;
   }
 
   lines.push(`export const trainingModules: Module[] = [`);

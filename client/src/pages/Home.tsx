@@ -139,6 +139,40 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
   );
 }
 
+// Assignment body: paragraphs/lists with a bold lead-in for "Part N — …" and "Example …:" headers.
+function AssignmentDescription({ blocks }: { blocks?: ContentBlock[] }) {
+  if (!blocks || !blocks.length) return null;
+  return (
+    <div className="flex flex-col gap-3 text-sm text-muted-foreground leading-relaxed">
+      {blocks.map((b, idx) => {
+        if (b.kind === 'list') {
+          const ListTag = b.ordered ? 'ol' : 'ul';
+          return (
+            <ListTag key={idx} className={`flex flex-col gap-1.5 pl-5 ${b.ordered ? 'list-decimal' : 'list-disc'} marker:text-primary`}>
+              {b.items.map((it, i) => <li key={i} className="pl-1">{it}</li>)}
+            </ListTag>
+          );
+        }
+        if (b.kind === 'code') {
+          return (
+            <pre key={idx} className="overflow-x-auto rounded-xl border border-border bg-background/60 p-3 text-xs leading-relaxed font-mono text-foreground">
+              <code>{b.text}</code>
+            </pre>
+          );
+        }
+        if (b.kind === 'video') return null;
+        const lead = b.text.match(/^(Part \d+[^.]*\.|Example[^:]*:)\s*([\s\S]*)$/);
+        if (lead) {
+          return (
+            <p key={idx}><span className="font-semibold text-foreground">{lead[1]}</span> {lead[2]}</p>
+          );
+        }
+        return <p key={idx}>{b.text}</p>;
+      })}
+    </div>
+  );
+}
+
 function DataTable({ table }: { table: TableBlock }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border my-2">
@@ -1216,46 +1250,44 @@ export default function Home() {
                       <span className="text-xs font-bold uppercase tracking-wider">{moduleLabel(activeModule.day)} Practical Assignment</span>
                     </div>
                     <CardTitle className="text-xl font-serif font-bold">{activeModule.assignment.title}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mt-1">{activeModule.assignment.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0 flex flex-col gap-4">
+                    <AssignmentDescription blocks={activeModule.assignment.description} />
                     {activeModule.assignment.type === 'roleplay' && (
-                      <>
-                        <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 flex items-center gap-3.5 mb-2">
-                          <Video className="w-8 h-8 text-primary shrink-0" />
-                          <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Recording Tip</h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                              Use your phone's built-in voice recorder, Loom, or record a quick video. Upload to Google Drive or Dropbox, set the link to "anyone with link can view," and paste it below.
-                            </p>
-                          </div>
+                      <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 flex items-center gap-3.5">
+                        <Video className="w-8 h-8 text-primary shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Recording Tip</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                            Use your phone's built-in voice recorder, Loom, or record a quick video. Upload to Google Drive or Dropbox, set the link to "anyone with link can view," and paste it below.
+                          </p>
                         </div>
-                        {activeModule.assignment.rubric && activeModule.assignment.rubric.length > 0 && (
-                          <div className="border border-border/60 bg-background/40 rounded-xl p-4">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">Self-Assessment Rubric</h4>
-                            <p className="text-xs text-muted-foreground mb-3">Score yourself honestly before submitting. Check each item you completed.</p>
-                            <div className="flex flex-col gap-2">
-                              {activeModule.assignment.rubric.map((item, i) => {
-                                const key = `${activeModule.id}_rubric_${i}`;
-                                return (
-                                  <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                                    <input
-                                      type="checkbox"
-                                      checked={!!rubricChecked[key]}
-                                      onChange={e => setRubricChecked(prev => ({ ...prev, [key]: e.target.checked }))}
-                                      className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
-                                    />
-                                    <span className={`text-xs leading-relaxed transition-colors ${rubricChecked[key] ? 'text-foreground line-through opacity-60' : 'text-muted-foreground group-hover:text-foreground'}`}>{item}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-3 font-medium">
-                              {Object.keys(rubricChecked).filter(k => k.startsWith(`${activeModule.id}_rubric_`) && rubricChecked[k]).length} / {activeModule.assignment.rubric.length} completed
-                            </p>
-                          </div>
-                        )}
-                      </>
+                      </div>
+                    )}
+                    {activeModule.assignment.rubric && activeModule.assignment.rubric.length > 0 && (
+                      <div className="border border-border/60 bg-background/40 rounded-xl p-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">Self-Assessment Rubric</h4>
+                        <p className="text-xs text-muted-foreground mb-3">Score yourself honestly before submitting. Check each item you completed.</p>
+                        <div className="flex flex-col gap-2">
+                          {activeModule.assignment.rubric.map((item, i) => {
+                            const key = `${activeModule.id}_rubric_${i}`;
+                            return (
+                              <label key={i} className="flex items-start gap-3 cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  checked={!!rubricChecked[key]}
+                                  onChange={e => setRubricChecked(prev => ({ ...prev, [key]: e.target.checked }))}
+                                  className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
+                                />
+                                <span className={`text-xs leading-relaxed transition-colors ${rubricChecked[key] ? 'text-foreground line-through opacity-60' : 'text-muted-foreground group-hover:text-foreground'}`}>{item}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-3 font-medium">
+                          {Object.keys(rubricChecked).filter(k => k.startsWith(`${activeModule.id}_rubric_`) && rubricChecked[k]).length} / {activeModule.assignment.rubric.length} completed
+                        </p>
+                      </div>
                     )}
                     <textarea
                       value={progress.assignmentsData[activeModule.id] || ''}

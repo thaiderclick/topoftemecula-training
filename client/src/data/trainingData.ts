@@ -38,7 +38,7 @@ export interface Question {
 }
 export interface Assignment {
   title: string;
-  description: string;
+  description: ContentBlock[];
   type: 'text' | 'roleplay';
   placeholder: string;
   rubric?: string[];
@@ -475,7 +475,14 @@ One sentence: why would an AI trust Business 1 more?` },
     ],
     assignment: {
   title: `Audit a Real Business & Teach It Back`,
-  description: `Pick one real local business in the Temecula Valley (a genuine independent shop, restaurant, salon, contractor — not a national chain, and not Top of Temecula). You'll investigate how AI currently "sees" it, then explain what you found. This is the same thing you'll do in the field — do it for real, not from memory. Part 1 — The live query. Ask a real answer engine (ChatGPT, Perplexity, or Google's AI overview) a natural question a customer would ask — e.g. "best taco shop in Old Town Temecula" or "is [business name] open on Sundays?" Paste the exact question you asked and what the AI actually answered. Did it mention your business? Did it get anything wrong, or say it didn't know? Part 2 — The consistency check. Look the business up in 2–3 places (its Google listing, its own website, and Yelp or Facebook). In a short list, note any place the name, address, phone, or hours don't match, or any key info that's missing entirely. Part 3 — Connect it to the concepts (3–4 sentences). Using what you found — not the slides — explain why the AI answered the way it did. Tie it to retrieval and structured data: what is helping or hurting this business's chances of being the AI's answer? Part 4 — The owner pitch (2–3 sentences). Now pitch this specific owner, out loud in their shop, referencing the actual gap you found. Plain English, no acronyms, no guarantees, end with why it's worth doing now. Example (Part 4): "When someone asks ChatGPT or Siri for the best shop like yours around here, the AI looks your info up on the spot — and it can only recommend you if your details are clear, correct, and consistent. Right now your hours are different on Google than on your own site, so it hedges. We fix that and actually track how often AI mentions you. It's free to set up, and the businesses that get clear now are the ones AI learns to trust first."`,
+  description: [
+      { kind: 'p', text: `Pick one real local business in the Temecula Valley (a genuine independent shop, restaurant, salon, contractor — not a national chain, and not Top of Temecula). You'll investigate how AI currently "sees" it, then explain what you found. This is the same thing you'll do in the field — do it for real, not from memory.` },
+      { kind: 'p', text: `Part 1 — The live query. Ask a real answer engine (ChatGPT, Perplexity, or Google's AI overview) a natural question a customer would ask — e.g. "best taco shop in Old Town Temecula" or "is [business name] open on Sundays?" Paste the exact question you asked and what the AI actually answered. Did it mention your business? Did it get anything wrong, or say it didn't know?` },
+      { kind: 'p', text: `Part 2 — The consistency check. Look the business up in 2–3 places (its Google listing, its own website, and Yelp or Facebook). In a short list, note any place the name, address, phone, or hours don't match, or any key info that's missing entirely.` },
+      { kind: 'p', text: `Part 3 — Connect it to the concepts (3–4 sentences). Using what you found — not the slides — explain why the AI answered the way it did. Tie it to retrieval and structured data: what is helping or hurting this business's chances of being the AI's answer?` },
+      { kind: 'p', text: `Part 4 — The owner pitch (2–3 sentences). Now pitch this specific owner, out loud in their shop, referencing the actual gap you found. Plain English, no acronyms, no guarantees, end with why it's worth doing now.` },
+      { kind: 'p', text: `Example (Part 4): "When someone asks ChatGPT or Siri for the best shop like yours around here, the AI looks your info up on the spot — and it can only recommend you if your details are clear, correct, and consistent. Right now your hours are different on Google than on your own site, so it hedges. We fix that and actually track how often AI mentions you. It's free to set up, and the businesses that get clear now are the ones AI learns to trust first."` },
+    ],
   type: `text`,
   placeholder: `Type your response here...`,
   rubric: [
@@ -775,7 +782,16 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Interview a Real Person About How They Search`,
-  description: `Find one real person who doesn't work in marketing (a friend, roommate, family member). Ask them two questions and write down their actual words: 1. "When you want to find a good [plumber / taco spot / hair salon] around here, what do you actually do first?" 2. "Have you ever asked ChatGPT, Siri, Alexa, or Google's AI a question like that — and did you just take the answer it gave?" Part 1 — What they said (quote them). 2–3 sentences capturing their real answers. Part 2 — Explain the shift to them (3–4 sentences, no acronyms). Using how this person actually searches, explain why local search is moving from a list of links to one AI answer, and why a business claiming now is smart. Then write the 10-second version you'd say out loud. Example (10-second version): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute."`,
+  description: [
+      { kind: 'p', text: `Find one real person who doesn't work in marketing (a friend, roommate, family member). Ask them two questions and write down their actual words:` },
+      { kind: 'list', ordered: true, items: [
+        `"When you want to find a good [plumber / taco spot / hair salon] around here, what do you actually do first?"`,
+        `"Have you ever asked ChatGPT, Siri, Alexa, or Google's AI a question like that — and did you just take the answer it gave?"`,
+      ] },
+      { kind: 'p', text: `Part 1 — What they said (quote them). 2–3 sentences capturing their real answers.` },
+      { kind: 'p', text: `Part 2 — Explain the shift to them (3–4 sentences, no acronyms). Using how this person actually searches, explain why local search is moving from a list of links to one AI answer, and why a business claiming now is smart. Then write the 10-second version you'd say out loud.` },
+      { kind: 'p', text: `Example (10-second version): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute."` },
+    ],
   type: `text`,
   placeholder: `Type your response here...`,
   rubric: [
@@ -1005,7 +1021,9 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Record Your Dashboard Walkthrough`,
-  description: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Do the walkthrough with the dashboard visible on screen (screen-record or film your screen) — don't narrate from memory. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
+  description: [
+      { kind: 'p', text: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Do the walkthrough with the dashboard visible on screen (screen-record or film your screen) — don't narrate from memory. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.` },
+    ],
   type: `roleplay`,
   placeholder: `Paste your Google Drive, YouTube, or Loom link here...`,
   rubric: [
@@ -1362,7 +1380,18 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Roleplay Recording (with Self-Assessment Rubric)`,
-  description: `Record a short audio or video clip (1–2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency. Include: 1. Intro 2. Free Claim & AI Dashboard Pitch (mention a free à la carte tool) 3. Response to "Is this really free?" or "We already have Google" 4. A soft tee-up of the Premium upgrade (point to on-screen price, don't quote from memory) 5. Polite Close Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
+  description: [
+      { kind: 'p', text: `Record a short audio or video clip (1–2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency.` },
+      { kind: 'p', text: `Include:` },
+      { kind: 'list', ordered: true, items: [
+        `Intro`,
+        `Free Claim & AI Dashboard Pitch (mention a free à la carte tool)`,
+        `Response to "Is this really free?" or "We already have Google"`,
+        `A soft tee-up of the Premium upgrade (point to on-screen price, don't quote from memory)`,
+        `Polite Close`,
+      ] },
+      { kind: 'p', text: `Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.` },
+    ],
   type: `roleplay`,
   placeholder: `Paste your Google Drive, YouTube, or Loom link here...`,
   rubric: [
