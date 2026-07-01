@@ -77,6 +77,19 @@ function moduleBadge(day: number): string {
   return String(day);
 }
 
+// Compact duration for the narrow sidebar chip, e.g.
+// "2.5 Hours (Self-Paced Knowledge Module — complete before Day 1)" -> "2.5 hrs · Self-Paced"
+// "4 Hours (Paid)" -> "4 hrs · Paid". The full string still shows in the content header.
+function shortDuration(duration: string): string {
+  const timeMatch = duration.match(/^\s*([\d.]+)\s*Hours?/i);
+  const time = timeMatch ? `${timeMatch[1]} hr${timeMatch[1] === '1' ? '' : 's'}` : duration;
+  const paren = duration.match(/\(([^)]*)\)/)?.[1] ?? '';
+  let tag = '';
+  if (/self-?paced/i.test(paren)) tag = 'Self-Paced';
+  else if (/paid/i.test(paren)) tag = 'Paid';
+  return tag ? `${time} · ${tag}` : time;
+}
+
 function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
   if (!blocks || !blocks.length) return null;
   return (
@@ -499,9 +512,9 @@ export default function Home() {
                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold`} style={active ? { borderColor: 'oklch(0.68 0.148 72)', color: 'oklch(0.68 0.148 72)' } : { borderColor: 'oklch(0.45 0.01 65)', color: 'oklch(0.55 0.01 65)' }}>{moduleBadge(m.day)}</div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold tracking-wide uppercase" style={{ color: 'oklch(0.68 0.148 72)' }}>{moduleLabel(m.day)}</span>
-                      <span className="text-[10px] text-muted-foreground">{m.duration}</span>
+                    <div className="flex justify-between items-baseline gap-2">
+                      <span className="text-xs font-bold tracking-wide uppercase whitespace-nowrap" style={{ color: 'oklch(0.68 0.148 72)' }}>{moduleLabel(m.day)}</span>
+                      <span className="text-[10px] text-muted-foreground text-right whitespace-nowrap">{shortDuration(m.duration)}</span>
                     </div>
                     <h4 className="text-sm font-bold truncate mt-0.5" style={{ color: 'inherit' }}>{m.title}</h4>
                     {unlocked && (
@@ -826,6 +839,7 @@ export default function Home() {
                 </div>
                 <h1 className="text-2xl md:text-3xl font-serif font-extrabold text-foreground">{activeModule.title}</h1>
                 <p className="text-sm text-muted-foreground mt-1">{activeModule.subtitle}</p>
+                <p className="text-xs text-muted-foreground/80 mt-1">{activeModule.duration}</p>
               </div>
 
               {/* Slide Reader */}
