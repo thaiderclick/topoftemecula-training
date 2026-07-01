@@ -443,7 +443,7 @@ export default function Home() {
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-80 p-6 flex flex-col justify-between
-          transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen
+          transform transition-transform duration-300 ease-in-out md:translate-x-0 md:sticky md:top-0 md:self-start md:h-screen
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{ background: 'oklch(0.22 0.01 65)', borderRight: '1px solid oklch(0.30 0.01 65)' }}
