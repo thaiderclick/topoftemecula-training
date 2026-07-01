@@ -7,7 +7,8 @@
 export type ContentBlock =
   | { kind: 'p'; text: string }
   | { kind: 'list'; items: string[]; ordered?: boolean }
-  | { kind: 'code'; text: string };
+  | { kind: 'code'; text: string }
+  | { kind: 'video'; videoId: string; title?: string };
 export interface RecallPrompt { prompt: string; answer: string; }
 export interface ScriptItem { label: string; text: string; }
 export interface DosDontsItem { bad: boolean; label: string; text: string; }
@@ -120,6 +121,7 @@ export const trainingModules: Module[] = [
     title: `How Answer Engines Work, Part 2: RAG, Grounding & Citations`,
     content: [
       { kind: 'p', text: `The technique behind "look it up while answering" has a name: RAG — Retrieval-Augmented Generation. It's worth understanding because it explains exactly why structured, consistent data wins.` },
+      { kind: 'video', videoId: `T-D1OfcDW1M`, title: `What is Retrieval-Augmented Generation (RAG)? — IBM Technology (~6 min)` },
       { kind: 'p', text: `Here's the loop, in plain terms:` },
       { kind: 'list', ordered: true, items: [
         `Retrieve. The system searches its sources for material relevant to the question and pulls back the most relevant passages.`,
@@ -139,6 +141,7 @@ export const trainingModules: Module[] = [
     content: [
       { kind: 'p', text: `Humans read a web page and instantly understand "this is a med spa in Murrieta, open till 7, phone number right there." A machine sees a wall of text. Structured data fixes that: it's a standardized way to label the meaning of information so machines read it cleanly and confidently.` },
       { kind: 'p', text: `The shared vocabulary everyone uses is schema.org — a standard, backed by Google, Microsoft, and others, that defines types (like LocalBusiness, Restaurant, Product, Event) and properties (like name, address, telephone, openingHours).` },
+      { kind: 'video', videoId: `tYfCjbvaOYg`, title: `Structured data for beginners — Google Search Central (~6 min)` },
       { kind: 'p', text: `The most common format for expressing it is JSON-LD (JSON for Linking Data) — a small block of code placed in a page's HTML. Here's a real, simplified example for a local business:` },
       { kind: 'code', text: `{
   "@context": "https://schema.org",

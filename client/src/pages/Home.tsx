@@ -110,6 +110,29 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
             </pre>
           );
         }
+        if (b.kind === 'video') {
+          return (
+            <figure key={idx} className="my-2">
+              <div className="relative w-full overflow-hidden rounded-xl border border-border bg-black" style={{ aspectRatio: '16 / 9' }}>
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={`https://www.youtube-nocookie.com/embed/${b.videoId}`}
+                  title={b.title ?? 'Video'}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+              {b.title && (
+                <figcaption className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Video className="h-3.5 w-3.5 shrink-0" />
+                  {b.title}
+                </figcaption>
+              )}
+            </figure>
+          );
+        }
         return <p key={idx}>{b.text}</p>;
       })}
     </>

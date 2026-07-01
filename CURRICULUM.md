@@ -85,6 +85,8 @@ Why this distinction matters for a local business: a small Temecula shop is almo
 
 The technique behind "look it up while answering" has a name: **RAG — Retrieval-Augmented Generation.** It's worth understanding because it explains *exactly* why structured, consistent data wins.
 
+@video https://www.youtube.com/watch?v=T-D1OfcDW1M | What is Retrieval-Augmented Generation (RAG)? — IBM Technology (~6 min)
+
 Here's the loop, in plain terms:
 
 1. **Retrieve.** The system searches its sources for material relevant to the question and pulls back the most relevant passages.
@@ -105,6 +107,8 @@ Two consequences follow directly:
 Humans read a web page and instantly understand "this is a med spa in Murrieta, open till 7, phone number right there." A machine sees a wall of text. **Structured data** fixes that: it's a standardized way to label the meaning of information so machines read it cleanly and confidently.
 
 The shared vocabulary everyone uses is **schema.org** — a standard, backed by Google, Microsoft, and others, that defines types (like `LocalBusiness`, `Restaurant`, `Product`, `Event`) and properties (like `name`, `address`, `telephone`, `openingHours`).
+
+@video https://www.youtube.com/watch?v=tYfCjbvaOYg | Structured data for beginners — Google Search Central (~6 min)
 
 The most common format for expressing it is **JSON-LD** (JSON for Linking Data) — a small block of code placed in a page's HTML. Here's a real, simplified example for a local business:
 

@@ -29,6 +29,7 @@
  *     5. **Objection:** + **Response:**         → 'objection'
  *     6. everything else                        → 'text'
  *   Text/script slides keep paragraphs, ordered/unordered lists, and tables.
+ *   Embed a video with a line:  @video <youtube-url> | <optional caption>
  *
  * ACTIVITY BLOCK:  ### Activity NX — Title
  *   **Activity:** / **Time:** / **Goal:** / **Steps:** (list) / **Template:** (```code```) / **Done when:** / **Rubric...:** (list)
@@ -77,6 +78,22 @@ function escapeTs(str) {
 
 function ts(str) {
   return '`' + escapeTs(str) + '`';
+}
+
+// Extract an 11-char YouTube video id from watch/youtu.be/embed URLs (or a bare id).
+function parseYouTubeId(url) {
+  const u = url.trim();
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{11})/,        // watch?v=ID
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,   // youtu.be/ID
+    /\/embed\/([A-Za-z0-9_-]{11})/,     // /embed/ID
+  ];
+  for (const p of patterns) {
+    const m = u.match(p);
+    if (m) return m[1];
+  }
+  if (/^[A-Za-z0-9_-]{11}$/.test(u)) return u; // bare id
+  return null;
 }
 
 // ─── Line-level parsers ───────────────────────────────────────────────────────
@@ -245,6 +262,17 @@ function parseContent(lines) {
 
     const l = raw.trim();
     if (!l) { flushPara(); flushList(); continue; }
+    const vid = l.match(/^@video\s+(\S+)(?:\s*\|\s*(.+))?$/i);
+    if (vid) {
+      flushPara(); flushList();
+      const videoId = parseYouTubeId(vid[1]);
+      if (videoId) {
+        const block = { kind: 'video', videoId };
+        if (vid[2]) block.title = vid[2].trim();
+        blocks.push(block);
+      }
+      continue;
+    }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(l)) { flushPara(); flushList(); continue; } // horizontal rule
     if (l.startsWith('>') || l.startsWith('|')) { flushPara(); flushList(); continue; }
     if (/^\*\*(Label|Script|Prompt|Answer|Scenario|Rung):/.test(l) || l.startsWith('✅') || l.startsWith('❌') || /^\*Explanation:/.test(l)) {
@@ -263,6 +291,7 @@ function parseContent(lines) {
   return blocks.filter(b => {
     if (b.kind === 'p') return b.text;
     if (b.kind === 'code') return b.text;
+    if (b.kind === 'video') return b.videoId;
     return b.items.length;
   });
 }
@@ -589,7 +618,8 @@ function emitTs({ modules, finalReadinessTestBank }) {
   lines.push(`export type ContentBlock =`);
   lines.push(`  | { kind: 'p'; text: string }`);
   lines.push(`  | { kind: 'list'; items: string[]; ordered?: boolean }`);
-  lines.push(`  | { kind: 'code'; text: string };`);
+  lines.push(`  | { kind: 'code'; text: string }`);
+  lines.push(`  | { kind: 'video'; videoId: string; title?: string };`);
   lines.push(`export interface RecallPrompt { prompt: string; answer: string; }`);
   lines.push(`export interface ScriptItem { label: string; text: string; }`);
   lines.push(`export interface DosDontsItem { bad: boolean; label: string; text: string; }`);
@@ -645,6 +675,10 @@ function emitTs({ modules, finalReadinessTestBank }) {
       }
       if (b.kind === 'code') {
         return `      { kind: 'code', text: ${ts(b.text)} },`;
+      }
+      if (b.kind === 'video') {
+        const title = b.title ? `, title: ${ts(b.title)}` : '';
+        return `      { kind: 'video', videoId: ${ts(b.videoId)}${title} },`;
       }
       return `      { kind: 'p', text: ${ts(b.text)} },`;
     }).join('\n');
