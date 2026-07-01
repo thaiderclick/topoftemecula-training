@@ -553,7 +553,7 @@ function parseCurriculum(md) {
     // ── Run-of-Day block ──
     if (line.match(/^### Run-of-Day\b/i)) {
       flushSlide(); flushQuiz(); flushAssignment();
-      currentSlideTitle = 'Run of Day';
+      currentSlideTitle = "What You'll Cover";
       currentSlideForcedType = 'runofday';
       currentSlideLines = [];
       inQuiz = false; inAssignment = false;

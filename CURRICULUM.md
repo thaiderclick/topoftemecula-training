@@ -13,7 +13,7 @@
 > - **Activity blocks** use `**Activity:**` / `**Time:**` / `**Goal:**` / `**Steps:**` / `**Done when:**`. These are facilitator-led, hands-on, and are what make each day a real working day rather than a read-through.
 > - **Drill blocks** use `**Drill:**` / `**Time:**` / `**How:**`. Drills are repeated practice reps (partner roleplay, rapid-fire objections).
 > - **Facilitator notes** use `> **Facilitator:**` and are guidance for whoever is running the session, not trainee-facing content.
-> - Each Day opens with a **Run-of-Day** time block so the facilitator can pace a real ~4-hour session.
+> - Each Day opens with a **Run-of-Day** block that previews what the trainee will cover and roughly how long each part takes.
 
 ---
 
@@ -22,13 +22,12 @@
 **Duration:** 2.5 Hours (Self-Paced Knowledge Module — complete before Day 1)
 **Description:** This module is a real, standalone foundation in Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO) — an emerging discipline in digital marketing. You'll learn how large language models and answer engines actually work, what structured data and schema.org markup are, how entities and knowledge graphs drive recommendations, and how to measure AI visibility. The concepts here are not specific to Top of Temecula — they're the same ideas a search strategist, SEO specialist, or AI-marketing consultant works with. Once you understand them, the rest of your training (and your conversations with business owners) will make far more sense, and you'll be able to speak about this field with genuine credibility.
 
-### Run-of-Day (Facilitator Pacing)
+### Run-of-Day (Suggested Pacing)
 | Block | Topic | Time |
 |---|---|---|
 | 1 | Why this module / the field & the credential (Slides 1–2) | 20 min |
 | 2 | How answer engines work: training vs. retrieval (Slides 3–4) | 35 min |
 | 3 | Structured data & schema.org deep-dive (Slides 5–6) | 35 min |
-| — | Break | 10 min |
 | 4 | Entities, knowledge graph & E-E-A-T (Slides 7–8) | 30 min |
 | 5 | **Activity F1 — Read Real Schema Markup** (hands-on) | 25 min |
 | 6 | GEO tactics, measuring + how the engines differ (Slides 9–11) | 35 min |
@@ -483,13 +482,12 @@ Pick **one real local business in the Temecula Valley** (a genuine independent s
 **Duration:** 4 Hours (Paid)
 **Description:** Learn the core value proposition of Top of Temecula, get hands-on with the platform, understand the Temecula Valley business ecosystem you'll be working in, and master the single most important idea behind the whole job: local search is shifting from a list of links to a single AI answer, and the businesses that get in early win.
 
-### Run-of-Day (Facilitator Pacing)
+### Run-of-Day (Suggested Pacing)
 | Block | Activity | Time |
 |---|---|---|
 | 1 | Welcome, mission, what winning looks like (Slides 1–4) | 35 min |
 | 2 | The local ecosystem + ToT vs the Giants (Slides 5–6) | 30 min |
 | 3 | **Activity 1A — Platform Safari** (hands-on site exploration) | 40 min |
-| — | Break | 15 min |
 | 4 | The New Search Landscape: AEO/GEO (Slides 7–12) | 50 min |
 | 5 | **Activity 1B — Insurance Agency Audit** (in-session) | 50 min |
 | 6 | Active Recall + Day 1 Quiz | 30 min |
@@ -571,12 +569,14 @@ Most of these are owner-operated or small-team businesses. The owner is often on
 
 Owners will compare us to what they already know. Here is the honest breakdown — never disparage the other platforms, just position us as complementary:
 
-- **Google:** Worldwide and algorithm-driven. We add a curated, local-first discovery channel and show how AI tools view them.
+- **Google:** Worldwide and algorithm-driven. We add a curated, local-first discovery channel with an engaged local audience, and show how AI tools view them.
 - **Yelp:** Review-heavy and transactional. We show businesses in a warm, community-guide context.
 - **Social Media:** Great for temporary posts that disappear in a feed. We provide a lasting, structured local directory profile.
 - **Their Own Website:** Great, but customers have to find it first. We help local residents and AI tools discover it.
 
-> **Key Callout:** We never say "leave Google." We say "Google and Yelp are great — we're the local-first layer on top, plus we show you something they don't: how AI recommends you."
+**And here's the part owners care about most: we have a real, growing local audience.** Top of Temecula isn't an empty directory — it's a local media platform that residents actually visit. People come to us for our **Insider content, "Best of" lists, local deals, events, and job listings**, and that audience is growing every month across the site and our social channels. So real Temecula Valley locals — the exact people who become customers — are already browsing. When a business claims its profile, it gets put in front of that audience. On top of the AI visibility, a claim is a **new and growing channel for actual local customers and new business.**
+
+> **Key Callout:** We never say "leave Google." We say "Google and Yelp are great — we're the local-first layer on top. Plus we do two things they don't: we show you how AI recommends you, *and* we put you in front of our growing audience of local residents who are already looking for businesses like yours."
 
 ---
 
@@ -761,11 +761,11 @@ Agency 2 Name:
 
 **Q3.** A business owner asks: "Why do I need this when I already have Google?" What is the correct response?
 - A) "Google is outdated and local businesses are leaving it."
-- B) ✅ "We don't replace Google. We add a local discovery channel for valley residents, show you how AI tools recommend you, and the free claim confirms your info is accurate."
+- B) ✅ "We don't replace Google. We put you in front of our growing local audience — residents who come to us for Insider guides, Best-of lists, deals, and events — show you how AI tools recommend you, and the free claim confirms your info is accurate."
 - C) "Our platform guarantees you will rank higher on Google search results."
 - D) "You have to claim this or your Google listing will be affected."
 
-*Explanation: Always position Top of Temecula as a complementary local channel, never make false guarantees about Google, and focus on the free claim/dashboard.*
+*Explanation: Position Top of Temecula as a complementary local channel with its own growing audience of potential customers, never make false guarantees about Google, and focus on the free claim/dashboard.*
 
 ---
 
@@ -824,16 +824,15 @@ Find one real person who doesn't work in marketing (a friend, roommate, family m
 **Duration:** 4 Hours (Paid)
 **Description:** Understand the free local marketing command center every business unlocks, the à la carte tools they get even at $0, the paid upgrade ladder, and how to present it confidently without pressure. Then practice it through hands-on dashboard time, pitch-writing, and objection drills.
 
-### Run-of-Day (Facilitator Pacing)
+### Run-of-Day (Suggested Pacing)
 | Block | Activity | Time |
 |---|---|---|
 | 1 | The dashboard + AI-citation hook (Slides 1–2) | 35 min |
 | 2 | **Activity 2A — Dashboard Walkthrough** (hands-on demo dashboard) | 40 min |
 | 3 | The upgrade ladder + how to present it (Slides 3–4) | 35 min |
-| — | Break | 15 min |
 | 4 | Pricing scripts + Do's and Don'ts (Slides 5–6) | 30 min |
 | 5 | **Activity 2B — Write Your Value Pitch** + read-aloud | 45 min |
-| 6 | **Drill 2C — Rapid-Fire Pricing Objections** (partner reps) | 30 min |
+| 6 | **Drill 2C — Rapid-Fire Pricing Objections** (solo reps) | 30 min |
 | 7 | Active Recall + Day 2 Quiz | 30 min |
 
 > **Facilitator — PRICING (read first):** The price numbers in this module live in ONE place: the **Pricing Master Reference** table in Slide 3 (Enhanced $29/mo, Premium Lite $49/mo, Premium $79/mo, Growth Partner $299/mo). Teach the *concepts* and have trainees point owners to the on-screen price rather than quote a number from memory — but you may use the table to answer trainee questions in session. If any tier's price ever changes, update the table in Slide 3 and re-run the curriculum parser; everything else points back to it.
@@ -1099,17 +1098,16 @@ Record yourself (1–2 minutes, phone is fine) pretending to walk an owner throu
 **Duration:** 4 Hours (Paid)
 **Description:** Get fully prepared for the field. Learn the full ladder of outcomes, how to walk an owner through claiming and upgrading on the spot, how to handle every situation you'll meet, strict safety rules, the mindset to stay strong through a day of "no thanks," and how to record and self-assess your pitch. The day is built around practice: a hands-on claim and extended roleplay drills.
 
-### Run-of-Day (Facilitator Pacing)
+### Run-of-Day (Suggested Pacing)
 | Block | Activity | Time |
 |---|---|---|
 | 1 | Outcome Ladder + the 3 scripts (Slides 1–3) | 35 min |
 | 2 | In-person claim walkthrough + recovery (Slides 4–5) | 25 min |
 | 3 | **Activity 3A — Hands-On Claim** (real claim on a test listing) | 30 min |
 | 4 | Field scenarios + gatekeeper + edge cases (Slides 6–10) | 40 min |
-| — | Break | 15 min |
 | 5 | Safety, CRM logging, content capture, adapting (Slides 11–14) | 35 min |
 | 6 | Field mindset & rejection resilience (Slide 15) | 20 min |
-| 7 | **Drill 3B — Live Roleplay Rounds** (paired scenario practice) | 45 min |
+| 7 | **Drill 3B — Live Roleplay Rounds** (AI Roleplay Simulator practice) | 45 min |
 | 8 | Active Recall + Day 3 Quiz | 25 min |
 
 ---
@@ -1218,7 +1216,7 @@ Each card is tagged to a rung on the Outcome Ladder.
 
 **Scenario:** "We already have Google / Yelp."
 **Rung:** 1–3
-**Script:** "That's great — we don't replace Google. We add a hyper-local discovery channel for Temecula Valley residents, and our dashboard shows you how often AI search tools recommend you. The claim just ensures your local info is accurate."
+**Script:** "That's great — we don't replace Google. We're a local platform residents actually visit for our Insider guides, Best-of lists, deals, and events, and that audience is growing every month — so claiming puts you in front of local people who could become customers. Our dashboard also shows you how often AI search tools recommend you, and the claim just ensures your local info is accurate."
 
 **Scenario:** "I'll do it later."
 **Rung:** 4
@@ -1594,7 +1592,7 @@ Upload to Google Drive or YouTube (unlisted) and paste the link in the assignmen
 
 **F5.** What should you say if an owner says, "We already have Google"?
 - A) "Google is blocking local businesses, so you need to switch to us."
-- B) ✅ "We don't replace Google. We add a local-first channel for valley residents, and our dashboard shows you how often AI tools recommend you. The free claim just ensures your info is accurate."
+- B) ✅ "We don't replace Google. We put you in front of our growing local audience — residents who visit us for Insider content, Best-of lists, deals, and events — and our dashboard shows you how often AI tools recommend you. The free claim just ensures your info is accurate."
 - C) "Our platform is owned by Google, so they work together."
 - D) "Google is going out of business soon anyway."
 

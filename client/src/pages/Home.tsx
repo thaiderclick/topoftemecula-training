@@ -924,7 +924,7 @@ export default function Home() {
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-2 text-primary">
                           <CalendarClock className="w-4 h-4" />
-                          <span className="text-xs font-bold uppercase tracking-wider">Facilitator Pacing — ~4 Hour Session</span>
+                          <span className="text-xs font-bold uppercase tracking-wider">Suggested Pacing</span>
                         </div>
                         {activeModule.slides[currentSlideIndex].table && (
                           <DataTable table={activeModule.slides[currentSlideIndex].table!} />
