@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   BookOpen,
   CheckCircle,
@@ -257,6 +257,7 @@ export default function Home() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
+  const [, setLocation] = useLocation();
   const [quizScore, setQuizScore] = useState<number>(0);
   const [showQuiz, setShowQuiz] = useState<boolean>(false);
   const [showAssignment, setShowAssignment] = useState<boolean>(false);
@@ -369,6 +370,10 @@ export default function Home() {
       setActiveModuleId(nextMod.id);
       setCurrentSlideIndex(0);
       setShowQuiz(false);
+    } else {
+      // Last module done — send them to the next required step: Safety Scenarios.
+      setShowQuiz(false);
+      setLocation('/safety');
     }
   };
 
