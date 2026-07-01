@@ -670,15 +670,15 @@ A shop owner doesn't care about acronyms. Your skill is turning this into one or
 
 **Activity:** Platform Safari
 **Time:** 40 min
-**Goal:** Every trainee gets comfortable navigating topoftemecula.com so they can speak about it naturally and pull up a profile in the field without fumbling.
+**Goal:** Get comfortable navigating topoftemecula.com so you can speak about it naturally and pull up a profile in the field without fumbling.
 **Steps:**
 1. On your phone or laptop, open topoftemecula.com. Spend 5 minutes just browsing — categories, events, deals, guides.
 2. Find 5 local businesses you know personally. For each, note: Are they listed? Is the profile claimed or unclaimed? Is the info accurate? Do they have photos?
 3. Find one *claimed* profile and one *unclaimed* profile and screenshot both. Notice the visible differences.
 4. Pull up the public profile of a business as if you were standing next to its owner. Practice saying out loud: "This is your profile, right here on your phone."
-5. Share with the group: what surprised you about how many local businesses are unclaimed?
+5. Jot down for yourself: what surprised you about how many local businesses are unclaimed?
 
-**Done when:** Each trainee can, unprompted, open the site, navigate to a category, and pull up a specific business profile in under 30 seconds.
+**Done when:** You can, unprompted, open the site, navigate to a category, and pull up a specific business profile in under 30 seconds.
 
 > **Facilitator:** Walk the room. The goal isn't a worksheet, it's muscle memory. If someone can't find the search or fumbles loading a profile, drill that specific motion until it's smooth. They'll be doing this in front of owners.
 
@@ -694,7 +694,7 @@ A shop owner doesn't care about acronyms. Your skill is turning this into one or
 2. Look each one up on topoftemecula.com and complete the template below.
 3. **Then go further:** open ChatGPT (or Google's AI Overview) and ask, "Who are the best insurance agents in Temecula?" Note whether any of your three agencies appear in the AI's answer. This is the AEO/GEO concept made real.
 4. Write one sentence per agency on how claiming + an accurate profile could improve their standing.
-5. Present your most interesting finding to the group.
+5. Write down your most interesting finding — the moment that made the "why now" argument click for you.
 
 **Template:**
 ```
@@ -709,7 +709,7 @@ Agency 2 Name:
 ...
 ```
 
-**Done when:** Each trainee has audited 3 agencies and can articulate, using a real example, why a claimed/accurate profile matters for AI recommendations.
+**Done when:** You've audited 3 agencies and can articulate, using a real example, why a claimed/accurate profile matters for AI recommendations.
 
 > **Facilitator:** The ChatGPT step is the payoff. When a trainee sees that AI named two competitors but not the third agency, the whole "why now" argument lands permanently. Debrief on that moment.
 
@@ -874,16 +874,16 @@ The dashboard isn't just a place to *look* at an AI score — it's an active loc
 
 **Activity:** Dashboard Walkthrough
 **Time:** 40 min
-**Goal:** Every trainee has personally seen and clicked through the dashboard so they can guide an owner through it with confidence, and so the "wow moment" is real to them.
+**Goal:** Personally see and click through the dashboard so you can guide an owner through it with confidence — and so the "wow moment" is real to you.
 **Steps:**
-1. Using the training/demo login the facilitator provides, log into a claimed business dashboard.
+1. Using the training/demo login provided to you, log into a claimed business dashboard.
 2. Find and open the AI-Citation Tracker. Read what it shows. Practice saying out loud what it means: "This shows how often AI tools are recommending you."
 3. Find each à la carte tool (event promotion, press release, featured jobs). Open each one so you know exactly what the owner will see.
 4. Find where the owner edits hours, services, and photos.
 5. Find where the upgrade options live, so in the field you can say "they're right here" and point.
-6. Pair up: one person plays owner, the other walks them through the dashboard in 90 seconds. Swap.
+6. Now do a timed run: walk through the dashboard out loud in 90 seconds as if an owner were watching over your shoulder. Record it on your phone if you can, then play it back.
 
-**Done when:** Each trainee can navigate to the AI tracker, name all three à la carte tools, and locate the upgrade screen without help.
+**Done when:** You can navigate to the AI tracker, name all three à la carte tools, and locate the upgrade screen without help.
 
 > **Facilitator:** This is the most important activity of Day 2. If the demo dashboard shows real citation data, point it out — that's the wow moment they'll recreate in the field. If a trainee has never opened the dashboard before going to the field, they will fumble the highest-value rung. Don't skip this.
 
@@ -893,7 +893,7 @@ The dashboard isn't just a place to *look* at an AI score — it's an active loc
 
 You do **not** need to memorize feature lists. When the owner is on the claim/upgrade screen, every deliverable is listed right there in bullets — let them read it for themselves. Your job is the **big-idea difference** between the tiers and the confidence to walk them through it. Specifics or tough questions go to the screen, or to **questions@topoftemecula.com**.
 
-#### Pricing Master Reference (single source of truth — confirm before each cohort)
+#### Pricing Master Reference (single source of truth — always confirm on the live screen)
 
 | Tier | Price | One big idea |
 |---|---|---|
@@ -965,21 +965,21 @@ You do **not** need to memorize feature lists. When the owner is on the claim/up
 
 **Activity:** Write Your Value Pitch
 **Time:** 45 min
-**Goal:** Each trainee builds a natural, personal version of the pitch in their own words, then practices saying it out loud.
+**Goal:** Build a natural, personal version of the pitch in your own words, then practice saying it out loud.
 **Steps:**
 1. Write a 4–5 sentence pitch for why a local insurance agency should claim its free profile. Work in: the free claim (no credit card), the AI-citation tracker, the free à la carte tools, and a soft mention that Premium exists if they want more visibility. Do **not** state a price — point to the screen.
-2. Read it out loud to a partner. The partner scores it against the rubric below.
-3. Rewrite it once based on the feedback. The second version should sound more like *you* talking, less like a script.
-4. Volunteers read their best version to the group.
+2. Read it out loud and record yourself on your phone. Play it back and score it against the rubric below.
+3. Rewrite it once based on what you heard. The second version should sound more like *you* talking, less like a script.
+4. Save your best version — this is the pitch you'll deliver in the field.
 
-**Rubric (partner scores 1 pt each):**
+**Rubric (score yourself 1 pt each):**
 - [ ] Led with the **free claim**, not cost.
 - [ ] Hit the **AI-citation hook** and at least one free à la carte tool.
 - [ ] No forbidden claims (no Google guarantee, no false partnership, no deletion threat, no price-from-memory).
 - [ ] Soft, no-pressure mention of Premium.
 - [ ] Sounded natural and human, not robotic.
 
-**Done when:** Each trainee has a written pitch they can deliver from memory and a 4/5+ partner score.
+**Done when:** You have a written pitch you can deliver from memory and a 4/5+ self-score.
 
 ---
 
@@ -987,7 +987,7 @@ You do **not** need to memorize feature lists. When the owner is on the claim/up
 
 **Drill:** Rapid-Fire Pricing Objections
 **Time:** 30 min
-**How:** In pairs, the "owner" fires one objection; the "ambassador" responds in real time, then they swap. Run through the full list at least twice. The point is reps — getting comfortable answering instantly without freezing. Objections to fire:
+**How:** Work down the list one objection at a time. Read the objection out loud, then respond out loud as the ambassador in real time — no pausing to script it. Run through the full list at least twice. The point is reps — getting comfortable answering instantly without freezing. For live back-and-forth reps, use the **AI Roleplay Simulator** in the app and have it play the skeptical owner. Objections to answer:
 - "How much is this?"
 - "Is there a catch?"
 - "It's too expensive."
@@ -1185,16 +1185,16 @@ Two things go wrong most often. Handle them smoothly:
 
 **Activity:** Hands-On Claim (on a test listing)
 **Time:** 30 min
-**Goal:** Every trainee performs a real, complete claim on a test listing so the first time they ever touch the claim flow is NOT in front of a live owner.
+**Goal:** Perform a real, complete claim on a test listing so the first time you ever touch the claim flow is NOT in front of a live owner.
 **Steps:**
-1. The facilitator provides a test business listing and QR card for each trainee (or a shared set of test listings).
+1. Use the test business listing and QR card provided to you.
 2. Scan the QR card with your phone, exactly as an owner would.
 3. Complete the full claim flow end-to-end, reading each screen out loud as you go.
 4. Land on the dashboard. Find the AI tracker, the à la carte tools, and the upgrade screen.
-5. Pair up: run the claim a second time while *narrating it to your partner as if they're the owner* ("Okay, tap here, confirm your info..."). Swap.
+5. Run the claim a second time while *narrating it out loud as if an owner were watching over your shoulder* ("Okay, tap here, confirm your info..."). Record this run on your phone.
 6. Do it a third time solo, smoothly, start to finish.
 
-**Done when:** Each trainee has completed the claim flow at least 3 times and can narrate it confidently while doing it.
+**Done when:** You've completed the claim flow at least 3 times and can narrate it confidently while doing it.
 
 > **Facilitator:** This is non-negotiable prep. An ambassador who has never done a claim will freeze or misclick at an owner's shoulder, which kills trust at the highest rung. Watch for the spots where people hesitate and have them repeat those steps. If the test environment isn't ready, build it before running this cohort.
 
@@ -1395,11 +1395,11 @@ A few things to internalize:
 
 **Drill:** Live Roleplay Rounds
 **Time:** 45 min
-**How:** Pairs take turns as ambassador and owner. The facilitator hands the "owner" a scenario card from Slide 6 (or a curveball). The "ambassador" runs the visit start to finish: open, pitch, handle the objection, climb or step down the ladder, close, and state out loud what they'd log. Then swap. Run at least 6 rounds so everyone plays both roles multiple times across varied scenarios.
+**How:** Open the **AI Roleplay Simulator** in the app and have it play the owner — this is your live sparring partner. Work through the scenarios one at a time. For each, run the visit start to finish: open, pitch, handle the objection, climb or step down the ladder, close, and state out loud what you'd log. Run at least 6 rounds across varied scenarios. If the simulator isn't available, work each scenario out loud on your own and record yourself so you can review it after.
 
 **Rotate these scenarios:** engaged owner (full win), "we already have Google," "I'll do it later," gatekeeper/owner-out, "is this a scam," hostile prior-scam owner, "take me off your site," QR won't scan, language barrier, employee-wants-to-claim.
 
-**After each round, the "owner" gives 30 seconds of feedback:**
+**After each round, score yourself in 30 seconds:**
 - Did they lead with *free*?
 - Did the tone feel warm and low-pressure?
 - Did they recover to the highest rung available?
