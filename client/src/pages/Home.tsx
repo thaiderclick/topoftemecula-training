@@ -628,13 +628,13 @@ export default function Home() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform -translate-x-10 translate-y-10" />
               <Award className="w-20 h-20 text-primary mb-6 animate-bounce" />
-              <h1 className="text-3xl md:text-4xl font-serif font-extrabold text-foreground mb-2">Clearance Certificate</h1>
-              <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">Top of Temecula Field Ambassador</p>
+              <h1 className="text-3xl md:text-4xl font-serif font-extrabold text-foreground mb-2">Certificate of Completion</h1>
+              <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">AEO / GEO Foundations &amp; Field Ambassador Program</p>
               <div className="max-w-md bg-background/50 rounded-2xl p-6 border border-border mb-8 shadow-inner">
                 <p className="text-sm text-muted-foreground italic mb-4">"This certifies that"</p>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'Ambassador'}</h2>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Has successfully completed all 3 days of paid interactive study, passed the Safety Scenarios, scored 10/10 on the Final Readiness Test, and is officially cleared for field operations.
+                  Has completed the <span className="font-semibold text-foreground">Answer Engine &amp; Generative Engine Optimization (AEO/GEO) Foundations</span> module — covering how answer engines retrieve and recommend, structured data and schema.org, entities and NAP consistency, E-E-A-T, and measuring AI visibility — along with all three days of applied field training, the safety scenarios, and a 10/10 score on the Final Readiness Test.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
