@@ -1790,17 +1790,11 @@ Upload to Google Drive or YouTube (unlisted) and paste the link in the assignmen
 
 ---
 
-## SHIFT 1 DEBRIEF
-*Unlocked after the trainee completes their FIRST REAL FIELD ROUTE (not at certification). This is a post-field reflection, so it must not appear until an actual shift has been worked.*
-
-Trainees complete a written debrief covering:
-1. What went well on your first shift?
-2. What was the hardest objection or situation you encountered, and how did you handle it?
-3. What's the highest rung you reached, and where did most of your visits land on the ladder?
-4. How did you handle the no's emotionally? What helped you reset between stops?
-5. What would you do differently next time?
-6. Any businesses that seemed especially interested or ready to upgrade (Premium or Growth Partner)?
-7. Any safety concerns or uncomfortable situations to flag?
+<!--
+SHIFT 1 DEBRIEF is NOT generated from this file.
+It is a post-field reflection form defined in client/src/pages/Home.tsx
+(see handleShift1Submit / shift1DebriefAnswers). Edit it there, not here.
+-->
 
 ---
 
