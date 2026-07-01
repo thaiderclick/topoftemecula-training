@@ -7,12 +7,28 @@ import {
   createRoleplayAttempt,
   getAllFeedback,
   getAllTrainees,
+  getCredentialByCode,
+  getCredentialByUserId,
   getRoleplayAttempts,
   getTrainingProgress,
+  issueCredential,
   submitFeedback,
   upsertTrainingProgress,
 } from "./db";
 import { ENV } from "./_core/env";
+import { randomBytes } from "crypto";
+
+// ─── Credential helpers ─────────────────────────────────────────────────────
+export const CREDENTIAL_PROGRAM = "AEO/GEO Foundations — Level I";
+
+// Human-facing credential code, e.g. "TOT-AEO1-7K9QT2". Avoids ambiguous chars.
+function generateCredentialCode(): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(6);
+  let suffix = "";
+  for (let i = 0; i < 6; i++) suffix += alphabet[bytes[i] % alphabet.length];
+  return `TOT-AEO1-${suffix}`;
+}
 
 // ─── Persona system prompts ───────────────────────────────────────────────────
 
@@ -97,10 +113,23 @@ export const appRouter = router({
         shift1DebriefData: z.record(z.string(), z.string()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Check if this is a new final test pass — fire completion alert
+        // Check if this is a new final test pass — issue credential + fire completion alert
         if (input.passedFinalTest === true && input.finalTestScore === 10) {
           const existing = await getTrainingProgress(ctx.user.id);
           if (!existing?.passedFinalTest) {
+            // Issue the verifiable credential (idempotent, non-fatal)
+            try {
+              await issueCredential({
+                userId: ctx.user.id,
+                code: generateCredentialCode(),
+                holderName: ctx.user.name ?? null,
+                program: CREDENTIAL_PROGRAM,
+                finalTestScore: input.finalTestScore ?? 10,
+              });
+            } catch {
+              // Credential issuance failure is non-fatal
+            }
+
             // Send completion email alert (non-blocking)
             try {
               const { sendCompletionAlert } = await import("./_core/email");
@@ -116,6 +145,31 @@ export const appRouter = router({
         }
         await upsertTrainingProgress(ctx.user.id, input as Parameters<typeof upsertTrainingProgress>[1]);
         return { success: true };
+      }),
+  }),
+
+  // Verifiable Certification Credential
+  credential: router({
+    // The signed-in holder's own credential (for display on the certificate).
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      const cred = await getCredentialByUserId(ctx.user.id);
+      if (!cred) return null;
+      return { code: cred.code, holderName: cred.holderName, program: cred.program, issuedAt: cred.issuedAt };
+    }),
+
+    // Public verification — no auth. Returns minimal, non-sensitive fields.
+    verify: publicProcedure
+      .input(z.object({ code: z.string().min(3).max(32) }))
+      .query(async ({ input }) => {
+        const cred = await getCredentialByCode(input.code.trim().toUpperCase());
+        if (!cred) return { valid: false as const };
+        return {
+          valid: true as const,
+          code: cred.code,
+          holderName: cred.holderName,
+          program: cred.program,
+          issuedAt: cred.issuedAt,
+        };
       }),
   }),
 

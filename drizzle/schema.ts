@@ -85,3 +85,21 @@ export const traineeFeedback = pgTable("trainee_feedback", {
 
 export type TraineeFeedback = typeof traineeFeedback.$inferSelect;
 export type InsertTraineeFeedback = typeof traineeFeedback.$inferInsert;
+
+/**
+ * Issued, publicly-verifiable certification credentials.
+ * One row per holder (userId unique). `code` is the human-facing ID printed
+ * on the certificate and looked up at /verify/:code.
+ */
+export const credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  holderName: text("holderName"),
+  program: varchar("program", { length: 128 }).notNull(),
+  finalTestScore: integer("finalTestScore"),
+  issuedAt: timestamp("issuedAt").defaultNow().notNull(),
+});
+
+export type Credential = typeof credentials.$inferSelect;
+export type InsertCredential = typeof credentials.$inferInsert;

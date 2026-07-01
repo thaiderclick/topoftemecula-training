@@ -134,10 +134,19 @@ export default function Home() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
 
   // ── Server progress sync ──
+  const utils = trpc.useUtils();
   const progressQuery = trpc.training.getProgress.useQuery(undefined, {
     enabled: isAuthenticated,
   });
-  const saveProgressMutation = trpc.training.saveProgress.useMutation();
+  const saveProgressMutation = trpc.training.saveProgress.useMutation({
+    onSuccess: () => { utils.credential.mine.invalidate(); },
+  });
+
+  // ── Issued credential (populated server-side once the final test is passed) ──
+  const credentialQuery = trpc.credential.mine.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const credential = credentialQuery.data;
 
   // ── Local progress state (mirrors server) ──
   const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
@@ -628,14 +637,38 @@ export default function Home() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl transform -translate-x-10 translate-y-10" />
               <Award className="w-20 h-20 text-primary mb-6 animate-bounce" />
-              <h1 className="text-3xl md:text-4xl font-serif font-extrabold text-foreground mb-2">Certificate of Completion</h1>
-              <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">AEO / GEO Foundations &amp; Field Ambassador Program</p>
+              <p className="text-xs text-primary font-semibold tracking-[0.2em] uppercase mb-2">Professional Certification</p>
+              <h1 className="text-3xl md:text-4xl font-serif font-extrabold text-foreground mb-2">AEO / GEO Foundations — Level I</h1>
+              <p className="text-sm text-primary font-semibold tracking-wider uppercase mb-6">Answer Engine &amp; Generative Engine Optimization</p>
               <div className="max-w-md bg-background/50 rounded-2xl p-6 border border-border mb-8 shadow-inner">
                 <p className="text-sm text-muted-foreground italic mb-4">"This certifies that"</p>
-                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'Ambassador'}</h2>
+                <h2 className="text-2xl font-serif font-bold text-foreground mb-4">{user?.name ?? 'the holder'}</h2>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Has completed the <span className="font-semibold text-foreground">Answer Engine &amp; Generative Engine Optimization (AEO/GEO) Foundations</span> module — covering how answer engines retrieve and recommend, structured data and schema.org, entities and NAP consistency, E-E-A-T, and measuring AI visibility — along with all three days of applied field training, the safety scenarios, and a 10/10 score on the Final Readiness Test.
+                  Has demonstrated Level I proficiency in <span className="font-semibold text-foreground">Answer Engine &amp; Generative Engine Optimization (AEO/GEO)</span> — covering how answer engines retrieve and recommend, structured data and schema.org, entities and NAP consistency, E-E-A-T, and measuring AI visibility across ChatGPT, Gemini, Claude, and Perplexity — including an applied practicum and a 10/10 score on the final assessment.
                 </p>
+                {credential && (
+                  <div className="mt-5 pt-4 border-t border-border/60 flex flex-col gap-1 text-left">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Credential ID</span>
+                      <span className="text-xs font-mono font-bold text-foreground">{credential.code}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Issued</span>
+                      <span className="text-xs text-foreground">{new Date(credential.issuedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${window.location.origin}/verify/${credential.code}`;
+                        navigator.clipboard?.writeText(url);
+                        toast.success('Verification link copied — add it to your résumé or LinkedIn.');
+                      }}
+                      className="mt-2 text-[11px] text-primary hover:underline font-semibold self-start"
+                    >
+                      Copy public verification link →
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                 <Button onClick={() => toast.success('Certificate saved! Share this screen with your supervisor to confirm field clearance.')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">

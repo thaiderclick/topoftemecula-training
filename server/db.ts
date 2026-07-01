@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { InsertUser, users, roleplayAttempts, trainingProgress, traineeFeedback, InsertRoleplayAttempt, InsertTrainingProgress, InsertTraineeFeedback } from "../drizzle/schema";
+import { InsertUser, users, roleplayAttempts, trainingProgress, traineeFeedback, credentials, InsertRoleplayAttempt, InsertTrainingProgress, InsertTraineeFeedback, InsertCredential } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -161,6 +161,32 @@ export async function getAllFeedback() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(traineeFeedback).orderBy(traineeFeedback.createdAt);
+}
+
+// ─── Credentials ──────────────────────────────────────────────────────────────
+
+export async function getCredentialByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(credentials).where(eq(credentials.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getCredentialByCode(code: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(credentials).where(eq(credentials.code, code)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+// Idempotent: returns the existing credential if the user already has one.
+export async function issueCredential(data: InsertCredential) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getCredentialByUserId(data.userId);
+  if (existing) return existing;
+  await db.insert(credentials).values(data).onConflictDoNothing({ target: credentials.userId });
+  return getCredentialByUserId(data.userId);
 }
 
 // ─── Admin Queries ────────────────────────────────────────────────────────────
