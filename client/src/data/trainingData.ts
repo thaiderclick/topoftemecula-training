@@ -474,10 +474,16 @@ One sentence: why would an AI trust Business 1 more?` },
   },
     ],
     assignment: {
-  title: `Teach AEO/GEO in Your Own Words`,
-  description: `Create a short knowledge artifact that proves you understand the field — something you could genuinely show someone to demonstrate the concept. Write it in two parts: Part 1 — The explainer (5–7 sentences). In your own words, explain to an imaginary friend who knows nothing about marketing: what AEO/GEO is, how AI decides which local businesses to recommend (mention retrieval and structured data), and why being consistent and findable matters. No copying the slides — put it in your own voice. Part 2 — The owner pitch (2–3 sentences). Now compress it into how you'd say it to a busy business owner standing in their shop. Plain English, no acronyms, no guarantees, and end with why it's worth doing now. Example (Part 2): "When someone asks ChatGPT or Siri for the best shop like yours around here, the AI looks your info up on the spot — and it can only recommend you if your details are clear, correct, and consistent. We make sure they are, and we actually track how often AI mentions you. It's free to get set up, and the businesses that get clear now are the ones AI learns to trust first." ---`,
+  title: `Audit a Real Business & Teach It Back`,
+  description: `Pick one real local business in the Temecula Valley (a genuine independent shop, restaurant, salon, contractor — not a national chain, and not Top of Temecula). You'll investigate how AI currently "sees" it, then explain what you found. This is the same thing you'll do in the field — do it for real, not from memory. Part 1 — The live query. Ask a real answer engine (ChatGPT, Perplexity, or Google's AI overview) a natural question a customer would ask — e.g. "best taco shop in Old Town Temecula" or "is [business name] open on Sundays?" Paste the exact question you asked and what the AI actually answered. Did it mention your business? Did it get anything wrong, or say it didn't know? Part 2 — The consistency check. Look the business up in 2–3 places (its Google listing, its own website, and Yelp or Facebook). In a short list, note any place the name, address, phone, or hours don't match, or any key info that's missing entirely. Part 3 — Connect it to the concepts (3–4 sentences). Using what you found — not the slides — explain why the AI answered the way it did. Tie it to retrieval and structured data: what is helping or hurting this business's chances of being the AI's answer? Part 4 — The owner pitch (2–3 sentences). Now pitch this specific owner, out loud in their shop, referencing the actual gap you found. Plain English, no acronyms, no guarantees, end with why it's worth doing now. Example (Part 4): "When someone asks ChatGPT or Siri for the best shop like yours around here, the AI looks your info up on the spot — and it can only recommend you if your details are clear, correct, and consistent. Right now your hours are different on Google than on your own site, so it hedges. We fix that and actually track how often AI mentions you. It's free to set up, and the businesses that get clear now are the ones AI learns to trust first."`,
   type: `text`,
-  placeholder: `Type your response here...`
+  placeholder: `Type your response here...`,
+  rubric: [
+    `You used a real local business and a real AI query (exact question and answer pasted in)`,
+    `You found and listed at least one concrete inconsistency or gap (or noted it's already clean, with evidence)`,
+    `Your Part 3 explains this business's result using retrieval and structured data, not a generic definition`,
+    `Your pitch names the specific gap you found — it couldn't be copy-pasted for any other business`,
+  ]
 },
   },
   {
@@ -769,7 +775,7 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Explain the Shift in Your Own Words`,
-  description: `Write a short, plain-English explanation (3–4 sentences) you could say to a busy restaurant owner about why AI search matters and why claiming now is smart. No acronyms allowed — imagine the owner has never heard "SEO" in their life. Then write the one-sentence, ten-second version. Example (one-sentence): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute." ---`,
+  description: `Write a short, plain-English explanation (3–4 sentences) you could say to a busy restaurant owner about why AI search matters and why claiming now is smart. No acronyms allowed — imagine the owner has never heard "SEO" in their life. Then write the one-sentence, ten-second version. Example (one-sentence): "More people now ask ChatGPT or Siri 'who's the best taco spot in Temecula' and get one answer instead of a list — claiming your free profile helps make sure that answer can be you, and it takes about a minute."`,
   type: `text`,
   placeholder: `Type your response here...`
 },
@@ -993,7 +999,7 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Record Your Dashboard Walkthrough`,
-  description: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box. ---`,
+  description: `Record yourself (1–2 minutes, phone is fine) pretending to walk an owner through their dashboard after a successful claim. Show/say: where the AI-citation tracker is and what it means, name the three à la carte tools, and a soft tee-up of Premium that points to the on-screen price. Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
   type: `roleplay`,
   placeholder: `Paste your Google Drive, YouTube, or Loom link here...`
 },
@@ -1344,7 +1350,7 @@ Agency 2 Name:
     ],
     assignment: {
   title: `Roleplay Recording (with Self-Assessment Rubric)`,
-  description: `Record a short audio or video clip (1–2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency. Include: 1. Intro 2. Free Claim & AI Dashboard Pitch (mention a free à la carte tool) 3. Response to "Is this really free?" or "We already have Google" 4. A soft tee-up of the Premium upgrade (point to on-screen price, don't quote from memory) 5. Polite Close Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box. ---`,
+  description: `Record a short audio or video clip (1–2 minutes) of yourself delivering the full pitch as if you just walked into a local insurance agency. Include: 1. Intro 2. Free Claim & AI Dashboard Pitch (mention a free à la carte tool) 3. Response to "Is this really free?" or "We already have Google" 4. A soft tee-up of the Premium upgrade (point to on-screen price, don't quote from memory) 5. Polite Close Upload to Google Drive or YouTube (unlisted) and paste the link in the assignment box.`,
   type: `roleplay`,
   placeholder: `Paste your Google Drive, YouTube, or Loom link here...`,
   rubric: [

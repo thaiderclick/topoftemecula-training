@@ -413,7 +413,7 @@ function parseRubric(lines) {
 function parseAssignment(lines, title) {
   const rubric = parseRubric(lines);
   const descLines = lines
-    .filter(l => l.trim() && !l.match(/^-\s+\[[ x]\]/) && !l.match(/^\*\*Score yourself/))
+    .filter(l => l.trim() && !l.match(/^-\s+\[[ x]\]/) && !l.match(/^\*\*Score yourself/) && !/^(-{3,}|\*{3,}|_{3,})$/.test(l.trim()))
     .map(l => stripInlineMarkdown(l))
     .filter(Boolean);
 
