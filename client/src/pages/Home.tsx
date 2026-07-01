@@ -21,7 +21,6 @@ import {
   Video,
   Shield,
   Sparkles,
-  Volume2,
   Check,
   X,
   Lock,
@@ -1014,18 +1013,18 @@ export default function Home() {
                           const cardId = `${activeModule.id}_s_${idx}`;
                           const isFlipped = flippedCards[cardId];
                           return (
-                            <div key={idx} onClick={() => toggleCardFlip(cardId)} className="group cursor-pointer perspective-1000 h-28 w-full">
+                            <div key={idx} onClick={() => toggleCardFlip(cardId)} className="group cursor-pointer perspective-1000 h-44 w-full">
                               <div className={`relative w-full h-full duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                                 <div className="absolute inset-0 backface-hidden border border-primary/30 bg-primary/5 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-primary transition-colors">
                                   <div className="flex items-center gap-3">
-                                    <Volume2 className="w-5 h-5 text-primary animate-pulse" />
+                                    <MessageSquare className="w-5 h-5 text-primary" />
                                     <span className="text-sm font-bold text-foreground">{s.label}</span>
                                   </div>
                                   <span className="text-[10px] font-bold text-primary uppercase tracking-wider group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
                                     Tap to reveal <ChevronRight className="w-3 h-3" />
                                   </span>
                                 </div>
-                                <div className="absolute inset-0 backface-hidden rotate-y-180 border border-primary bg-card rounded-xl p-4 flex flex-col justify-center shadow-md">
+                                <div className="absolute inset-0 backface-hidden rotate-y-180 border border-primary bg-card rounded-xl p-4 flex flex-col justify-center overflow-y-auto shadow-md">
                                   <p className="text-xs md:text-sm text-foreground font-medium italic leading-relaxed">"{s.text}"</p>
                                 </div>
                               </div>

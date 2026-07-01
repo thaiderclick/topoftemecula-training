@@ -181,3 +181,18 @@
     color: oklch(0.50 0.12 72);
   }
 }
+
+/* ============================================================
+   3D FLIP CARD UTILITIES
+   Tailwind v4 ships backface-hidden and rotate-y-180, but not
+   perspective-1000 or transform-style-3d — without the 3D
+   context the flip has no depth and the revealed face is hidden.
+   ============================================================ */
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+}
