@@ -146,6 +146,7 @@ export const business = pgTable("business", {
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   directoryClaimStatus: text("directory_claim_status"),
+  verticalType: text("vertical_type"),
   subscriptionTier: text("subscription_tier"),
   isFeatured: boolean("is_featured"),
   confidenceScore: numeric("confidence_score"),

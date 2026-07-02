@@ -47,6 +47,7 @@ function mapRow(r: WebsiteBusinessRow): InsertBusiness {
     lat: r.latitude,
     lng: r.longitude,
     directoryClaimStatus: r.claim_status,
+    verticalType: r.vertical_type,
     subscriptionTier: r.subscription_tier,
     isFeatured: r.is_featured,
     confidenceScore: r.confidence_score, // numeric ⇒ string | null (drizzle)
@@ -75,6 +76,7 @@ const CONFLICT_SET = {
   lat: sql`excluded.lat`,
   lng: sql`excluded.lng`,
   directoryClaimStatus: sql`excluded.directory_claim_status`,
+  verticalType: sql`excluded.vertical_type`,
   subscriptionTier: sql`excluded.subscription_tier`,
   isFeatured: sql`excluded.is_featured`,
   confidenceScore: sql`excluded.confidence_score`,

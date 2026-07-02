@@ -6,6 +6,7 @@
 import { randomBytes } from "crypto";
 import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import { marketingValueTier, ValueTier } from "./marketingValue";
 import {
   Ambassador,
   ambassador,
@@ -197,6 +198,7 @@ const TARGET_COLUMNS = {
   lat: business.lat,
   lng: business.lng,
   confidenceScore: business.confidenceScore,
+  verticalType: business.verticalType,
 };
 
 /**
@@ -351,6 +353,7 @@ const MAX_ROUTE_STOPS = 20;
 
 export interface EnrichedRouteStop extends RouteStop {
   name: string | null;
+  valueTier: ValueTier;
   address: string | null;
   city: string | null;
   lat: number | null;
@@ -379,6 +382,7 @@ async function enrichPlan(db: Db, plan: { planDate: string; status: string; stop
           lat: business.lat,
           lng: business.lng,
           localClaimStatus: business.localClaimStatus,
+          verticalType: business.verticalType,
         })
         .from(business)
         .where(inArray(business.businessId, ids))
@@ -399,6 +403,7 @@ async function enrichPlan(db: Db, plan: { planDate: string; status: string; stop
     }
     return {
       ...st,
+      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null),
       name: b?.name ?? null,
       address: b?.address ?? null,
       city: b?.city ?? null,
@@ -483,10 +488,16 @@ export async function buildRoutePlan(
   }
 
   if (ids.length < count) {
-    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 2) });
-    for (const t of targets) {
+    // Over-fetch, then favor businesses whose type typically pays for
+    // marketing (legal/medical/home services/venues...) — the stable sort
+    // keeps getTargets' distance/confidence order within each tier.
+    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 5) });
+    const ranked = targets
+      .map((t) => ({ id: t.businessId, tier: marketingValueTier(t.name, t.verticalType) }))
+      .sort((a, b) => b.tier - a.tier);
+    for (const t of ranked) {
       if (ids.length >= count) break;
-      push(t.businessId);
+      push(t.id);
     }
   }
 

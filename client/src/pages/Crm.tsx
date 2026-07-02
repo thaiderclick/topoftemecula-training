@@ -38,6 +38,7 @@ function claimUrl(base: string, code: string, businessId?: string) {
 interface RouteStopView {
   businessId: string;
   status: "pending" | "done" | "skipped";
+  valueTier?: number;
   name: string | null;
   address: string | null;
   city: string | null;
@@ -436,7 +437,7 @@ export default function Crm() {
               <Card className="mt-5 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1"><RouteIcon className="w-4 h-4 text-primary" /> Plan your day</div>
                 <p className="text-[12px] text-muted-foreground mb-3">
-                  Builds today's route from your open follow-ups plus the nearest unclaimed businesses, ordered so you're never backtracking.
+                  Builds today's route from your open follow-ups plus nearby unclaimed businesses — favoring the types that typically pay for marketing (medical, home services, legal, venues…) — ordered so you're never backtracking.
                 </p>
                 <div className="flex gap-2 mb-3">
                   {[5, 8, 10, 15].map((n) => (
@@ -498,7 +499,14 @@ export default function Crm() {
                             {s.status === "done" ? <Check className="w-3.5 h-3.5" /> : i + 1}
                           </span>
                           <div className="min-w-0">
-                            <p className={`font-semibold text-sm truncate ${s.status === "skipped" ? "line-through text-muted-foreground" : "text-foreground"}`}>{s.name ?? "(unnamed)"}</p>
+                            <p className={`font-semibold text-sm truncate ${s.status === "skipped" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                              {s.name ?? "(unnamed)"}
+                              {(s.valueTier ?? 1) >= 2 && (
+                                <span className={`ml-1.5 text-[10px] font-bold align-middle ${s.valueTier === 3 ? "text-emerald-600" : "text-amber-600"}`} title="Likely marketing buyer">
+                                  {s.valueTier === 3 ? "$$$" : "$$"}
+                                </span>
+                              )}
+                            </p>
                             <p className="text-[11px] text-muted-foreground truncate">
                               {[s.address, s.city].filter(Boolean).join(" · ") || "—"}
                               {s.distanceFromPrevMiles != null && <> · +{s.distanceFromPrevMiles.toFixed(1)} mi</>}

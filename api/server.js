@@ -46437,6 +46437,7 @@ var business = pgTable("business", {
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   directoryClaimStatus: text("directory_claim_status"),
+  verticalType: text("vertical_type"),
   subscriptionTier: text("subscription_tier"),
   isFeatured: boolean("is_featured"),
   confidenceScore: numeric("confidence_score"),
@@ -46953,6 +46954,165 @@ init_env();
 
 // server/crmDb.ts
 var import_crypto2 = require("crypto");
+
+// server/marketingValue.ts
+var VERTICAL_TIER = {
+  home_services: 3,
+  medical: 3,
+  hospitality: 2,
+  retail: 1
+};
+var TIER0_KEYWORDS = [
+  "church",
+  "ministry",
+  "ministries",
+  "temple",
+  "mosque",
+  "synagogue",
+  "nonprofit",
+  "non-profit",
+  "foundation",
+  "charity",
+  "school district",
+  "elementary school",
+  "middle school",
+  "high school",
+  "city of",
+  "county of",
+  "library",
+  "post office"
+];
+var TIER3_KEYWORDS = [
+  // legal
+  "law",
+  "attorney",
+  "legal",
+  // medical / dental / vet
+  "dental",
+  "dentist",
+  "orthodont",
+  "chiropract",
+  "dermatolog",
+  "med spa",
+  "medspa",
+  "medical",
+  "clinic",
+  "urgent care",
+  "physician",
+  "pediatric",
+  "optometr",
+  "veterinar",
+  "animal hospital",
+  "physical therapy",
+  // home services
+  "plumb",
+  "hvac",
+  "heating",
+  "air condition",
+  "roof",
+  "electric",
+  "solar",
+  "pest",
+  "remodel",
+  "construction",
+  "contractor",
+  "landscap",
+  "garage door",
+  "pool service",
+  "pool & spa",
+  "painting",
+  "flooring",
+  "handyman",
+  "restoration",
+  "tree service",
+  "fencing",
+  "concrete",
+  "grading",
+  // real estate / finance / insurance
+  "realty",
+  "real estate",
+  "property management",
+  "escrow",
+  "mortgage",
+  "insurance",
+  "financial",
+  "wealth",
+  "cpa",
+  "accounting",
+  "tax service",
+  // auto
+  "auto repair",
+  "auto body",
+  "collision",
+  "dealership",
+  "tire",
+  "transmission",
+  "auto detail",
+  "smog",
+  // Temecula high-ticket hospitality
+  "winery",
+  "vineyard",
+  "wedding",
+  "venue",
+  "estate"
+];
+var TIER2_KEYWORDS = [
+  "restaurant",
+  "grill",
+  "cafe",
+  "caf\xE9",
+  "coffee",
+  "bakery",
+  "brewery",
+  "pizzeria",
+  "taqueria",
+  "sushi",
+  "steakhouse",
+  "bistro",
+  "eatery",
+  "catering",
+  "salon",
+  "spa",
+  "barber",
+  "nails",
+  "lashes",
+  "tattoo",
+  "fitness",
+  "gym",
+  "yoga",
+  "pilates",
+  "crossfit",
+  "martial arts",
+  "dance studio",
+  "photograph",
+  "moving",
+  "storage",
+  "senior",
+  "assisted living",
+  "childcare",
+  "preschool",
+  "day care",
+  "daycare",
+  "hotel",
+  "inn",
+  "resort",
+  "golf"
+];
+function keywordTier(name) {
+  const n = name.toLowerCase();
+  if (TIER0_KEYWORDS.some((k) => n.includes(k))) return 0;
+  if (TIER3_KEYWORDS.some((k) => n.includes(k))) return 3;
+  if (TIER2_KEYWORDS.some((k) => n.includes(k))) return 2;
+  return null;
+}
+function marketingValueTier(name, verticalType) {
+  const fromKeyword = name ? keywordTier(name) : null;
+  if (fromKeyword === 0) return 0;
+  const fromVertical = verticalType ? VERTICAL_TIER[verticalType] ?? null : null;
+  return Math.max(fromKeyword ?? 1, fromVertical ?? 1);
+}
+
+// server/crmDb.ts
 async function requireDb() {
   const db = await getDb();
   if (!db) throw new Error("CRM database not available");
@@ -47045,7 +47205,8 @@ var TARGET_COLUMNS = {
   phone: business.phone,
   lat: business.lat,
   lng: business.lng,
-  confidenceScore: business.confidenceScore
+  confidenceScore: business.confidenceScore,
+  verticalType: business.verticalType
 };
 async function getTargets(q) {
   const db = await requireDb();
@@ -47136,7 +47297,8 @@ async function enrichPlan(db, plan) {
     city: business.city,
     lat: business.lat,
     lng: business.lng,
-    localClaimStatus: business.localClaimStatus
+    localClaimStatus: business.localClaimStatus,
+    verticalType: business.verticalType
   }).from(business).where(inArray(business.businessId, ids)) : [];
   const byId = new Map(rows.map((r) => [r.businessId, r]));
   let prev = null;
@@ -47153,6 +47315,7 @@ async function enrichPlan(db, plan) {
     }
     return {
       ...st,
+      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null),
       name: b?.name ?? null,
       address: b?.address ?? null,
       city: b?.city ?? null,
@@ -47219,10 +47382,11 @@ async function buildRoutePlan(ambassadorId, opts) {
     }
   }
   if (ids.length < count) {
-    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 2) });
-    for (const t2 of targets) {
+    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 5) });
+    const ranked = targets.map((t2) => ({ id: t2.businessId, tier: marketingValueTier(t2.name, t2.verticalType) })).sort((a, b) => b.tier - a.tier);
+    for (const t2 of ranked) {
       if (ids.length >= count) break;
-      push(t2.businessId);
+      push(t2.id);
     }
   }
   let useLocationOrdering = hasLoc;
@@ -47351,8 +47515,8 @@ function cursorFromWatermark(watermark, overlapMs) {
 }
 var BUSINESS_SELECT = `
     select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
-           latitude, longitude, claim_status, subscription_tier, is_featured, confidence_score,
-           status, signup_source, owner_contact_email,
+           latitude, longitude, claim_status, vertical_type, subscription_tier, is_featured,
+           confidence_score, status, signup_source, owner_contact_email,
            to_char(coalesce(updated_at, created_at) at time zone 'UTC', ${ISO_US}) as effective_at
     from public.businesses`;
 async function fetchBusinessesPage(opts) {
@@ -47424,6 +47588,7 @@ function mapRow(r) {
     lat: r.latitude,
     lng: r.longitude,
     directoryClaimStatus: r.claim_status,
+    verticalType: r.vertical_type,
     subscriptionTier: r.subscription_tier,
     isFeatured: r.is_featured,
     confidenceScore: r.confidence_score,
@@ -47450,6 +47615,7 @@ var CONFLICT_SET = {
   lat: sql`excluded.lat`,
   lng: sql`excluded.lng`,
   directoryClaimStatus: sql`excluded.directory_claim_status`,
+  verticalType: sql`excluded.vertical_type`,
   subscriptionTier: sql`excluded.subscription_tier`,
   isFeatured: sql`excluded.is_featured`,
   confidenceScore: sql`excluded.confidence_score`,
