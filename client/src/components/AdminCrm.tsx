@@ -11,12 +11,37 @@ const dollars = (cents: number | null | undefined) => `$${(((cents ?? 0) as numb
  * upstream (Admin.tsx holds adminPassword and passes it into every call —
  * crmAdminProcedure validates it server-side).
  */
+const TIER_LABELS: Record<string, string> = {
+  enhanced: "Enhanced ($29/mo)",
+  premium: "Premium ($79/mo)",
+  growth_partner: "Growth Partner ($299/mo)",
+};
+
 export function AdminCrm({ adminPassword }: { adminPassword: string }) {
   const utils = trpc.useUtils();
   const [bountyInput, setBountyInput] = useState("");
+  const [tierInputs, setTierInputs] = useState<Record<string, string>>({});
 
   const auth = { adminPassword };
   const bounty = trpc.crm.adminGetActiveBounty.useQuery(auth);
+  const upgradeBounties = trpc.crm.adminGetUpgradeBounties.useQuery(auth);
+  const setUpgradeBounty = trpc.crm.adminSetUpgradeBounty.useMutation({
+    onSuccess: (r) => {
+      toast.success(
+        `${TIER_LABELS[r.tier] ?? r.tier} bonus set to ${dollars(r.amountCents)}` +
+          (r.backfilledBonuses > 0 ? ` — ${r.backfilledBonuses} earlier bonus(es) backfilled.` : ".")
+      );
+      setTierInputs((v) => ({ ...v, [r.tier]: "" }));
+      utils.crm.adminGetUpgradeBounties.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const submitTierBounty = (tier: "enhanced" | "premium" | "growth_partner") => {
+    const amount = Number.parseFloat(tierInputs[tier] ?? "");
+    if (!Number.isFinite(amount) || amount < 0) return toast.error("Enter a dollar amount.");
+    setUpgradeBounty.mutate({ adminPassword, tier, amountCents: Math.round(amount * 100) });
+  };
   const leaderboard = trpc.crm.adminLeaderboard.useQuery(auth);
   const anomalies = trpc.crm.adminAnomalies.useQuery(auth);
   const gaps = trpc.crm.adminGaps.useQuery(auth);
@@ -77,6 +102,34 @@ export function AdminCrm({ adminPassword }: { adminPassword: string }) {
           <Button onClick={submitBounty} disabled={setBounty.isPending || !bountyInput} style={{ background: "oklch(0.22 0.01 65)", color: "white" }}>
             {setBounty.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Set bounty"}
           </Button>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-slate-100">
+          <h4 className="text-sm font-bold text-slate-700 mb-1">Upgrade bonuses</h4>
+          <p className="text-xs text-slate-500 mb-3">
+            Paid when a business an ambassador claimed moves to a paid tier within 90 days. The nightly sync detects upgrades automatically.
+          </p>
+          {(["enhanced", "premium", "growth_partner"] as const).map((tier) => (
+            <div key={tier} className="flex items-center gap-2 py-1.5">
+              <span className="text-sm text-slate-600 w-52">{TIER_LABELS[tier]}</span>
+              <span className="text-sm font-bold text-slate-800 w-20">
+                {upgradeBounties.isLoading ? "…" : upgradeBounties.data?.[tier] != null ? dollars(upgradeBounties.data[tier]) : "not set"}
+              </span>
+              <div className="relative w-24">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <input
+                  inputMode="decimal"
+                  value={tierInputs[tier] ?? ""}
+                  onChange={(e) => setTierInputs((v) => ({ ...v, [tier]: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && submitTierBounty(tier)}
+                  className="w-full border border-slate-300 rounded-lg pl-6 pr-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+              <Button size="sm" variant="outline" disabled={setUpgradeBounty.isPending || !tierInputs[tier]} onClick={() => submitTierBounty(tier)}>
+                Set
+              </Button>
+            </div>
+          ))}
         </div>
       </div>
 

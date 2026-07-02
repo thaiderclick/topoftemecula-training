@@ -9,6 +9,7 @@
  */
 import type { Express, Request, Response } from "express";
 import { ENV } from "./_core/env";
+import { detectUpgradeBonuses } from "./crmDb";
 import { runDirectorySync } from "./directorySync";
 import { pollClaimEvents } from "./reconciliation";
 
@@ -52,8 +53,11 @@ export function registerScheduledRoutes(app: Express): void {
         "and the directory sync / claim reconciliation will NEVER run. Set CRON_SECRET in the environment."
     );
   }
-  registerCronJob(app, "syncDirectory", (req) =>
-    runDirectorySync({ full: req.query.full === "1" || (!!req.body && req.body.full === true) })
-  );
+  registerCronJob(app, "syncDirectory", async (req) => {
+    const result = await runDirectorySync({ full: req.query.full === "1" || (!!req.body && req.body.full === true) });
+    // Tiers are fresh right after a sync — the natural moment to spot upgrades.
+    const upgradeBonusesDetected = await detectUpgradeBonuses();
+    return { ...result, upgradeBonusesDetected };
+  });
   registerCronJob(app, "pollClaims", () => pollClaimEvents());
 }

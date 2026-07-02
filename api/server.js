@@ -46503,8 +46503,20 @@ var curriculumGap = pgTable("curriculum_gap", {
 var bountyConfig = pgTable("bounty_config", {
   id: serial("id").primaryKey(),
   amountCents: integer("amount_cents").notNull(),
+  kind: text("kind").notNull().default("claim"),
+  tier: text("tier"),
   effectiveFrom: timestamp("effective_from", { withTimezone: true }).defaultNow().notNull(),
   effectiveTo: timestamp("effective_to", { withTimezone: true })
+});
+var upgradeBonus = pgTable("upgrade_bonus", {
+  id: serial("id").primaryKey(),
+  claimId: integer("claim_id").notNull().unique(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  tier: text("tier").notNull(),
+  amountCents: integer("amount_cents"),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true })
 });
 var payoutPeriod = pgTable("payout_period", {
   id: serial("id").primaryKey(),
@@ -47320,7 +47332,7 @@ async function getTargets(q) {
 }
 async function getEarnings(ambassadorId) {
   const db = await requireDb();
-  const [rows, visitCountRows] = await Promise.all([
+  const [rows, visitCountRows, bonusRows] = await Promise.all([
     db.select({
       paidCents: sql`coalesce(sum(case when ${claim.state}='paid' then ${claim.bountyAmountCents} end),0)`,
       verifiedUnpaidCents: sql`coalesce(sum(case when ${claim.state}='verified' then ${claim.bountyAmountCents} end),0)`,
@@ -47330,17 +47342,25 @@ async function getEarnings(ambassadorId) {
       verifiedCount: sql`count(*) filter (where ${claim.state} in ('verified','paid'))`,
       paidCount: sql`count(*) filter (where ${claim.state}='paid')`
     }).from(claim).where(eq(claim.ambassadorId, ambassadorId)),
-    db.select({ n: sql`count(*)` }).from(visit).where(eq(visit.ambassadorId, ambassadorId))
+    db.select({ n: sql`count(*)` }).from(visit).where(eq(visit.ambassadorId, ambassadorId)),
+    db.select({
+      bonusUnpaidCents: sql`coalesce(sum(case when ${upgradeBonus.paidAt} is null then ${upgradeBonus.amountCents} end),0)`,
+      bonusPaidCents: sql`coalesce(sum(case when ${upgradeBonus.paidAt} is not null then ${upgradeBonus.amountCents} end),0)`,
+      bonusCount: sql`count(*)`
+    }).from(upgradeBonus).where(eq(upgradeBonus.ambassadorId, ambassadorId))
   ]);
   const r = rows[0];
   const visitCount = Number(visitCountRows[0]?.n ?? 0);
   const verifiedCount = Number(r?.verifiedCount ?? 0);
+  const b = bonusRows[0];
   return {
-    paidCents: Number(r?.paidCents ?? 0),
-    verifiedUnpaidCents: Number(r?.verifiedUnpaidCents ?? 0),
+    paidCents: Number(r?.paidCents ?? 0) + Number(b?.bonusPaidCents ?? 0),
+    verifiedUnpaidCents: Number(r?.verifiedUnpaidCents ?? 0) + Number(b?.bonusUnpaidCents ?? 0),
     pendingCount: Number(r?.pendingCount ?? 0),
     verifiedCount,
     paidCount: Number(r?.paidCount ?? 0),
+    upgradeBonusCount: Number(b?.bonusCount ?? 0),
+    upgradeBonusCents: Number(b?.bonusUnpaidCents ?? 0) + Number(b?.bonusPaidCents ?? 0),
     visitCount,
     conversionPct: visitCount > 0 ? Math.round(verifiedCount / visitCount * 100) : 0
   };
@@ -47349,17 +47369,69 @@ async function getOpenFollowups(ambassadorId) {
   const db = await requireDb();
   return db.select().from(followupTask).where(and(eq(followupTask.ambassadorId, ambassadorId), eq(followupTask.done, false))).orderBy(followupTask.dueDate);
 }
-async function getActiveBounty() {
+async function activeConfigRow(kind, tier) {
   const db = await requireDb();
   const now = /* @__PURE__ */ new Date();
-  const rows = await db.select().from(bountyConfig).where(and(sql`${bountyConfig.effectiveFrom} <= ${now}`, or(isNull(bountyConfig.effectiveTo), gt(bountyConfig.effectiveTo, now)))).orderBy(desc(bountyConfig.effectiveFrom)).limit(1);
+  const conds = [
+    eq(bountyConfig.kind, kind),
+    sql`${bountyConfig.effectiveFrom} <= ${now}`,
+    or(isNull(bountyConfig.effectiveTo), gt(bountyConfig.effectiveTo, now))
+  ];
+  if (tier) conds.push(eq(bountyConfig.tier, tier));
+  const rows = await db.select().from(bountyConfig).where(and(...conds)).orderBy(desc(bountyConfig.effectiveFrom)).limit(1);
   return rows[0] ?? null;
+}
+async function getActiveBounty() {
+  return activeConfigRow("claim");
+}
+var UPGRADE_TIERS = ["enhanced", "premium", "growth_partner"];
+async function getUpgradeBountyConfig() {
+  const out = {};
+  for (const tier of UPGRADE_TIERS) {
+    out[tier] = (await activeConfigRow("upgrade", tier))?.amountCents ?? null;
+  }
+  return out;
+}
+async function setUpgradeBounty(tier, amountCents) {
+  const db = await requireDb();
+  const now = /* @__PURE__ */ new Date();
+  await db.update(bountyConfig).set({ effectiveTo: now }).where(and(eq(bountyConfig.kind, "upgrade"), eq(bountyConfig.tier, tier), isNull(bountyConfig.effectiveTo)));
+  await db.insert(bountyConfig).values({ amountCents, kind: "upgrade", tier, effectiveFrom: now });
+  const backfilled = await db.update(upgradeBonus).set({ amountCents }).where(and(eq(upgradeBonus.tier, tier), isNull(upgradeBonus.amountCents))).returning({ id: upgradeBonus.id });
+  return { tier, amountCents, backfilledBonuses: backfilled.length };
+}
+var UPGRADE_WINDOW_DAYS = 90;
+async function detectUpgradeBonuses() {
+  const db = await requireDb();
+  const candidates = await db.select({
+    claimId: claim.id,
+    ambassadorId: claim.ambassadorId,
+    businessId: claim.businessId,
+    tier: business.subscriptionTier
+  }).from(claim).innerJoin(business, eq(business.businessId, claim.businessId)).leftJoin(upgradeBonus, eq(upgradeBonus.claimId, claim.id)).where(
+    and(
+      sql`${claim.state} in ('verified','paid')`,
+      sql`${claim.ambassadorId} is not null`,
+      sql`${business.subscriptionTier} is not null and ${business.subscriptionTier} <> 'free'`,
+      sql`${upgradeBonus.id} is null`,
+      sql`coalesce(${claim.verifiedAt}, ${claim.createdAt}) > now() - interval '${sql.raw(String(UPGRADE_WINDOW_DAYS))} days'`
+    )
+  );
+  let created = 0;
+  for (const c of candidates) {
+    const tier = c.tier;
+    const amount = (await activeConfigRow("upgrade", tier))?.amountCents ?? null;
+    const inserted = await db.insert(upgradeBonus).values({ claimId: c.claimId, ambassadorId: c.ambassadorId, businessId: c.businessId, tier, amountCents: amount }).onConflictDoNothing({ target: upgradeBonus.claimId }).returning({ id: upgradeBonus.id });
+    if (inserted[0]) created += 1;
+  }
+  if (created > 0) console.log(`[upgradeBonus] detected ${created} new upgrade bonus(es)`);
+  return created;
 }
 async function setBounty(amountCents) {
   const db = await requireDb();
   const now = /* @__PURE__ */ new Date();
-  await db.update(bountyConfig).set({ effectiveTo: now }).where(isNull(bountyConfig.effectiveTo));
-  const inserted = await db.insert(bountyConfig).values({ amountCents, effectiveFrom: now }).returning();
+  await db.update(bountyConfig).set({ effectiveTo: now }).where(and(eq(bountyConfig.kind, "claim"), isNull(bountyConfig.effectiveTo)));
+  const inserted = await db.insert(bountyConfig).values({ amountCents, kind: "claim", effectiveFrom: now }).returning();
   const backfilled = await db.update(claim).set({ bountyAmountCents: amountCents, updatedAt: now }).where(and(eq(claim.state, "verified"), isNull(claim.bountyAmountCents))).returning({ id: claim.id });
   return { ...inserted[0], backfilledClaims: backfilled.length };
 }
@@ -48027,11 +48099,11 @@ function registerScheduledRoutes(app2) {
       "[scheduled] CRON_SECRET is not set in production \u2014 Vercel cron invocations will be rejected (403) and the directory sync / claim reconciliation will NEVER run. Set CRON_SECRET in the environment."
     );
   }
-  registerCronJob(
-    app2,
-    "syncDirectory",
-    (req) => runDirectorySync({ full: req.query.full === "1" || !!req.body && req.body.full === true })
-  );
+  registerCronJob(app2, "syncDirectory", async (req) => {
+    const result = await runDirectorySync({ full: req.query.full === "1" || !!req.body && req.body.full === true });
+    const upgradeBonusesDetected = await detectUpgradeBonuses();
+    return { ...result, upgradeBonusesDetected };
+  });
   registerCronJob(app2, "pollClaims", () => pollClaimEvents());
 }
 
@@ -61098,6 +61170,8 @@ var crmRouter = router({
     const b = await setBounty(input.amountCents);
     return { amountCents: b.amountCents, effectiveFrom: b.effectiveFrom, backfilledClaims: b.backfilledClaims };
   }),
+  adminGetUpgradeBounties: crmAdminProcedure.query(async () => getUpgradeBountyConfig()),
+  adminSetUpgradeBounty: crmAdminProcedure.input(external_exports.object({ tier: external_exports.enum(["enhanced", "premium", "growth_partner"]), amountCents: external_exports.number().int().min(0).max(5e6) })).mutation(async ({ input }) => setUpgradeBounty(input.tier, input.amountCents)),
   adminAnomalies: crmAdminProcedure.query(async () => getAnomalyClaims()),
   adminGaps: crmAdminProcedure.query(async () => getCurriculumGaps()),
   adminLeaderboard: crmAdminProcedure.query(async () => getLeaderboard()),

@@ -652,6 +652,11 @@ export default function Crm() {
                   <span>{e.activeBountyCents == null ? "bounty: not set" : `${dollars(e.activeBountyCents)}/claim`}</span>
                 </div>
               )}
+              {e != null && e.upgradeBonusCount > 0 && (
+                <p className="mt-2 text-[11px] text-emerald-600 font-semibold">
+                  🎖 {e.upgradeBonusCount} upgrade bonus{e.upgradeBonusCount > 1 ? "es" : ""} earned ({dollars(e.upgradeBonusCents)}) — a business you claimed went paid!
+                </p>
+              )}
             </Card>
 
             <Card className="mt-4 p-4">

@@ -23,10 +23,12 @@ import {
   getOpenFollowups,
   getRoutePlan,
   getTargets,
+  getUpgradeBountyConfig,
   getVisitsByAmbassador,
   markRouteStopDone,
   setBounty,
   setRouteStopStatus,
+  setUpgradeBounty,
   submitCurriculumGap,
 } from "./crmDb";
 import { getCredentialByUserId } from "./db";
@@ -249,6 +251,12 @@ export const crmRouter = router({
       const b = await setBounty(input.amountCents);
       return { amountCents: b.amountCents, effectiveFrom: b.effectiveFrom, backfilledClaims: b.backfilledClaims };
     }),
+
+  adminGetUpgradeBounties: crmAdminProcedure.query(async () => getUpgradeBountyConfig()),
+
+  adminSetUpgradeBounty: crmAdminProcedure
+    .input(z.object({ tier: z.enum(["enhanced", "premium", "growth_partner"]), amountCents: z.number().int().min(0).max(5_000_000) }))
+    .mutation(async ({ input }) => setUpgradeBounty(input.tier, input.amountCents)),
 
   adminAnomalies: crmAdminProcedure.query(async () => getAnomalyClaims()),
 

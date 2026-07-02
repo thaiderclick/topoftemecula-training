@@ -226,15 +226,33 @@ export const curriculumGap = pgTable("curriculum_gap", {
 export type CurriculumGap = typeof curriculumGap.$inferSelect;
 export type InsertCurriculumGap = typeof curriculumGap.$inferInsert;
 
-/** Bounty is config-driven, never hardcoded. Reconciliation reads the active row. */
+/** Bounty is config-driven, never hardcoded. Reconciliation reads the active row.
+ *  kind='claim' = flat fee per verified claim; kind='upgrade' + tier = bonus when
+ *  an attributed business moves to that paid tier within 90 days. */
 export const bountyConfig = pgTable("bounty_config", {
   id: serial("id").primaryKey(),
   amountCents: integer("amount_cents").notNull(),
+  kind: text("kind").notNull().default("claim"),
+  tier: text("tier"),
   effectiveFrom: timestamp("effective_from", { withTimezone: true }).defaultNow().notNull(),
   effectiveTo: timestamp("effective_to", { withTimezone: true }),
 });
 export type BountyConfig = typeof bountyConfig.$inferSelect;
 export type InsertBountyConfig = typeof bountyConfig.$inferInsert;
+
+/** One upgrade bonus per claim: credited when the attributed business shows up
+ *  on a paid tier within the attribution window. */
+export const upgradeBonus = pgTable("upgrade_bonus", {
+  id: serial("id").primaryKey(),
+  claimId: integer("claim_id").notNull().unique(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  tier: text("tier").notNull(),
+  amountCents: integer("amount_cents"),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+});
+export type UpgradeBonus = typeof upgradeBonus.$inferSelect;
 
 export const payoutPeriod = pgTable("payout_period", {
   id: serial("id").primaryKey(),
