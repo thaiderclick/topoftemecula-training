@@ -138,14 +138,40 @@ export async function getVisitsByAmbassador(ambassadorId: number, limit = 50) {
       id: visit.id,
       businessId: visit.businessId,
       businessName: business.name,
+      businessCity: business.city,
+      localClaimStatus: business.localClaimStatus,
       outcome: visit.outcome,
       notes: visit.notes,
+      ownerEmailCaptured: visit.ownerEmailCaptured,
+      ownerNameForFollowup: visit.ownerNameForFollowup,
+      bestTimeToReturn: visit.bestTimeToReturn,
       createdAt: visit.createdAt,
     })
     .from(visit)
     .leftJoin(business, eq(business.businessId, visit.businessId))
     .where(eq(visit.ambassadorId, ambassadorId))
     .orderBy(desc(visit.createdAt))
+    .limit(Math.max(1, Math.min(200, limit)));
+}
+
+/** The ambassador's claims with business names — the money pipeline they watch. */
+export async function getClaimsByAmbassador(ambassadorId: number, limit = 100) {
+  const db = await requireDb();
+  return db
+    .select({
+      id: claim.id,
+      businessId: claim.businessId,
+      businessName: business.name,
+      state: claim.state,
+      bountyAmountCents: claim.bountyAmountCents,
+      verifiedAt: claim.verifiedAt,
+      paidAt: claim.paidAt,
+      createdAt: claim.createdAt,
+    })
+    .from(claim)
+    .leftJoin(business, eq(business.businessId, claim.businessId))
+    .where(eq(claim.ambassadorId, ambassadorId))
+    .orderBy(desc(claim.createdAt))
     .limit(Math.max(1, Math.min(200, limit)));
 }
 

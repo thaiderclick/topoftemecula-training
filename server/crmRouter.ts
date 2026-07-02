@@ -13,6 +13,7 @@ import {
   ensureAmbassador,
   getActiveBounty,
   getAnomalyClaims,
+  getClaimsByAmbassador,
   getCurriculumGaps,
   getEarnings,
   getLeaderboard,
@@ -89,7 +90,15 @@ export const crmRouter = router({
   // The signed-in user's ambassador profile (created on first use).
   me: ambassadorProcedure.query(async ({ ctx }) => {
     const amb = ctx.ambassador;
-    return { id: amb.id, referralCode: amb.referralCode, payoutMethodStatus: amb.payoutMethodStatus, active: amb.active };
+    return {
+      id: amb.id,
+      referralCode: amb.referralCode,
+      payoutMethodStatus: amb.payoutMethodStatus,
+      active: amb.active,
+      // Base for claim links/QR codes; the website claim flow reads
+      // ?claim=<businessId>&amb=<code> (website PR #29).
+      claimBaseUrl: ENV.websiteBaseUrl,
+    };
   }),
 
   // Log a field visit (§5). claimed_onsite creates a `logged` claim and runs an
@@ -146,6 +155,11 @@ export const crmRouter = router({
 
   myVisits: ambassadorProcedure.query(async ({ ctx }) => {
     return getVisitsByAmbassador(ctx.ambassador.id);
+  }),
+
+  // The ambassador's claims (logged → verified → paid) — visible money pipeline.
+  myClaims: ambassadorProcedure.query(async ({ ctx }) => {
+    return getClaimsByAmbassador(ctx.ambassador.id);
   }),
 
   // Ranked target queue (§6): unclaimed businesses, by distance (if located) or

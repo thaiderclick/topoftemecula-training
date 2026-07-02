@@ -27640,6 +27640,9 @@ var init_env = __esm({
       supabaseUrl: process.env.SUPABASE_URL ?? "",
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
       supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+      // Public website base for ambassador claim links/QR codes. The claim flow
+      // (website repo PR #29) reads ?claim=<businessId>&amb=<code> on /business/signup.
+      websiteBaseUrl: process.env.WEBSITE_PUBLIC_BASE_URL ?? "https://topoftemecula.com",
       // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
       posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
       posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",
@@ -47001,10 +47004,28 @@ async function getVisitsByAmbassador(ambassadorId, limit = 50) {
     id: visit.id,
     businessId: visit.businessId,
     businessName: business.name,
+    businessCity: business.city,
+    localClaimStatus: business.localClaimStatus,
     outcome: visit.outcome,
     notes: visit.notes,
+    ownerEmailCaptured: visit.ownerEmailCaptured,
+    ownerNameForFollowup: visit.ownerNameForFollowup,
+    bestTimeToReturn: visit.bestTimeToReturn,
     createdAt: visit.createdAt
   }).from(visit).leftJoin(business, eq(business.businessId, visit.businessId)).where(eq(visit.ambassadorId, ambassadorId)).orderBy(desc(visit.createdAt)).limit(Math.max(1, Math.min(200, limit)));
+}
+async function getClaimsByAmbassador(ambassadorId, limit = 100) {
+  const db = await requireDb();
+  return db.select({
+    id: claim.id,
+    businessId: claim.businessId,
+    businessName: business.name,
+    state: claim.state,
+    bountyAmountCents: claim.bountyAmountCents,
+    verifiedAt: claim.verifiedAt,
+    paidAt: claim.paidAt,
+    createdAt: claim.createdAt
+  }).from(claim).leftJoin(business, eq(business.businessId, claim.businessId)).where(eq(claim.ambassadorId, ambassadorId)).orderBy(desc(claim.createdAt)).limit(Math.max(1, Math.min(200, limit)));
 }
 var TARGET_COLUMNS = {
   businessId: business.businessId,
@@ -60470,7 +60491,15 @@ var crmRouter = router({
   // The signed-in user's ambassador profile (created on first use).
   me: ambassadorProcedure.query(async ({ ctx }) => {
     const amb = ctx.ambassador;
-    return { id: amb.id, referralCode: amb.referralCode, payoutMethodStatus: amb.payoutMethodStatus, active: amb.active };
+    return {
+      id: amb.id,
+      referralCode: amb.referralCode,
+      payoutMethodStatus: amb.payoutMethodStatus,
+      active: amb.active,
+      // Base for claim links/QR codes; the website claim flow reads
+      // ?claim=<businessId>&amb=<code> (website PR #29).
+      claimBaseUrl: ENV.websiteBaseUrl
+    };
   }),
   // Log a field visit (§5). claimed_onsite creates a `logged` claim and runs an
   // on-demand live-check; verification/attribution is still decided by the
@@ -60519,6 +60548,10 @@ var crmRouter = router({
   }),
   myVisits: ambassadorProcedure.query(async ({ ctx }) => {
     return getVisitsByAmbassador(ctx.ambassador.id);
+  }),
+  // The ambassador's claims (logged → verified → paid) — visible money pipeline.
+  myClaims: ambassadorProcedure.query(async ({ ctx }) => {
+    return getClaimsByAmbassador(ctx.ambassador.id);
   }),
   // Ranked target queue (§6): unclaimed businesses, by distance (if located) or
   // confidence. Ambassador-gated: the directory is for certified field staff.

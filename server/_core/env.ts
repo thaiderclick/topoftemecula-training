@@ -23,6 +23,9 @@ export const ENV = {
   supabaseUrl: process.env.SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  // Public website base for ambassador claim links/QR codes. The claim flow
+  // (website repo PR #29) reads ?claim=<businessId>&amb=<code> on /business/signup.
+  websiteBaseUrl: process.env.WEBSITE_PUBLIC_BASE_URL ?? "https://topoftemecula.com",
   // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
   posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
   posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",
