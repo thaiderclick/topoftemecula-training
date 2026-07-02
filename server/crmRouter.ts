@@ -36,6 +36,7 @@ import {
   submitCurriculumGap,
 } from "./crmDb";
 import { getCredentialByUserId } from "./db";
+import { getStopIntel } from "./precallIntel";
 import { reconcileLiveCheck } from "./reconciliation";
 import { getAttributionLeakCount } from "./monitoring";
 
@@ -233,6 +234,12 @@ export const crmRouter = router({
     await clearRoutePlan(ctx.ambassador.id);
     return { success: true };
   }),
+
+  // Pre-call intel: what AI says about THIS business + door ammunition.
+  // Cached 7 days; first generation takes a few seconds (three model calls).
+  stopIntel: ambassadorProcedure
+    .input(z.object({ businessId: z.string().uuid() }))
+    .query(async ({ input }) => getStopIntel(input.businessId)),
 
   // Shift-scoped breadcrumb: only stored while today's route is active.
   recordPing: ambassadorProcedure

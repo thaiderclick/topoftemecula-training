@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import {
   Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation,
   History, GraduationCap, LogOut, Lock, QrCode, Share2, Copy, X, ClipboardList, BadgeCheck,
-  Route as RouteIcon, Check, RotateCcw, Trash2, PlusCircle, Flag,
+  Route as RouteIcon, Check, RotateCcw, Trash2, PlusCircle, Flag, Sparkles,
 } from "lucide-react";
 
 const OUTCOMES: { value: string; label: string; hint?: string }[] = [
@@ -113,6 +113,51 @@ function ClaimQrModal({ base, code, business, onClose }: {
           </Button>
         </div>
       </Card>
+    </div>
+  );
+}
+
+/** Pre-call intel: the nugget to drop at the door. First load takes ~5s (live AI probe). */
+function StopIntelPanel({ businessId }: { businessId: string }) {
+  const intel = trpc.crm.stopIntel.useQuery({ businessId }, { staleTime: Infinity, retry: 1 });
+
+  if (intel.isLoading) {
+    return (
+      <div className="mt-3 border-t border-border/60 pt-3 flex items-center gap-2 text-[12px] text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin" /> Asking AI about this business… (~5s first time)
+      </div>
+    );
+  }
+  if (intel.error || !intel.data) {
+    return <p className="mt-3 border-t border-border/60 pt-3 text-[12px] text-muted-foreground">Intel unavailable right now — try again in a minute.</p>;
+  }
+  const d = intel.data;
+  return (
+    <div className="mt-3 border-t border-border/60 pt-3 flex flex-col gap-2.5 text-[12px]">
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-primary font-bold mb-1">Say this at the door</p>
+        <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2 text-[13px] text-foreground leading-snug">
+          “{d.opener}”
+          <button
+            onClick={() => { navigator.clipboard?.writeText(d.opener); toast.success("Opener copied."); }}
+            className="ml-1.5 align-middle text-primary hover:text-primary/70"
+          >
+            <Copy className="w-3 h-3 inline" />
+          </button>
+        </div>
+      </div>
+      <p><span className="font-bold text-foreground">What AI says about them:</span> <span className="text-muted-foreground">{d.aiSummary}</span></p>
+      {d.competitorsMentioned.length > 0 && (
+        <p><span className="font-bold text-foreground">AI recommends instead:</span> <span className="text-muted-foreground">{d.competitorsMentioned.join(", ")}</span></p>
+      )}
+      {d.listingGaps.length > 0 && (
+        <p><span className="font-bold text-foreground">Listing gaps:</span> <span className="text-muted-foreground">{d.listingGaps.join(" · ")}</span></p>
+      )}
+      <div className="rounded-lg bg-muted/40 px-3 py-2">
+        <p className="text-muted-foreground italic">If they say: “{d.likelyObjection}”</p>
+        <p className="text-foreground mt-1">→ {d.objectionResponse}</p>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Live AI responses from {new Date(d.generatedAt).toLocaleDateString()} — show them the real thing on your phone if they doubt it.</p>
     </div>
   );
 }
@@ -250,6 +295,7 @@ export default function Crm() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [openVisitFor, setOpenVisitFor] = useState<string | null>(null);
   const [qrFor, setQrFor] = useState<{ businessId: string; name: string | null } | null>(null);
+  const [intelFor, setIntelFor] = useState<string | null>(null);
   const [gapText, setGapText] = useState("");
 
   const me = trpc.crm.me.useQuery(undefined, { enabled: isAuthenticated, retry: false });
@@ -290,7 +336,14 @@ export default function Crm() {
   const utils = trpc.useUtils();
   const [routeCount, setRouteCount] = useState(8);
   const buildRoute = trpc.crm.buildRoute.useMutation({
-    onSuccess: () => { utils.crm.route.invalidate(); toast.success("Route built — nearest first."); },
+    onSuccess: async (plan) => {
+      utils.crm.route.invalidate();
+      toast.success("Route built — pre-call intel is warming up for each stop.");
+      // Pre-warm intel sequentially so it's instant by the time they park.
+      for (const stop of plan.stops) {
+        await utils.crm.stopIntel.prefetch({ businessId: stop.businessId }, { staleTime: Infinity }).catch(() => {});
+      }
+    },
     onError: (err) => toast.error(err.message),
   });
   const addStop = trpc.crm.addRouteStop.useMutation({
@@ -394,6 +447,9 @@ export default function Crm() {
           </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
+          <Button size="sm" variant="outline" title="Pre-call intel" onClick={() => setIntelFor(intelFor === b.businessId ? null : b.businessId)}>
+            <Sparkles className="w-3.5 h-3.5" />
+          </Button>
           <Button
             size="sm" variant="outline" title="Add to today's route"
             disabled={addStop.isPending || route.data?.stops.some((s) => s.businessId === b.businessId)}
@@ -411,6 +467,7 @@ export default function Crm() {
           </Button>
         </div>
       </div>
+      {intelFor === b.businessId && <StopIntelPanel businessId={b.businessId} />}
       {openVisitFor === b.businessId && (
         <VisitForm businessId={b.businessId} businessName={b.name ?? "business"} onDone={() => setOpenVisitFor(null)} />
       )}
@@ -549,6 +606,9 @@ export default function Crm() {
                               <p className="text-[11px] text-muted-foreground truncate">{[s.address, s.city].filter(Boolean).join(" · ") || "—"}</p>
                             </div>
                             <div className="flex gap-1.5 shrink-0">
+                              <Button size="sm" variant="outline" title="Pre-call intel" onClick={() => setIntelFor(intelFor === s.businessId ? null : s.businessId)}>
+                                <Sparkles className="w-3.5 h-3.5" />
+                              </Button>
                               <a href={directionsUrl(s)} target="_blank" rel="noreferrer">
                                 <Button size="sm" variant="outline" title="Directions"><Navigation className="w-3.5 h-3.5" /></Button>
                               </a>
@@ -568,6 +628,7 @@ export default function Crm() {
                               )}
                             </div>
                           </div>
+                          {intelFor === s.businessId && <StopIntelPanel businessId={s.businessId} />}
                           {openVisitFor === s.businessId && s.status === "pending" && (
                             <VisitForm businessId={s.businessId} businessName={s.name ?? "business"} onDone={() => setOpenVisitFor(null)} />
                           )}
@@ -606,6 +667,9 @@ export default function Crm() {
                         <div className="flex gap-1.5 shrink-0">
                           {s.status === "pending" ? (
                             <>
+                              <Button size="sm" variant="outline" title="Pre-call intel" onClick={() => setIntelFor(intelFor === s.businessId ? null : s.businessId)}>
+                                <Sparkles className="w-3.5 h-3.5" />
+                              </Button>
                               <a href={directionsUrl(s)} target="_blank" rel="noreferrer">
                                 <Button size="sm" variant="outline" title="Directions"><Navigation className="w-3.5 h-3.5" /></Button>
                               </a>
@@ -628,6 +692,7 @@ export default function Crm() {
                           )}
                         </div>
                       </div>
+                      {intelFor === s.businessId && <StopIntelPanel businessId={s.businessId} />}
                       {openVisitFor === s.businessId && s.status === "pending" && (
                         <VisitForm businessId={s.businessId} businessName={s.name ?? "business"} onDone={() => setOpenVisitFor(null)} />
                       )}

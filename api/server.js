@@ -14420,8 +14420,8 @@ var require_text = __commonJS({
     var debug = require_src()("body-parser:text");
     var read = require_read();
     var typeis = require_type_is();
-    module2.exports = text2;
-    function text2(options) {
+    module2.exports = text3;
+    function text3(options) {
       var opts = options || {};
       var defaultCharset = opts.defaultCharset || "utf-8";
       var inflate = opts.inflate !== false;
@@ -23651,11 +23651,11 @@ var require_utils4 = __commonJS({
       const outer = await md5(Buffer.concat([Buffer.from(inner), salt]));
       return "md5" + outer;
     }
-    async function sha2562(text2) {
-      return await subtleCrypto.digest("SHA-256", text2);
+    async function sha2562(text3) {
+      return await subtleCrypto.digest("SHA-256", text3);
     }
-    async function hashByName(hashName, text2) {
-      return await subtleCrypto.digest(hashName, text2);
+    async function hashByName(hashName, text3) {
+      return await subtleCrypto.digest(hashName, text3);
     }
     async function hmacSha256(keyBuffer, msg) {
       const key = await subtleCrypto.importKey("raw", keyBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -23876,21 +23876,21 @@ var require_sasl = __commonJS({
         throw new Error("SASL: SCRAM-SERVER-FINAL-MESSAGE: server signature does not match");
       }
     }
-    function isPrintableChars(text2) {
-      if (typeof text2 !== "string") {
+    function isPrintableChars(text3) {
+      if (typeof text3 !== "string") {
         throw new TypeError("SASL: text must be a string");
       }
-      return text2.split("").map((_, i) => text2.charCodeAt(i)).every((c) => c >= 33 && c <= 43 || c >= 45 && c <= 126);
+      return text3.split("").map((_, i) => text3.charCodeAt(i)).every((c) => c >= 33 && c <= 43 || c >= 45 && c <= 126);
     }
-    function isBase64(text2) {
-      return /^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(text2);
+    function isBase64(text3) {
+      return /^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(text3);
     }
-    function parseAttributePairs(text2) {
-      if (typeof text2 !== "string") {
+    function parseAttributePairs(text3) {
+      if (typeof text3 !== "string") {
         throw new TypeError("SASL: attribute pairs text must be a string");
       }
       return new Map(
-        text2.split(",").map((attrValue) => {
+        text3.split(",").map((attrValue) => {
           if (!/^.=/.test(attrValue)) {
             throw new Error("SASL: Invalid attribute pair entry");
           }
@@ -24769,9 +24769,9 @@ var require_messages = __commonJS({
     };
     exports2.ReadyForQueryMessage = ReadyForQueryMessage;
     var CommandCompleteMessage = class {
-      constructor(length, text2) {
+      constructor(length, text3) {
         this.length = length;
-        this.text = text2;
+        this.text = text3;
         this.name = "commandComplete";
       }
     };
@@ -24943,8 +24943,8 @@ var require_serializer = __commonJS({
         /* code.startup */
       );
     };
-    var query = (text2) => {
-      return writer.addCString(text2).flush(
+    var query = (text3) => {
+      return writer.addCString(text3).flush(
         81
         /* code.query */
       );
@@ -25069,8 +25069,8 @@ var require_serializer = __commonJS({
       return msg.name ? cstringMessage(68, `${msg.type}${msg.name || ""}`) : msg.type === "P" ? emptyDescribePortal : emptyDescribeStatement;
     };
     var close = (msg) => {
-      const text2 = `${msg.type}${msg.name || ""}`;
-      return cstringMessage(67, text2);
+      const text3 = `${msg.type}${msg.name || ""}`;
+      return cstringMessage(67, text3);
     };
     var copyData = (chunk) => {
       return writer.add(chunk).flush(
@@ -25342,8 +25342,8 @@ var require_parser = __commonJS({
       return new messages_1.ReadyForQueryMessage(LATEINIT_LENGTH, status);
     };
     var parseCommandCompleteMessage = (reader) => {
-      const text2 = reader.cstring();
-      return new messages_1.CommandCompleteMessage(LATEINIT_LENGTH, text2);
+      const text3 = reader.cstring();
+      return new messages_1.CommandCompleteMessage(LATEINIT_LENGTH, text3);
     };
     var parseCopyData = (reader, length) => {
       const chunk = reader.bytes(length - 4);
@@ -25715,8 +25715,8 @@ var require_connection = __commonJS({
         }
         return this.stream.write(buffer);
       }
-      query(text2) {
-        this._send(serialize.query(text2));
+      query(text3) {
+        this._send(serialize.query(text3));
       }
       // send parse message
       parse(query) {
@@ -27057,9 +27057,9 @@ var require_pg_pool = __commonJS({
         this._idle.push(new IdleItem(client, idleListener, tid));
         this._pulseQueue();
       }
-      query(text2, values, cb) {
-        if (typeof text2 === "function") {
-          const response2 = promisify(this.Promise, text2);
+      query(text3, values, cb) {
+        if (typeof text3 === "function") {
+          const response2 = promisify(this.Promise, text3);
           setImmediate(function() {
             return response2.callback(new Error("Passing a function as the first parameter to pool.query is not supported"));
           });
@@ -27087,7 +27087,7 @@ var require_pg_pool = __commonJS({
           client.once("error", onError);
           this.log("dispatching query");
           try {
-            client.query(text2, values, (err2, res) => {
+            client.query(text3, values, (err2, res) => {
               this.log("query dispatched");
               client.removeListener("error", onError);
               if (clientReleased) {
@@ -27782,7 +27782,7 @@ function decodeWords(str) {
       }
     ).replace(/(\?=)?__\x00JOIN\x00__(=\?([^?]+)\?[QqBb]\?)?/g, "").replace(/(=\?[^?]+\?[QqBb]\?[^?]*\?=)\s+(?==\?[^?]+\?[QqBb]\?[^?]*\?=)/g, "$1").replace(
       /=\?([\w_\-*]+)\?([QqBb])\?([^?]*)\?=/g,
-      (m, charset, encoding, text2) => decodeWord(charset, encoding, text2)
+      (m, charset, encoding, text3) => decodeWord(charset, encoding, text3)
     );
     if (joinString && result.indexOf("\uFFFD") >= 0) {
       joinString = false;
@@ -33129,7 +33129,7 @@ var init_dist = __esm({
         });
       }
       async forwardWrapped(email3, options) {
-        const { to, from, subject, text: text2, html } = options;
+        const { to, from, subject, text: text3, html } = options;
         if (!email3.raw?.download_url) return {
           data: null,
           error: {
@@ -33154,7 +33154,7 @@ var init_dist = __esm({
           from,
           to,
           subject,
-          text: text2,
+          text: text3,
           html,
           attachments: [{
             filename: "forwarded_message.eml",
@@ -46551,6 +46551,22 @@ var routePlan = pgTable("route_plan", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
+var aiCategoryCheck = pgTable("ai_category_check", {
+  id: serial("id").primaryKey(),
+  categoryName: text("category_name").notNull().unique(),
+  mentionedNames: text("mentioned_names").array().notNull().default([]),
+  rawResponse: text("raw_response"),
+  model: text("model"),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull()
+});
+var aiStopIntel = pgTable("ai_stop_intel", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull().unique(),
+  intel: jsonb("intel").$type().notNull(),
+  probeRaw: text("probe_raw"),
+  model: text("model"),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull()
+});
 var routePing = pgTable("route_ping", {
   id: serial("id").primaryKey(),
   ambassadorId: integer("ambassador_id").notNull(),
@@ -55270,8 +55286,8 @@ var parsedTypeFromType = (t2, data = void 0) => {
   }
   return t2;
 };
-var capitalizeFirstCharacter = (text2) => {
-  return text2.charAt(0).toUpperCase() + text2.slice(1);
+var capitalizeFirstCharacter = (text3) => {
+  return text3.charAt(0).toUpperCase() + text3.slice(1);
 };
 function getUnitTypeFromNumber(number4) {
   const abs = Math.abs(number4);
@@ -61065,6 +61081,143 @@ var import_crypto3 = require("crypto");
 // server/crmRouter.ts
 init_env();
 
+// server/precallIntel.ts
+var MODEL = "gpt-4o-mini";
+var CATEGORY_TTL_MS = 7 * 24 * 60 * 60 * 1e3;
+var INTEL_TTL_MS = 7 * 24 * 60 * 60 * 1e3;
+function text2(res) {
+  return (res.choices[0]?.message?.content ?? "").trim();
+}
+async function getCategoryCheck(db, categoryName) {
+  const rows = await db.select().from(aiCategoryCheck).where(eq(aiCategoryCheck.categoryName, categoryName)).limit(1);
+  const cached2 = rows[0];
+  if (cached2 && Date.now() - cached2.checkedAt.getTime() < CATEGORY_TTL_MS) return cached2;
+  const res = await invokeLLM({
+    model: MODEL,
+    messages: [
+      {
+        role: "user",
+        content: `A local resident asks you: "What are the best ${categoryName.toLowerCase()} in the Temecula, California area? Give me your top recommendations." Answer as you normally would, naming specific businesses.`
+      }
+    ]
+  });
+  const raw = text2(res);
+  const extract = await invokeLLM({
+    model: MODEL,
+    messages: [
+      {
+        role: "user",
+        content: `List ONLY the business names mentioned in this text as a JSON array of strings, nothing else:
+
+${raw}`
+      }
+    ],
+    response_format: { type: "json_object" }
+  });
+  let names = [];
+  try {
+    const parsed = JSON.parse(text2(extract));
+    const arr = Array.isArray(parsed) ? parsed : Object.values(parsed).find(Array.isArray);
+    names = (arr ?? []).filter((n) => typeof n === "string").slice(0, 12);
+  } catch {
+    names = [];
+  }
+  const upserted = await db.insert(aiCategoryCheck).values({ categoryName, mentionedNames: names, rawResponse: raw, model: MODEL, checkedAt: /* @__PURE__ */ new Date() }).onConflictDoUpdate({
+    target: aiCategoryCheck.categoryName,
+    set: { mentionedNames: names, rawResponse: raw, model: MODEL, checkedAt: /* @__PURE__ */ new Date() }
+  }).returning();
+  return upserted[0];
+}
+function listingGaps(b) {
+  const gaps = [];
+  if (b.directoryClaimStatus === "unclaimed") gaps.push("listing unclaimed \u2014 nobody owns their presence");
+  if (!b.website) gaps.push("no website on the listing");
+  if (!b.phone) gaps.push("no phone number on the listing");
+  if (!b.hours) gaps.push("no business hours listed");
+  return gaps;
+}
+function nameMatches(businessName, mentioned) {
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+  const bn = norm(businessName);
+  return mentioned.some((m) => {
+    const mn = norm(m);
+    return bn.includes(mn) || mn.includes(bn);
+  });
+}
+async function getStopIntel(businessId) {
+  const db = await requireDb();
+  const cachedRows = await db.select().from(aiStopIntel).where(eq(aiStopIntel.businessId, businessId)).limit(1);
+  const cached2 = cachedRows[0];
+  if (cached2 && Date.now() - cached2.generatedAt.getTime() < INTEL_TTL_MS) {
+    return { ...cached2.intel, generatedAt: cached2.generatedAt.toISOString() };
+  }
+  const bRows = await db.select().from(business).where(eq(business.businessId, businessId)).limit(1);
+  const b = bRows[0];
+  if (!b) throw new Error("business not found");
+  const name = b.name ?? "this business";
+  const probeRes = await invokeLLM({
+    model: MODEL,
+    messages: [
+      {
+        role: "user",
+        content: `What do you know about "${name}"${b.city ? ` in ${b.city}, California` : " in the Temecula, California area"}? Describe the business, its hours, and what it's known for. If you don't have reliable information, say so plainly.`
+      }
+    ]
+  });
+  const probe = text2(probeRes);
+  const check2 = b.categoryName ? await getCategoryCheck(db, b.categoryName) : null;
+  const mentioned = check2?.mentionedNames ?? [];
+  const aiKnowsThem = nameMatches(name, mentioned);
+  const competitorsMentioned = mentioned.filter((m) => !nameMatches(name, [m])).slice(0, 4);
+  const paidCompetitor = b.categoryName ? (await db.select({ name: business.name, tier: business.subscriptionTier }).from(business).where(
+    and(
+      eq(business.categoryName, b.categoryName),
+      ne(business.businessId, businessId),
+      sql`${business.subscriptionTier} is not null and ${business.subscriptionTier} <> 'free'`
+    )
+  ).limit(1))[0] ?? null : null;
+  const gaps = listingGaps(b);
+  const synthesisRes = await invokeLLM({
+    model: MODEL,
+    messages: [
+      {
+        role: "system",
+        content: "You write pre-call briefings for field ambassadors of Top of Temecula, a local business directory that AI assistants read. The ambassador is about to walk into a business and has 30 seconds to earn attention by showing the owner something true and specific about their own AI visibility. Write in plain spoken English \u2014 no jargon, no hype, nothing that sounds like a sales script. Every claim must come from the data provided; invent nothing. Respond as JSON with exactly these keys: opener (1-2 sentences the ambassador can say out loud, referencing the most surprising true fact), insight (the single most compelling fact for THIS business, one sentence), likelyObjection (the pushback this specific owner will most plausibly give, one sentence, first person as the owner), objectionResponse (a respectful, concrete counter, 1-2 sentences), aiSummary (one sentence: what AI currently says/knows about them)."
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          business: { name, category: b.categoryName, city: b.city, claimStatus: b.directoryClaimStatus },
+          whatAiSaysAboutThemWhenAskedDirectly: probe.slice(0, 1500),
+          isRecommendedWhenPeopleAskForTheirCategory: aiKnowsThem,
+          competitorsAiRecommendsInstead: competitorsMentioned,
+          listingGaps: gaps,
+          nearbyPaidCompetitor: paidCompetitor
+        })
+      }
+    ],
+    response_format: { type: "json_object" }
+  });
+  let parsed = {};
+  try {
+    parsed = JSON.parse(text2(synthesisRes));
+  } catch {
+  }
+  const intel = {
+    opener: parsed.opener ?? `I looked up ${name} on ChatGPT before walking in \u2014 can I show you what it says?`,
+    insight: parsed.insight ?? (aiKnowsThem ? "AI assistants mention them, but their listing is unclaimed." : "AI assistants don't recommend them for their own category."),
+    likelyObjection: parsed.likelyObjection ?? "We already show up fine on Google.",
+    objectionResponse: parsed.objectionResponse ?? "Google is where people search \u2014 AI assistants are where people now ask. Different index, and right now it's missing you.",
+    aiKnowsThem,
+    aiSummary: parsed.aiSummary ?? probe.slice(0, 200),
+    competitorsMentioned,
+    listingGaps: gaps
+  };
+  const now = /* @__PURE__ */ new Date();
+  await db.insert(aiStopIntel).values({ businessId, intel, probeRaw: probe, model: MODEL, generatedAt: now }).onConflictDoUpdate({ target: aiStopIntel.businessId, set: { intel, probeRaw: probe, model: MODEL, generatedAt: now } });
+  return { ...intel, generatedAt: now.toISOString() };
+}
+
 // server/monitoring.ts
 init_env();
 async function getAttributionLeakCount() {
@@ -61244,6 +61397,9 @@ var crmRouter = router({
     await clearRoutePlan(ctx.ambassador.id);
     return { success: true };
   }),
+  // Pre-call intel: what AI says about THIS business + door ammunition.
+  // Cached 7 days; first generation takes a few seconds (three model calls).
+  stopIntel: ambassadorProcedure.input(external_exports.object({ businessId: external_exports.string().uuid() })).query(async ({ input }) => getStopIntel(input.businessId)),
   // Shift-scoped breadcrumb: only stored while today's route is active.
   recordPing: ambassadorProcedure.input(external_exports.object({ lat: external_exports.number().min(-90).max(90), lng: external_exports.number().min(-180).max(180) })).mutation(async ({ ctx, input }) => {
     const tracked2 = await recordRoutePing(ctx.ambassador.id, input.lat, input.lng);

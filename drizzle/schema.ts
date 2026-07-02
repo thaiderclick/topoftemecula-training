@@ -302,6 +302,37 @@ export const routePlan = pgTable("route_plan", {
 });
 export type RoutePlan = typeof routePlan.$inferSelect;
 
+/** Weekly per-category AI check: who the model recommends for this business type. */
+export const aiCategoryCheck = pgTable("ai_category_check", {
+  id: serial("id").primaryKey(),
+  categoryName: text("category_name").notNull().unique(),
+  mentionedNames: text("mentioned_names").array().notNull().default([]),
+  rawResponse: text("raw_response"),
+  model: text("model"),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Per-business pre-call intel: opener, insight, objection ammunition. */
+export interface StopIntel {
+  opener: string;
+  insight: string;
+  likelyObjection: string;
+  objectionResponse: string;
+  aiKnowsThem: boolean;
+  aiSummary: string;
+  competitorsMentioned: string[];
+  listingGaps: string[];
+}
+
+export const aiStopIntel = pgTable("ai_stop_intel", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull().unique(),
+  intel: jsonb("intel").$type<StopIntel>().notNull(),
+  probeRaw: text("probe_raw"),
+  model: text("model"),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 /** Breadcrumbs recorded only while a day route is active (shift-scoped tracking). */
 export const routePing = pgTable("route_ping", {
   id: serial("id").primaryKey(),
