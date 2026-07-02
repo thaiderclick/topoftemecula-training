@@ -3,9 +3,9 @@
  *
  * Vercel Cron invokes these with GET and, when CRON_SECRET is set, an
  * `Authorization: Bearer <CRON_SECRET>` header. POST is allowed for manual runs.
- *
- * Directory sync runs daily off-peak (see vercel.json `crons`). The claim
- * reconciliation poll (§2b) will be added with the verification engine.
+ * With no CRON_SECRET the endpoints are open in dev and REJECTED in production
+ * — that rejection is logged loudly, because a silently-403ing cron means the
+ * directory mirror and claim reconciliation never run.
  */
 import type { Express, Request, Response } from "express";
 import { ENV } from "./_core/env";
@@ -20,43 +20,40 @@ function authorized(req: Request): boolean {
   return !ENV.isProduction;
 }
 
+function registerCronJob(app: Express, job: string, run: (req: Request) => Promise<object>): void {
+  const handler = async (req: Request, res: Response) => {
+    if (!authorized(req)) {
+      console.warn(
+        `[scheduled] ${job}: rejected unauthorized request (${
+          ENV.cronSecret ? "bad/missing bearer token" : "CRON_SECRET not set in production"
+        })`
+      );
+      return res.status(403).json({ error: "forbidden" });
+    }
+    try {
+      const result = await run(req);
+      res.json({ ok: true, job, ...result });
+    } catch (e) {
+      const err = e as Error;
+      // Full error (incl. stack) goes to the server log only — response bodies
+      // must not leak stack traces.
+      console.error(`[scheduled] ${job} failed:`, err);
+      res.status(500).json({ job, error: err?.message ?? String(e), timestamp: new Date().toISOString() });
+    }
+  };
+  app.get(`/api/scheduled/${job}`, handler); // Vercel Cron
+  app.post(`/api/scheduled/${job}`, handler); // manual trigger
+}
+
 export function registerScheduledRoutes(app: Express): void {
-  const syncDirectory = async (req: Request, res: Response) => {
-    if (!authorized(req)) return res.status(403).json({ error: "forbidden" });
-    const full = req.query.full === "1" || (req.body && req.body.full === true);
-    try {
-      const result = await runDirectorySync({ full: !!full });
-      res.json({ ok: true, job: "syncDirectory", ...result });
-    } catch (e) {
-      const err = e as Error;
-      res.status(500).json({
-        job: "syncDirectory",
-        error: err?.message ?? String(e),
-        stack: err?.stack,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  };
-
-  app.get("/api/scheduled/syncDirectory", syncDirectory); // Vercel Cron
-  app.post("/api/scheduled/syncDirectory", syncDirectory); // manual trigger
-
-  const pollClaims = async (req: Request, res: Response) => {
-    if (!authorized(req)) return res.status(403).json({ error: "forbidden" });
-    try {
-      const result = await pollClaimEvents();
-      res.json({ ok: true, job: "pollClaims", ...result });
-    } catch (e) {
-      const err = e as Error;
-      res.status(500).json({
-        job: "pollClaims",
-        error: err?.message ?? String(e),
-        stack: err?.stack,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  };
-
-  app.get("/api/scheduled/pollClaims", pollClaims); // Vercel Cron
-  app.post("/api/scheduled/pollClaims", pollClaims); // manual trigger
+  if (ENV.isProduction && !ENV.cronSecret) {
+    console.error(
+      "[scheduled] CRON_SECRET is not set in production — Vercel cron invocations will be rejected (403) " +
+        "and the directory sync / claim reconciliation will NEVER run. Set CRON_SECRET in the environment."
+    );
+  }
+  registerCronJob(app, "syncDirectory", (req) =>
+    runDirectorySync({ full: req.query.full === "1" || (!!req.body && req.body.full === true) })
+  );
+  registerCronJob(app, "pollClaims", () => pollClaimEvents());
 }

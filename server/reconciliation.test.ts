@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decideReconciliation } from "./reconciliation";
+import { overlappedSince } from "./websiteDb";
 
 // The pure §4 decision. `ambassadorId` is what the caller resolves via a citext
 // `=` in SQL — case-insensitivity lives in the DB, so these tests assert the
@@ -39,5 +40,19 @@ describe("decideReconciliation (§4 branching)", () => {
     expect(
       decideReconciliation({ referral_code: null }, { existingBySource: { id: 5 }, ambassadorId: null, loggedClaim: null })
     ).toEqual({ kind: "idempotent", claimId: 5 });
+  });
+});
+
+// Watermark reads must start BEHIND the stored watermark so late-committing
+// rows and equal timestamps are re-read (idempotency absorbs the repeats)
+// instead of being lost forever.
+describe("overlappedSince (watermark overlap)", () => {
+  it("subtracts the overlap window from the watermark", () => {
+    const wm = new Date("2026-07-02T11:00:00.000Z");
+    expect(overlappedSince(wm, 60 * 60 * 1000)).toEqual(new Date("2026-07-02T10:00:00.000Z"));
+  });
+
+  it("null watermark (first run / full backfill) stays null", () => {
+    expect(overlappedSince(null, 60 * 60 * 1000)).toBeNull();
   });
 });

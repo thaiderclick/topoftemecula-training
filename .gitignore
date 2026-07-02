@@ -112,3 +112,9 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Supabase CLI scratch (rewritten on every CLI run)
+supabase/.temp/
+
+# Generated server bundle (scripts/build-server.mjs writes it during `pnpm build`)
+api/server.js

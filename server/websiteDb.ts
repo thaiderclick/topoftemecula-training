@@ -59,45 +59,103 @@ export interface WebsiteBusinessRow {
   effective_at: string | null; // coalesce(updated_at, created_at)
 }
 
-// Only literal, server-controlled values are interpolated below (an ISO
-// timestamp and two integers), so this is injection-safe and avoids the
-// extended protocol that can misbehave through the pooler.
-function sanitizeIso(d: Date): string {
-  const iso = d.toISOString();
-  if (!/^[0-9T:.\-]+Z$/.test(iso)) throw new Error("bad timestamp");
-  return iso;
+// Only literal, server-controlled values are interpolated below (ISO
+// timestamps, uuids, and integers — each validated), so this is injection-safe
+// and avoids the extended protocol that can misbehave through the pooler.
+function sanitizeUuid(id: string): string {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("bad uuid");
+  return id;
 }
 
+// Cursor timestamps travel as ISO text with microseconds (see KeysetCursor).
+function sanitizeTsText(ts: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$/.test(ts)) throw new Error("bad cursor timestamp");
+  return ts;
+}
+
+// Timestamps used as keyset cursors are selected via to_char so they round-trip
+// EXACTLY. Postgres keeps microseconds; the pg driver's Date only keeps
+// milliseconds, and a truncated cursor re-includes (or skips) boundary rows.
+const ISO_US = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`;
+
 /**
- * Fetch a page of businesses ordered by their effective-update time ascending.
- * `since` filters to rows changed after a watermark (null = full backfill).
+ * Keyset cursor for paging: strictly after (ts, id) in (timestamp, id) order.
+ * Used instead of LIMIT/OFFSET because the sort keys are mutable (updated_at)
+ * or non-unique (created_at): with OFFSET, a concurrent edit shifts rows across
+ * page boundaries and a row gets skipped while the watermark leapfrogs it.
+ * `ts` is the microsecond-exact ISO text the row was fetched with — never a
+ * JS Date (millisecond truncation breaks the strict tuple comparison).
+ */
+export interface KeysetCursor {
+  ts: string;
+  id: string;
+}
+
+export const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * Watermark reads subtract an overlap so rows that COMMITTED after the last
+ * run but with a timestamp at-or-before the stored watermark (long-running
+ * transactions, equal timestamps) are re-read and not lost forever. Re-reads
+ * are absorbed by idempotent upserts/guards downstream.
+ */
+export function overlappedSince(watermark: Date | null, overlapMs: number): Date | null {
+  if (!watermark) return null;
+  return new Date(watermark.getTime() - overlapMs);
+}
+
+/** Starting cursor for an incremental read from a watermark (or null = full read). */
+export function cursorFromWatermark(watermark: Date | null, overlapMs: number): KeysetCursor | null {
+  const since = overlappedSince(watermark, overlapMs);
+  // Millisecond precision is fine HERE: the overlap window re-reads the
+  // boundary anyway. Only page-to-page cursors need microsecond text.
+  return since ? { ts: since.toISOString(), id: ZERO_UUID } : null;
+}
+
+// effective_at is selected as microsecond-exact ISO text (see ISO_US) so it can
+// be fed back verbatim as the next page's cursor.
+const BUSINESS_SELECT = `
+    select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
+           latitude, longitude, claim_status, subscription_tier, is_featured, confidence_score,
+           status, signup_source, owner_contact_email,
+           to_char(coalesce(updated_at, created_at) at time zone 'UTC', ${ISO_US}) as effective_at
+    from public.businesses`;
+
+/**
+ * Fetch a page of businesses ordered by (effective-update time, id) ascending.
+ * `after` is a keyset cursor (null = start of a full backfill). To start an
+ * incremental read from a watermark, pass cursorFromWatermark(...).
  */
 export async function fetchBusinessesPage(opts: {
-  since: Date | null;
+  after: KeysetCursor | null;
   limit: number;
-  offset: number;
 }): Promise<WebsiteBusinessRow[]> {
   const pool = getWebsitePool();
   if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
 
   const limit = Math.max(1, Math.min(5000, Math.floor(opts.limit)));
-  const offset = Math.max(0, Math.floor(opts.offset));
-  const where = opts.since
-    ? `where coalesce(updated_at, created_at) > '${sanitizeIso(opts.since)}'::timestamptz`
+  const where = opts.after
+    ? `where (coalesce(updated_at, created_at), id) > ('${sanitizeTsText(opts.after.ts)}'::timestamptz, '${sanitizeUuid(opts.after.id)}'::uuid)`
     : "";
 
-  const sql = `
-    select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
-           latitude, longitude, claim_status, subscription_tier, is_featured, confidence_score,
-           status, signup_source, owner_contact_email,
-           coalesce(updated_at, created_at) as effective_at
-    from public.businesses
+  const sql = `${BUSINESS_SELECT}
     ${where}
     order by coalesce(updated_at, created_at) asc, id asc
-    limit ${limit} offset ${offset}`;
+    limit ${limit}`;
 
   const { rows } = await pool.query<WebsiteBusinessRow>(sql);
   return rows;
+}
+
+/** One business by id — used to self-heal the CRM mirror before claim inserts. */
+export async function fetchBusinessById(businessId: string): Promise<WebsiteBusinessRow | null> {
+  const pool = getWebsitePool();
+  if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
+  const sql = `${BUSINESS_SELECT}
+    where id = '${sanitizeUuid(businessId)}'::uuid
+    limit 1`;
+  const { rows } = await pool.query<WebsiteBusinessRow>(sql);
+  return rows[0] ?? null;
 }
 
 export interface BusinessUsersRowRaw {
@@ -109,23 +167,24 @@ export interface BusinessUsersRowRaw {
   created_at: string; // iso
 }
 
-/** A page of claim rows (business_users) ordered by created_at ascending. */
+/** A page of claim rows (business_users) ordered by (created_at, id) ascending. */
 export async function fetchBusinessUsersPage(opts: {
-  since: Date | null;
+  after: KeysetCursor | null;
   limit: number;
-  offset: number;
 }): Promise<BusinessUsersRowRaw[]> {
   const pool = getWebsitePool();
   if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
   const limit = Math.max(1, Math.min(5000, Math.floor(opts.limit)));
-  const offset = Math.max(0, Math.floor(opts.offset));
-  const where = opts.since ? `where created_at > '${sanitizeIso(opts.since)}'::timestamptz` : "";
+  const where = opts.after
+    ? `where (created_at, id) > ('${sanitizeTsText(opts.after.ts)}'::timestamptz, '${sanitizeUuid(opts.after.id)}'::uuid)`
+    : "";
   const sql = `
-    select id, user_id, business_id, role, referral_code, created_at
+    select id, user_id, business_id, role, referral_code,
+           to_char(created_at at time zone 'UTC', ${ISO_US}) as created_at
     from public.business_users
     ${where}
     order by created_at asc, id asc
-    limit ${limit} offset ${offset}`;
+    limit ${limit}`;
   const { rows } = await pool.query<BusinessUsersRowRaw>(sql);
   return rows;
 }
@@ -134,11 +193,11 @@ export async function fetchBusinessUsersPage(opts: {
 export async function fetchBusinessUsersByBusiness(businessId: string): Promise<BusinessUsersRowRaw[]> {
   const pool = getWebsitePool();
   if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
-  if (!/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error("bad business_id");
   const sql = `
-    select id, user_id, business_id, role, referral_code, created_at
+    select id, user_id, business_id, role, referral_code,
+           to_char(created_at at time zone 'UTC', ${ISO_US}) as created_at
     from public.business_users
-    where business_id = '${businessId}'::uuid
+    where business_id = '${sanitizeUuid(businessId)}'::uuid
     order by created_at asc`;
   const { rows } = await pool.query<BusinessUsersRowRaw>(sql);
   return rows;

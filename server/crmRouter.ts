@@ -4,6 +4,7 @@
  * (issuing a referral code on first use). Admin procedures gate on the shared
  * admin password (matching the existing admin/feedback pattern).
  */
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
@@ -33,21 +34,49 @@ const VISIT_OUTCOMES = [
   "no_decision_maker",
 ] as const;
 
-function requireAdmin(password: string) {
-  if (password !== ENV.adminPassword) throw new Error("Unauthorized");
-}
+/**
+ * All ambassador-facing procedures resolve the ambassador ONCE here (issuing a
+ * referral code on first use) and expose it as ctx.ambassador — no procedure
+ * can forget to do it or derive the code differently.
+ */
+const ambassadorProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+  return next({ ctx: { ...ctx, ambassador: amb } });
+});
+
+/**
+ * Admin gate as MIDDLEWARE (not a per-procedure call that the next admin route
+ * can forget): validates the shared admin password and fails with proper tRPC
+ * codes. In production it refuses to operate on the repo-visible default
+ * password — these procedures set money.
+ */
+const crmAdminProcedure = publicProcedure
+  .input(z.object({ adminPassword: z.string() }))
+  .use(async ({ input, next }) => {
+    const { adminPassword } = input as { adminPassword: string };
+    if (ENV.isProduction && !ENV.adminPasswordConfigured) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "ADMIN_PASSWORD is not configured on the server — admin access is disabled in production until it is set.",
+      });
+    }
+    if (adminPassword !== ENV.adminPassword) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin password" });
+    }
+    return next();
+  });
 
 export const crmRouter = router({
   // The signed-in user's ambassador profile (created on first use).
-  me: protectedProcedure.query(async ({ ctx }) => {
-    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+  me: ambassadorProcedure.query(async ({ ctx }) => {
+    const amb = ctx.ambassador;
     return { id: amb.id, referralCode: amb.referralCode, payoutMethodStatus: amb.payoutMethodStatus, active: amb.active };
   }),
 
   // Log a field visit (§5). claimed_onsite creates a `logged` claim and runs an
   // on-demand live-check; verification/attribution is still decided by the
   // business_users referral_code, never by who logged first.
-  logVisit: protectedProcedure
+  logVisit: ambassadorProcedure
     .input(
       z.object({
         businessId: z.string().uuid(),
@@ -64,7 +93,7 @@ export const crmRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+      const amb = ctx.ambassador;
       const { visitId, loggedClaimId } = await createVisit(amb.id, {
         businessId: input.businessId,
         outcome: input.outcome,
@@ -83,8 +112,12 @@ export const crmRouter = router({
       if (input.outcome === "claimed_onsite") {
         try {
           const results = await reconcileLiveCheck(input.businessId);
-          const verified = results.find((r) => r.state === "verified");
-          liveCheck = verified ? "verified" : "logged";
+          // Only a verified claim OWNED BY THIS AMBASSADOR counts — a claim
+          // already verified for someone else's code must not show them a
+          // "verified instantly" success.
+          const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
+          const someoneElses = !mine && results.some((r) => r.state === "verified");
+          liveCheck = mine ? "verified" : someoneElses ? "already_attributed" : "logged";
         } catch {
           liveCheck = "pending"; // website unreachable — daily poll will resolve it
         }
@@ -92,9 +125,8 @@ export const crmRouter = router({
       return { visitId, loggedClaimId, liveCheck };
     }),
 
-  myVisits: protectedProcedure.query(async ({ ctx }) => {
-    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
-    return getVisitsByAmbassador(amb.id);
+  myVisits: ambassadorProcedure.query(async ({ ctx }) => {
+    return getVisitsByAmbassador(ctx.ambassador.id);
   }),
 
   // Ranked target queue (§6): unclaimed businesses, by distance (if located) or confidence.
@@ -105,8 +137,8 @@ export const crmRouter = router({
     }),
 
   // Earnings dashboard (§7).
-  earnings: protectedProcedure.query(async ({ ctx }) => {
-    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+  earnings: ambassadorProcedure.query(async ({ ctx }) => {
+    const amb = ctx.ambassador;
     const [earnings, followups, bounty] = await Promise.all([
       getEarnings(amb.id),
       getOpenFollowups(amb.id),
@@ -116,12 +148,11 @@ export const crmRouter = router({
   }),
 
   // Curriculum-gap capture (§8).
-  submitGap: protectedProcedure
+  submitGap: ambassadorProcedure
     .input(z.object({ businessId: z.string().uuid().optional(), objectionText: z.string().min(1).max(2000), context: z.string().max(2000).optional() }))
     .mutation(async ({ ctx, input }) => {
-      const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
       await submitCurriculumGap({
-        ambassadorId: amb.id,
+        ambassadorId: ctx.ambassador.id,
         businessId: input.businessId ?? null,
         objectionText: input.objectionText,
         context: input.context ?? null,
@@ -129,48 +160,24 @@ export const crmRouter = router({
       return { success: true };
     }),
 
-  // ── Admin (shared password) ──────────────────────────────────────────────
-  adminGetActiveBounty: publicProcedure
-    .input(z.object({ adminPassword: z.string() }))
-    .query(async ({ input }) => {
-      requireAdmin(input.adminPassword);
-      const b = await getActiveBounty();
-      return { amountCents: b?.amountCents ?? null, effectiveFrom: b?.effectiveFrom ?? null };
-    }),
+  // ── Admin (shared password, validated by crmAdminProcedure middleware) ───
+  adminGetActiveBounty: crmAdminProcedure.query(async () => {
+    const b = await getActiveBounty();
+    return { amountCents: b?.amountCents ?? null, effectiveFrom: b?.effectiveFrom ?? null };
+  }),
 
-  adminSetBounty: publicProcedure
-    .input(z.object({ adminPassword: z.string(), amountCents: z.number().int().min(0).max(1_000_000) }))
+  adminSetBounty: crmAdminProcedure
+    .input(z.object({ amountCents: z.number().int().min(0).max(1_000_000) }))
     .mutation(async ({ input }) => {
-      requireAdmin(input.adminPassword);
       const b = await setBounty(input.amountCents);
-      return { amountCents: b.amountCents, effectiveFrom: b.effectiveFrom };
+      return { amountCents: b.amountCents, effectiveFrom: b.effectiveFrom, backfilledClaims: b.backfilledClaims };
     }),
 
-  adminAnomalies: publicProcedure
-    .input(z.object({ adminPassword: z.string() }))
-    .query(async ({ input }) => {
-      requireAdmin(input.adminPassword);
-      return getAnomalyClaims();
-    }),
+  adminAnomalies: crmAdminProcedure.query(async () => getAnomalyClaims()),
 
-  adminGaps: publicProcedure
-    .input(z.object({ adminPassword: z.string() }))
-    .query(async ({ input }) => {
-      requireAdmin(input.adminPassword);
-      return getCurriculumGaps();
-    }),
+  adminGaps: crmAdminProcedure.query(async () => getCurriculumGaps()),
 
-  adminLeaderboard: publicProcedure
-    .input(z.object({ adminPassword: z.string() }))
-    .query(async ({ input }) => {
-      requireAdmin(input.adminPassword);
-      return getLeaderboard();
-    }),
+  adminLeaderboard: crmAdminProcedure.query(async () => getLeaderboard()),
 
-  adminAttributionLeak: publicProcedure
-    .input(z.object({ adminPassword: z.string() }))
-    .query(async ({ input }) => {
-      requireAdmin(input.adminPassword);
-      return getAttributionLeakCount();
-    }),
+  adminAttributionLeak: crmAdminProcedure.query(async () => getAttributionLeakCount()),
 });

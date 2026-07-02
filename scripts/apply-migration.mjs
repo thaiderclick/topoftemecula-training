@@ -1,17 +1,22 @@
-// One-off: create the credentials table on the remote Postgres/Supabase DB.
-// Reads DATABASE_URL from the environment (or a local .env file). Idempotent.
+// Apply a SQL migration file to the CRM database (DATABASE_URL).
+// Usage: node scripts/apply-migration.mjs drizzle/crm_0002_fixes.sql
+// Migration files in drizzle/ are idempotent — safe to re-run.
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 
+const file = process.argv[2];
+if (!file) {
+  console.error("usage: node scripts/apply-migration.mjs <path/to/file.sql>");
+  process.exit(1);
+}
 const url = process.env.DATABASE_URL;
 if (!url) {
   console.error("DATABASE_URL is not set. Add it to .env or export it.");
   process.exit(1);
 }
 
-const sql = readFileSync(new URL("../drizzle/credentials.sql", import.meta.url), "utf8");
-
+const sql = readFileSync(file, "utf8");
 const pool = new Pool({
   connectionString: url,
   ssl: url.includes("supabase") || process.env.DATABASE_SSL === "true"
@@ -21,11 +26,7 @@ const pool = new Pool({
 
 try {
   await pool.query(sql);
-  const { rows } = await pool.query(
-    `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'credentials' ORDER BY ordinal_position`,
-  );
-  console.log("credentials table ready:");
-  for (const r of rows) console.log(`  - ${r.column_name} (${r.data_type})`);
+  console.log(`applied ${file}`);
 } catch (err) {
   console.error("Migration failed:", err.message);
   process.exit(1);

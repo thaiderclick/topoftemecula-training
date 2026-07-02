@@ -13,13 +13,16 @@
  *   - Attribution does NOT require a logged visit; a matching row is sufficient.
  *   - Idempotent: the same business_users row never creates two claims.
  */
-import { and, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
-import { getDb } from "./db";
-import { ambassador, bountyConfig, claim, syncState, visit } from "../drizzle/schema";
+import { and, desc, eq, isNull } from "drizzle-orm";
+import { ambassador, claim, syncState, visit } from "../drizzle/schema";
+import { Db, getActiveBounty, requireDb } from "./crmDb";
+import { ensureBusinessMirror } from "./directorySync";
 import {
   BusinessUsersRowRaw,
+  cursorFromWatermark,
   fetchBusinessUsersByBusiness,
   fetchBusinessUsersPage,
+  KeysetCursor,
 } from "./websiteDb";
 
 export type ReconcileSource = "webhook" | "poll" | "live_check" | "manual";
@@ -59,22 +62,20 @@ export function decideReconciliation(
   return { kind: "verified", ambassadorId: inp.ambassadorId, upgradeClaimId: inp.loggedClaim?.id };
 }
 
-/** Active bounty (cents) from config, or null when unset (claims still verify). */
-async function getActiveBountyCents(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<number | null> {
-  const now = new Date();
-  const rows = await db
-    .select({ amt: bountyConfig.amountCents })
-    .from(bountyConfig)
-    .where(and(lte(bountyConfig.effectiveFrom, now), or(isNull(bountyConfig.effectiveTo), gt(bountyConfig.effectiveTo, now))))
-    .orderBy(desc(bountyConfig.effectiveFrom))
-    .limit(1);
-  return rows[0]?.amt ?? null;
+/** Active bounty (cents) via the single source of truth in crmDb (money-path
+ *  queries must not be duplicated — the admin UI and reconciliation have to
+ *  agree on what "active" means). Null when unset: claims still verify. */
+async function activeBountyCents(): Promise<number | null> {
+  return (await getActiveBounty())?.amountCents ?? null;
 }
 
 export interface ReconcileResult {
   action: ReconcileAction["kind"];
   claimId: number | null;
   state: string | null;
+  /** Owner of the claim (also set on the idempotent path, so callers can tell
+   *  whether a verified claim is theirs). */
+  ambassadorId: number | null;
   bountyAmountCents: number | null;
 }
 
@@ -82,23 +83,38 @@ export interface ReconcileResult {
  * Reconcile one business_users-shaped row into a CRM claim. Idempotent: keyed on
  * source_business_users_id (unique). Works for both the poll/webhook feed and
  * the on-demand live-check.
+ * @param opts.bountyCents Pass the active bounty when reconciling a batch so it
+ *                         isn't re-queried per row; omit to fetch it here.
  */
 export async function reconcileFromRow(
   row: BusinessUsersRowRaw,
-  source: ReconcileSource
+  source: ReconcileSource,
+  opts: { bountyCents?: number | null } = {}
 ): Promise<ReconcileResult> {
-  const db = await getDb();
-  if (!db) throw new Error("CRM database not available");
+  const db = await requireDb();
 
   // Idempotency guard: has this source row already produced a claim?
   const existing = await db
-    .select({ id: claim.id, state: claim.state, bounty: claim.bountyAmountCents })
+    .select({ id: claim.id, state: claim.state, ambassadorId: claim.ambassadorId, bounty: claim.bountyAmountCents })
     .from(claim)
     .where(eq(claim.sourceBusinessUsersId, row.id))
     .limit(1);
   if (existing[0]) {
-    return { action: "idempotent", claimId: existing[0].id, state: existing[0].state, bountyAmountCents: existing[0].bounty ?? null };
+    return {
+      action: "idempotent",
+      claimId: existing[0].id,
+      state: existing[0].state,
+      ambassadorId: existing[0].ambassadorId ?? null,
+      bountyAmountCents: existing[0].bounty ?? null,
+    };
   }
+
+  // Every non-idempotent path inserts a claim whose business_id FK references
+  // the CRM mirror. A business claimed the same day it was added to the
+  // directory (or before the initial backfill has run) wouldn't be there yet —
+  // mirror it now instead of failing the insert.
+  const mirrored = await ensureBusinessMirror(row.business_id);
+  if (!mirrored) throw new Error(`business ${row.business_id} not found on the website`);
 
   // Resolve ambassador by PLAIN citext equality (DB handles case). No lowercasing.
   let ambassadorId: number | null = null;
@@ -133,7 +149,7 @@ export async function reconcileFromRow(
       sourceBusinessUsersId: row.id,
       verificationSource: source,
     });
-    return { action: "unattributed", claimId: id, state: "unattributed", bountyAmountCents: null };
+    return { action: "unattributed", claimId: id, state: "unattributed", ambassadorId: null, bountyAmountCents: null };
   }
 
   if (action.kind === "anomaly") {
@@ -144,13 +160,13 @@ export async function reconcileFromRow(
       sourceBusinessUsersId: row.id,
       verificationSource: source,
     });
-    return { action: "anomaly", claimId: id, state: "anomaly", bountyAmountCents: null };
+    return { action: "anomaly", claimId: id, state: "anomaly", ambassadorId: null, bountyAmountCents: null };
   }
 
   // Only 'verified' remains (existingBySource was null, so 'idempotent' is unreachable here).
   if (action.kind !== "verified") throw new Error(`unexpected reconcile action: ${action.kind}`);
 
-  const bounty = await getActiveBountyCents(db);
+  const bounty = opts.bountyCents !== undefined ? opts.bountyCents : await activeBountyCents();
   const now = new Date();
 
   if (action.upgradeClaimId) {
@@ -167,7 +183,7 @@ export async function reconcileFromRow(
         updatedAt: now,
       })
       .where(eq(claim.id, action.upgradeClaimId));
-    return { action: "verified", claimId: action.upgradeClaimId, state: "verified", bountyAmountCents: bounty };
+    return { action: "verified", claimId: action.upgradeClaimId, state: "verified", ambassadorId: action.ambassadorId, bountyAmountCents: bounty };
   }
 
   // Link a recent visit if one exists (not required for attribution).
@@ -197,11 +213,11 @@ export async function reconcileFromRow(
     .returning({ id: claim.id });
 
   const claimId = inserted[0]?.id ?? (await selectIdBySource(db, row.id));
-  return { action: "verified", claimId, state: "verified", bountyAmountCents: bounty };
+  return { action: "verified", claimId, state: "verified", ambassadorId: action.ambassadorId, bountyAmountCents: bounty };
 }
 
 async function insertOrGetBySource(
-  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  db: Db,
   values: { businessId: string; referralCode: string | null; state: string; sourceBusinessUsersId: string; verificationSource: ReconcileSource }
 ): Promise<number> {
   const inserted = await db
@@ -212,7 +228,7 @@ async function insertOrGetBySource(
   return inserted[0]?.id ?? (await selectIdBySource(db, values.sourceBusinessUsersId));
 }
 
-async function selectIdBySource(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, sourceId: string): Promise<number> {
+async function selectIdBySource(db: Db, sourceId: string): Promise<number> {
   const rows = await db.select({ id: claim.id }).from(claim).where(eq(claim.sourceBusinessUsersId, sourceId)).limit(1);
   return rows[0]!.id;
 }
@@ -221,47 +237,111 @@ async function selectIdBySource(db: NonNullable<Awaited<ReturnType<typeof getDb>
 
 const CLAIM_SYNC_SOURCE = "claim_events";
 const POLL_PAGE = 500;
+// Re-read window behind the watermark: claim rows that committed after the
+// last poll read but with created_at at-or-before the stored watermark (or
+// sharing its exact timestamp) would otherwise be skipped FOREVER — a claim
+// that never pays. Re-reads land on the idempotency guard and cost one query.
+const CLAIM_WATERMARK_OVERLAP_MS = 60 * 60 * 1000;
+// Stop paging cleanly before the serverless cap kills the process; the
+// watermark is persisted per page, so the next run resumes.
+const DEFAULT_POLL_TIME_BUDGET_MS = 45_000;
 
-/** Poll the website business_users feed since the watermark and reconcile each. */
-export async function pollClaimEvents(opts: { maxRows?: number; updateWatermark?: boolean } = {}) {
-  const { maxRows = Infinity, updateWatermark = true } = opts;
-  const db = await getDb();
-  if (!db) throw new Error("CRM database not available");
+/**
+ * Poll the website business_users feed since the watermark and reconcile each.
+ * Money-path guarantees:
+ * - the read starts an overlap window BEHIND the watermark (nothing is lost to
+ *   late commits or equal timestamps; idempotency absorbs the re-reads);
+ * - one bad row never blocks the rest: it's counted as failed, the run stops
+ *   at the end of that page, and the watermark is pinned just before the
+ *   failed row so it is retried next run;
+ * - the watermark is persisted after every page, so a killed run resumes.
+ */
+export async function pollClaimEvents(opts: { maxRows?: number; updateWatermark?: boolean; timeBudgetMs?: number } = {}) {
+  const { maxRows = Infinity, updateWatermark = true, timeBudgetMs = DEFAULT_POLL_TIME_BUDGET_MS } = opts;
+  const db = await requireDb();
 
   const stateRows = await db.select().from(syncState).where(eq(syncState.source, CLAIM_SYNC_SOURCE)).limit(1);
   const since: Date | null = stateRows[0]?.watermark ?? null;
+  let cursor: KeysetCursor | null = cursorFromWatermark(since, CLAIM_WATERMARK_OVERLAP_MS);
 
-  let offset = 0;
   let processed = 0;
-  let maxCreated: Date | null = null;
+  let failed = 0;
+  let watermark: Date | null = since;
+  let stoppedEarly = false;
   const counts: Record<string, number> = { verified: 0, unattributed: 0, anomaly: 0, idempotent: 0 };
   const startedAt = new Date();
+
+  // One bounty read per run, not per row (it can't change mid-run on our side
+  // of the money path; setBounty backfills if it lands mid-poll).
+  const bountyCents = await activeBountyCents();
+
+  const persist = async (status: string) => {
+    if (!updateWatermark) return;
+    await db
+      .update(syncState)
+      .set({ watermark, lastRunAt: startedAt, lastStatus: status })
+      .where(eq(syncState.source, CLAIM_SYNC_SOURCE));
+  };
 
   for (;;) {
     const remaining = maxRows - processed;
     if (remaining <= 0) break;
     const limit = Math.min(POLL_PAGE, remaining);
-    const rows = await fetchBusinessUsersPage({ since, limit, offset });
+    const rows = await fetchBusinessUsersPage({ after: cursor, limit });
     if (rows.length === 0) break;
+
+    let earliestFailed: Date | null = null;
     for (const r of rows) {
-      const res = await reconcileFromRow(r, "poll");
-      counts[res.action] = (counts[res.action] ?? 0) + 1;
-      const c = new Date(r.created_at);
-      if (!maxCreated || c > maxCreated) maxCreated = c;
+      try {
+        const res = await reconcileFromRow(r, "poll", { bountyCents });
+        counts[res.action] = (counts[res.action] ?? 0) + 1;
+      } catch (e) {
+        failed += 1;
+        const c = new Date(r.created_at);
+        if (!earliestFailed || c < earliestFailed) earliestFailed = c;
+        console.error(`[pollClaims] reconcile failed for business_users ${r.id} (business ${r.business_id}):`, e);
+      }
     }
     processed += rows.length;
-    offset += rows.length;
+
+    if (earliestFailed) {
+      // Pin the watermark just before the earliest failure so it (and
+      // everything after) is re-read next run, then stop: rows are ordered by
+      // created_at, so advancing past the failure would orphan it.
+      watermark = new Date(Math.max(earliestFailed.getTime() - 1, 0));
+      stoppedEarly = true;
+      await persist(`partial: ${processed} rows, ${failed} failed — pinned watermark before first failure for retry`);
+      break;
+    }
+
+    const last = rows[rows.length - 1];
+    watermark = new Date(last.created_at); // ms truncation covered by the overlap window
+    cursor = { ts: last.created_at, id: last.id }; // microsecond-exact text for the page boundary
     if (rows.length < limit) break;
+
+    await persist(`polling: ${processed} rows so far`);
+    if (Date.now() - startedAt.getTime() > timeBudgetMs) {
+      stoppedEarly = true;
+      break;
+    }
   }
 
-  if (updateWatermark) {
-    await db
-      .update(syncState)
-      .set({ watermark: maxCreated ?? since, lastRunAt: startedAt, lastStatus: `ok: ${processed} rows (${JSON.stringify(counts)})` })
-      .where(eq(syncState.source, CLAIM_SYNC_SOURCE));
+  if (!stoppedEarly || failed === 0) {
+    await persist(
+      stoppedEarly
+        ? `partial: ${processed} rows (${JSON.stringify(counts)}) — time budget reached; next run resumes`
+        : `ok: ${processed} rows (${JSON.stringify(counts)})`
+    );
   }
 
-  return { processed, counts, watermark: (maxCreated ?? since)?.toISOString() ?? null, startedAt: startedAt.toISOString() };
+  return {
+    processed,
+    failed,
+    completed: !stoppedEarly,
+    counts,
+    watermark: watermark?.toISOString() ?? null,
+    startedAt: startedAt.toISOString(),
+  };
 }
 
 /**

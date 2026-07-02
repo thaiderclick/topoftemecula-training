@@ -3,6 +3,9 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   trainingPassword: process.env.TRAINING_PASSWORD ?? "ambassador2024",
   adminPassword: process.env.ADMIN_PASSWORD ?? "supervisor2024",
+  // True only when ADMIN_PASSWORD is actually set — money-controlling CRM admin
+  // procedures refuse to run in production on the repo-visible default above.
+  adminPasswordConfigured: !!process.env.ADMIN_PASSWORD,
   isProduction: process.env.NODE_ENV === "production",
   // OpenAI API key for AI Roleplay feature
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
@@ -14,8 +17,6 @@ export const ENV = {
   websiteDatabaseUrl: process.env.WEBSITE_DATABASE_URL ?? "",
   // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
   cronSecret: process.env.CRON_SECRET ?? "",
-  // Public base URL for building business canonical links from slugs.
-  websitePublicBaseUrl: process.env.WEBSITE_PUBLIC_BASE_URL ?? "https://topoftemecula.com",
   // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
   posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
   posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",

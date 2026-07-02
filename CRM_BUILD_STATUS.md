@@ -1,6 +1,25 @@
 # Ambassador Field CRM — Build Status & Resume Doc
 
-**Last updated:** 2026-07-02. This file is the single source of truth for where the CRM build stands. Read it first when resuming.
+**Last updated:** 2026-07-02 (post code-review fixes). This file is the single source of truth for where the CRM build stands. Read it first when resuming.
+
+## 0. Code-review fixes (2026-07-02)
+
+A full review of the Phase 1 build found and fixed:
+
+- **Watermark loss (money path):** both website reads now use keyset pagination `(timestamp, id) > (cursor)` with **microsecond-exact ISO text cursors** (`to_char(... , 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')` — a JS `Date` truncates to ms and re-includes/skips boundary rows), plus a **1-hour overlap window** behind the stored watermark so late-committing rows and equal timestamps are re-read, never lost. Idempotent upserts/guards absorb the re-reads.
+- **Resumable syncs:** `runDirectorySync` and `pollClaimEvents` persist the watermark **per page** and stop cleanly on a ~45s time budget (`vercel.json` maxDuration is now 60) — a killed run resumes instead of restarting; a full backfill can complete across multiple cron runs.
+- **Poll error isolation:** one bad row no longer aborts the batch; the watermark is pinned just before the earliest failure for retry, failures are counted + logged.
+- **FK self-heal:** `ensureBusinessMirror()` (directorySync) mirrors a missing business from the website before any claim insert — claims for businesses added after the day's sync no longer FK-crash the poll.
+- **Bounty:** `setBounty` **backfills** null-bounty verified claims (claims verified before the bounty was set are no longer $0 forever; `adminSetBounty` returns `backfilledClaims`). Reconciliation reuses `crmDb.getActiveBounty` (single money-window query), fetched once per poll run, not per row.
+- **Live-check ownership:** `logVisit` only reports `verified` when the verified claim **belongs to that ambassador**; a claim verified for someone else's code returns `already_attributed` (honest toast in the UI).
+- **Admin gating:** admin procedures use a `crmAdminProcedure` middleware (TRPCError UNAUTHORIZED, not a 500), and **refuse to run in production if ADMIN_PASSWORD is unset** (the repo-default password no longer works there). Ambassador procedures share an `ambassadorProcedure` middleware (`ctx.ambassador`).
+- **Cron safety:** unauthorized cron calls are logged; startup logs a loud error if `CRON_SECRET` is missing in production (previously a silent 403 forever); 500 bodies no longer leak stack traces.
+- **Earnings:** verified count / conversion count `verified+paid` (paying a claim no longer drops the stats; matches the leaderboard). The two earnings queries run in parallel.
+- **Targets:** haversine ranking moved into SQL (true nearest wins — no more 500-row confidence pre-cut), narrow column select; `crm_0002_fixes.sql` replaces the mismatched confidence index with a partial `DESC NULLS LAST` index and adds `(ambassador_id, created_at DESC)` on visit. **Applied to the CRM DB.**
+- **UI:** `/crm` now renders a Recent Visits section (`myVisits` finally has a consumer; capped at 50 server-side).
+- **Hygiene:** `supabase/.temp/` and the generated `api/server.js` bundle are untracked + gitignored; `db:push` is disabled with guidance (see `drizzle/README.md`; use `node scripts/apply-migration.mjs drizzle/<file>.sql`); scripts use `dotenv/config` instead of three drifting hand-rolled .env parsers; dead `WEBSITE_PUBLIC_BASE_URL` env removed.
+
+Verified: `tsc` clean, 22/22 tests, build passes, plus a live smoke against both DBs (keyset pages don't overlap/skip, `fetchBusinessById` + mirror self-heal, 60-row bounded sync, SQL haversine returns anchor at 0.00 mi ascending).
 
 ---
 
@@ -77,22 +96,23 @@ A new **Ambassador Field CRM** built *inside* the training-app repo (`topoftemec
 
 ## 6. Irreducible / owner-owned items (do NOT block the build)
 
-- **Vercel env (production):** set `WEBSITE_DATABASE_URL` and `CRON_SECRET` in the Vercel project. (Can't be done from here — no Vercel access. One-time, ~2 min.)
-- **Bounty amount:** a business decision. `bounty_config` is intentionally empty; claims verify with null value until set. Will be an in-app admin field (see Next #1) or one SQL insert.
+- **Vercel env (production):** set `WEBSITE_DATABASE_URL`, `CRON_SECRET`, and `ADMIN_PASSWORD` in the Vercel project. (Can't be done from here — no Vercel access. One-time, ~2 min.) Guardrails now exist — a missing `CRON_SECRET` logs a loud startup error (crons would 403), and CRM admin procedures refuse the default password in production — but the vars still must be set for the system to run.
+- **Bounty amount:** a business decision. `bounty_config` is intentionally empty; claims verify with null value until set — and `setBounty` now **backfills** those claims when the amount lands, so nothing is lost by deferring this. Will be an in-app admin field (see Next #1) or one SQL insert.
 - **Optional:** `GRANT SELECT ON public.categories, public.neighborhoods TO crm_readonly;` on the website side → category/neighborhood **names** auto-populate on next sync (currently IDs only, self-healing). And `POSTHOG_API_KEY`/`POSTHOG_PROJECT_ID` to activate the §10 attribution-leak monitor.
-- **`canonical_url`:** built from `slug` against `WEBSITE_PUBLIC_BASE_URL` (default `https://topoftemecula.com`) — confirm the exact public URL pattern before it's user-facing.
+- **`canonical_url`:** not built yet (the unused `WEBSITE_PUBLIC_BASE_URL` env was removed in the review pass) — when a user-facing link is needed, build it from `slug` and confirm the exact public URL pattern first.
 
 ---
 
 ## 7. How to resume / useful commands
 
 ```bash
-npm test                 # 20 tests (incl. reconciliation branches)
+npm test                 # 22 tests (incl. reconciliation branches + watermark overlap)
 npx tsc --noEmit         # typecheck
 npm run build            # full client + server bundle (deploy check)
 npm run dev              # local dev server
+node scripts/apply-migration.mjs drizzle/<file>.sql   # apply a SQL migration (db:push is disabled)
 # Trigger sync locally (dev-open when CRON_SECRET unset):
-curl -X POST localhost:3000/api/scheduled/syncDirectory?full=1
+curl -X POST localhost:3000/api/scheduled/syncDirectory?full=1   # completed:false → run again to resume
 curl -X POST localhost:3000/api/scheduled/pollClaims
 ```
 

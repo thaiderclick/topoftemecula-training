@@ -5,7 +5,7 @@ import { PasswordGate } from "@/components/PasswordGate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation } from "lucide-react";
+import { Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation, History } from "lucide-react";
 
 const OUTCOMES: { value: string; label: string; hint?: string }[] = [
   { value: "claimed_onsite", label: "Claimed on-site 🎉", hint: "Owner claimed while you were there" },
@@ -32,6 +32,8 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
   const logVisit = trpc.crm.logVisit.useMutation({
     onSuccess: (r) => {
       if (r.liveCheck === "verified") toast.success("Visit logged — claim verified instantly! 🎉");
+      else if (r.liveCheck === "already_attributed")
+        toast.info("Visit logged — this business's claim is already attributed to another referral code.");
       else if (r.liveCheck) toast.success("Visit logged — claim pending owner completion.");
       else toast.success("Visit logged.");
       utils.crm.earnings.invalidate();
@@ -128,6 +130,7 @@ export default function Crm() {
 
   const me = trpc.crm.me.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const earnings = trpc.crm.earnings.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const myVisits = trpc.crm.myVisits.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const targets = trpc.crm.targets.useQuery(
     coords ? { lat: coords.lat, lng: coords.lng, limit: 25 } : { limit: 25 },
     { enabled: isAuthenticated, retry: false }
@@ -217,6 +220,30 @@ export default function Crm() {
             </Card>
           ))}
         </div>
+
+        {/* Recent visits */}
+        {(myVisits.data?.length ?? 0) > 0 && (
+          <Card className="mt-6 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2">
+              <History className="w-4 h-4 text-primary" /> Recent visits
+            </div>
+            <div className="flex flex-col divide-y divide-border/60">
+              {myVisits.data!.slice(0, 15).map((v) => (
+                <div key={v.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground truncate">{v.businessName ?? "(unnamed)"}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {OUTCOMES.find((o) => o.value === v.outcome)?.label ?? v.outcome}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    {new Date(v.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Curriculum gap */}
         <Card className="mt-6 p-4">

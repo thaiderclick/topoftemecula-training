@@ -19,8 +19,8 @@ import {
   visit,
 } from "../drizzle/schema";
 
-type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
-async function requireDb(): Promise<Db> {
+export type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+export async function requireDb(): Promise<Db> {
   const db = await getDb();
   if (!db) throw new Error("CRM database not available");
   return db;
@@ -131,9 +131,22 @@ export async function createVisit(
   return { visitId, loggedClaimId };
 }
 
-export async function getVisitsByAmbassador(ambassadorId: number) {
+export async function getVisitsByAmbassador(ambassadorId: number, limit = 50) {
   const db = await requireDb();
-  return db.select().from(visit).where(eq(visit.ambassadorId, ambassadorId)).orderBy(desc(visit.createdAt));
+  return db
+    .select({
+      id: visit.id,
+      businessId: visit.businessId,
+      businessName: business.name,
+      outcome: visit.outcome,
+      notes: visit.notes,
+      createdAt: visit.createdAt,
+    })
+    .from(visit)
+    .leftJoin(business, eq(business.businessId, visit.businessId))
+    .where(eq(visit.ambassadorId, ambassadorId))
+    .orderBy(desc(visit.createdAt))
+    .limit(Math.max(1, Math.min(200, limit)));
 }
 
 // ─── Route targeting (§6) ───────────────────────────────────────────────────
@@ -144,20 +157,25 @@ export interface TargetQuery {
   limit?: number;
 }
 
-function haversineMiles(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const R = 3958.8;
-  const dLat = ((bLat - aLat) * Math.PI) / 180;
-  const dLng = ((bLng - aLng) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
+// Columns the /crm target queue actually renders — the full row (incl. hours
+// jsonb) is deliberately not shipped.
+const TARGET_COLUMNS = {
+  businessId: business.businessId,
+  name: business.name,
+  slug: business.slug,
+  city: business.city,
+  address: business.address,
+  phone: business.phone,
+  lat: business.lat,
+  lng: business.lng,
+  confidenceScore: business.confidenceScore,
+};
 
 /**
  * Ranked target queue: unclaimed businesses not already worked-to-claimed.
- * With a location, filters to a bounding box and sorts by distance; otherwise
- * ranks by confidence_score (proxy for "ripe"). No PostGIS — app-side math.
+ * With a location, filters to a bounding box and ranks by haversine distance
+ * IN SQL (so the true nearest rows win, not just the highest-confidence 500);
+ * otherwise ranks by confidence_score (proxy for "ripe"). No PostGIS.
  */
 export async function getTargets(q: TargetQuery) {
   const db = await requireDb();
@@ -165,52 +183,62 @@ export async function getTargets(q: TargetQuery) {
   const hasLoc = typeof q.lat === "number" && typeof q.lng === "number";
 
   const conds = [eq(business.directoryClaimStatus, "unclaimed"), ne(business.localClaimStatus, "claimed")];
-  if (hasLoc) {
-    const dLat = 0.4; // ~28 mi
-    const dLng = 0.5;
-    conds.push(
-      sql`${business.lat} between ${q.lat! - dLat} and ${q.lat! + dLat}`,
-      sql`${business.lng} between ${q.lng! - dLng} and ${q.lng! + dLng}`
-    );
+
+  if (!hasLoc) {
+    const rows = await db
+      .select(TARGET_COLUMNS)
+      .from(business)
+      .where(and(...conds))
+      .orderBy(sql`${business.confidenceScore} desc nulls last`)
+      .limit(limit);
+    return rows.map((r) => ({ ...r, distanceMiles: null as number | null }));
   }
 
+  const dLat = 0.4; // ~28 mi
+  const dLng = 0.5;
+  conds.push(
+    sql`${business.lat} between ${q.lat! - dLat} and ${q.lat! + dLat}`,
+    sql`${business.lng} between ${q.lng! - dLng} and ${q.lng! + dLng}`
+  );
+
+  const distanceMiles = sql<number>`
+    2 * 3958.8 * asin(sqrt(
+      power(sin(radians(${business.lat} - ${q.lat!}) / 2), 2)
+      + cos(radians(${q.lat!})) * cos(radians(${business.lat}))
+        * power(sin(radians(${business.lng} - ${q.lng!}) / 2), 2)
+    ))`;
+
   const rows = await db
-    .select()
+    .select({ ...TARGET_COLUMNS, distanceMiles })
     .from(business)
     .where(and(...conds))
-    .orderBy(sql`${business.confidenceScore} desc nulls last`)
-    .limit(hasLoc ? 500 : limit);
-
-  if (!hasLoc) return rows.map((r) => ({ ...r, distanceMiles: null as number | null }));
-
-  return rows
-    .map((r) => ({
-      ...r,
-      distanceMiles: r.lat != null && r.lng != null ? haversineMiles(q.lat!, q.lng!, r.lat, r.lng) : null,
-    }))
-    .sort((a, b) => (a.distanceMiles ?? 1e9) - (b.distanceMiles ?? 1e9))
-    .slice(0, limit);
+    .orderBy(distanceMiles)
+    .limit(limit);
+  return rows.map((r) => ({ ...r, distanceMiles: Number(r.distanceMiles) }));
 }
 
 // ─── Earnings (§7) ──────────────────────────────────────────────────────────
 
 export async function getEarnings(ambassadorId: number) {
   const db = await requireDb();
-  const rows = await db
-    .select({
-      paidCents: sql<number>`coalesce(sum(case when ${claim.state}='paid' then ${claim.bountyAmountCents} end),0)`,
-      verifiedUnpaidCents: sql<number>`coalesce(sum(case when ${claim.state}='verified' then ${claim.bountyAmountCents} end),0)`,
-      pendingCount: sql<number>`count(*) filter (where ${claim.state}='logged')`,
-      verifiedCount: sql<number>`count(*) filter (where ${claim.state}='verified')`,
-      paidCount: sql<number>`count(*) filter (where ${claim.state}='paid')`,
-    })
-    .from(claim)
-    .where(eq(claim.ambassadorId, ambassadorId));
-
-  const visitCountRows = await db
-    .select({ n: sql<number>`count(*)` })
-    .from(visit)
-    .where(eq(visit.ambassadorId, ambassadorId));
+  const [rows, visitCountRows] = await Promise.all([
+    db
+      .select({
+        paidCents: sql<number>`coalesce(sum(case when ${claim.state}='paid' then ${claim.bountyAmountCents} end),0)`,
+        verifiedUnpaidCents: sql<number>`coalesce(sum(case when ${claim.state}='verified' then ${claim.bountyAmountCents} end),0)`,
+        pendingCount: sql<number>`count(*) filter (where ${claim.state}='logged')`,
+        // Lifetime conversions: paying a claim must never make the verified
+        // count / conversion % drop (the leaderboard counts the same way).
+        verifiedCount: sql<number>`count(*) filter (where ${claim.state} in ('verified','paid'))`,
+        paidCount: sql<number>`count(*) filter (where ${claim.state}='paid')`,
+      })
+      .from(claim)
+      .where(eq(claim.ambassadorId, ambassadorId)),
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(visit)
+      .where(eq(visit.ambassadorId, ambassadorId)),
+  ]);
 
   const r = rows[0];
   const visitCount = Number(visitCountRows[0]?.n ?? 0);
@@ -249,13 +277,26 @@ export async function getActiveBounty() {
   return rows[0] ?? null;
 }
 
-/** Set the active bounty: close the current one and insert the new amount. */
+/**
+ * Set the active bounty: close the current one and insert the new amount.
+ * Also backfills verified claims that carry no bounty (verified while
+ * bounty_config was empty — the intentional prelaunch state). Without this,
+ * those claims would sum to $0 forever: reconciliation's idempotency guard
+ * never re-stamps an existing claim.
+ */
 export async function setBounty(amountCents: number) {
   const db = await requireDb();
   const now = new Date();
   await db.update(bountyConfig).set({ effectiveTo: now }).where(isNull(bountyConfig.effectiveTo));
   const inserted = await db.insert(bountyConfig).values({ amountCents, effectiveFrom: now }).returning();
-  return inserted[0];
+
+  const backfilled = await db
+    .update(claim)
+    .set({ bountyAmountCents: amountCents, updatedAt: now })
+    .where(and(eq(claim.state, "verified"), isNull(claim.bountyAmountCents)))
+    .returning({ id: claim.id });
+
+  return { ...inserted[0], backfilledClaims: backfilled.length };
 }
 
 // ─── Curriculum gaps (§8) ───────────────────────────────────────────────────

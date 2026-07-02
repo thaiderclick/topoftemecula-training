@@ -1,11 +1,10 @@
-import { readFileSync } from "node:fs";
+import "dotenv/config";
 import { Pool } from "pg";
-const env = readFileSync(new URL("../.env", import.meta.url), "utf8");
-for (const l of env.split("\n")) {
-  const m = l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-  if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-}
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const url = process.env.DATABASE_URL;
+const pool = new Pool({
+  connectionString: url,
+  ssl: url?.includes("supabase") || process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
+});
 const { rows } = await pool.query(
   'select id, name, "loginMethod", "createdAt", "lastSignedIn" from users order by "createdAt"'
 );
