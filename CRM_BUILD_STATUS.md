@@ -33,6 +33,12 @@ Registration/login rebuilt (the name + shared-password gate was a placeholder):
 - **Legacy accounts** (name-keyed Frank/James/Stephanie): re-register with email; `scripts/link-legacy-user.mjs <legacyUserId> <email>` repoints training progress/credential/ambassador data if needed.
 - Verified: tsc clean, 22/22 tests, build passes, live smoke on a dev server (bad enrollment 401 → register → duplicate 409 → wrong password 401 → login → session works → CRM blocked NOT_CERTIFIED → certificate inserted → CRM unlocked with referral code), test user fully cleaned up.
 
+## 0.6 Phase 2b + 2c — ambassador money-loop UI & day routes (2026-07-02)
+
+- **2b (merged):** QR claim code per business (`/business/signup?claim=<id>&amb=<code>` — website PR #29 confirmed capturing `?amb=` end-to-end), share/copy links, bottom nav (Targets/Route/Pipeline/Earnings), pipeline tab (needs-follow-up + recent visits + objection capture), earnings tab claim-status list (`crm.myClaims`), `crm.me` returns `claimBaseUrl` (`WEBSITE_PUBLIC_BASE_URL`, default topoftemecula.com).
+- **2c (branch crm-phase2c-routes):** day routes — `route_plan` table (one per ambassador per PT day, ordered jsonb stops; `crm_0004_route.sql`, applied). `crm.buildRoute` pulls open follow-ups first, fills with nearest targets, orders nearest-neighbor from the ambassador's location; `crm.route/addRouteStop/setRouteStopStatus/clearRoute`; **logging a visit auto-checks the stop off**. Route tab UI: count picker builder, per-stop **Directions deep links** (Apple Maps on iOS / Google Maps elsewhere, no API key), one-tap "Navigate all" multi-stop Google link (≤9 waypoints), skip/undo, leg distances + total, completion recap. In-app maps = later upgrade; data model already supports it.
+- Verified: tsc clean, 22/22 tests, build passes; live dev smoke (built a 5-stop NN-ordered route near Old Town, skip persisted, logVisit auto-marked its stop done); smoke data fully removed.
+
 ## 1. What this is
 
 A new **Ambassador Field CRM** built *inside* the training-app repo (`topoftemecula-training`). Field ambassadors (who are existing training-app users) log visits to local businesses, drive free directory claims via `?amb=CODE` referral links, and earn bounties on verified claims. Built to the plan in the conversation ("Build Plan — Ambassador Field CRM", §0–§11).

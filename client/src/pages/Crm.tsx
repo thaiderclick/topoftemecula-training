@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation,
   History, GraduationCap, LogOut, Lock, QrCode, Share2, Copy, X, ClipboardList, BadgeCheck,
+  Route as RouteIcon, Check, RotateCcw, Trash2, PlusCircle, Flag,
 } from "lucide-react";
 
 const OUTCOMES: { value: string; label: string; hint?: string }[] = [
@@ -32,6 +33,38 @@ function claimUrl(base: string, code: string, businessId?: string) {
   if (businessId) url.searchParams.set("claim", businessId);
   url.searchParams.set("amb", code);
   return url.toString();
+}
+
+interface RouteStopView {
+  businessId: string;
+  status: "pending" | "done" | "skipped";
+  name: string | null;
+  address: string | null;
+  city: string | null;
+  lat: number | null;
+  lng: number | null;
+  distanceFromPrevMiles: number | null;
+}
+
+/** Deep link into the phone's native maps app (Apple on iOS, Google elsewhere). */
+function directionsUrl(stop: Pick<RouteStopView, "lat" | "lng" | "name" | "address" | "city">): string {
+  const dest =
+    stop.lat != null && stop.lng != null
+      ? `${stop.lat},${stop.lng}`
+      : [stop.name, stop.address, stop.city].filter(Boolean).join(", ");
+  const isApple = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  return isApple
+    ? `https://maps.apple.com/?daddr=${encodeURIComponent(dest)}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+}
+
+/** One Google Maps link through every remaining stop (waypoint cap ~9). */
+function navigateAllUrl(stops: RouteStopView[]): string | null {
+  const pts = stops.filter((s) => s.status === "pending" && s.lat != null && s.lng != null).map((s) => `${s.lat},${s.lng}`);
+  if (pts.length < 2) return null;
+  const dest = pts[pts.length - 1];
+  const waypoints = pts.slice(0, -1).slice(0, 9).join("|");
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&waypoints=${encodeURIComponent(waypoints)}`;
 }
 
 async function shareOrCopy(url: string, title: string) {
@@ -101,6 +134,7 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
       utils.crm.myVisits.invalidate();
       utils.crm.myClaims.invalidate();
       utils.crm.targets.invalidate();
+      utils.crm.route.invalidate();
       onDone();
     },
     onError: (e) => toast.error(e.message),
@@ -193,7 +227,7 @@ const CLAIM_STATE_STYLE: Record<string, { label: string; cls: string }> = {
   rejected: { label: "Rejected", cls: "bg-red-100 text-red-700" },
 };
 
-type Tab = "targets" | "pipeline" | "earnings";
+type Tab = "targets" | "route" | "pipeline" | "earnings";
 
 export default function Crm() {
   const { isAuthenticated, loading: authLoading, logout } = useAuth();
@@ -215,6 +249,44 @@ export default function Crm() {
     onSuccess: () => { toast.success("Objection logged for the training team."); setGapText(""); },
     onError: (e) => toast.error(e.message),
   });
+
+  const route = trpc.crm.route.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const utils = trpc.useUtils();
+  const [routeCount, setRouteCount] = useState(8);
+  const buildRoute = trpc.crm.buildRoute.useMutation({
+    onSuccess: () => { utils.crm.route.invalidate(); toast.success("Route built — nearest first."); },
+    onError: (err) => toast.error(err.message),
+  });
+  const addStop = trpc.crm.addRouteStop.useMutation({
+    onSuccess: () => { utils.crm.route.invalidate(); toast.success("Added to today's route."); },
+    onError: (err) => toast.error(err.message),
+  });
+  const setStopStatus = trpc.crm.setRouteStopStatus.useMutation({
+    onSuccess: () => utils.crm.route.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+  const clearRoute = trpc.crm.clearRoute.useMutation({
+    onSuccess: () => utils.crm.route.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const buildNearMe = () => {
+    if (!navigator.geolocation) {
+      buildRoute.mutate({ count: routeCount });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        buildRoute.mutate({ lat: p.coords.latitude, lng: p.coords.longitude, count: routeCount });
+      },
+      () => {
+        toast.info("No location — building by confidence instead of distance.");
+        buildRoute.mutate({ count: routeCount });
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   // Latest visit per business that still needs a follow-up (and isn't claimed yet).
   const followupsNeeded = useMemo(() => {
@@ -286,6 +358,13 @@ export default function Crm() {
           </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
+          <Button
+            size="sm" variant="outline" title="Add to today's route"
+            disabled={addStop.isPending || route.data?.stops.some((s) => s.businessId === b.businessId)}
+            onClick={() => addStop.mutate({ businessId: b.businessId })}
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+          </Button>
           {canShare && (
             <Button size="sm" variant="outline" onClick={() => setQrFor({ businessId: b.businessId, name: b.name })}>
               <QrCode className="w-3.5 h-3.5" />
@@ -344,6 +423,120 @@ export default function Crm() {
               {targets.data?.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">No unclaimed businesses found. Run the directory sync.</p>}
               {targets.data?.map(targetCard)}
             </div>
+          </>
+        )}
+
+        {/* ── Route tab ── */}
+        {tab === "route" && (
+          <>
+            {route.isLoading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto my-8" />}
+
+            {!route.isLoading && !route.data && (
+              <Card className="mt-5 p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1"><RouteIcon className="w-4 h-4 text-primary" /> Plan your day</div>
+                <p className="text-[12px] text-muted-foreground mb-3">
+                  Builds today's route from your open follow-ups plus the nearest unclaimed businesses, ordered so you're never backtracking.
+                </p>
+                <div className="flex gap-2 mb-3">
+                  {[5, 8, 10, 15].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setRouteCount(n)}
+                      className={`flex-1 rounded-lg px-2 py-1.5 text-sm border ${routeCount === n ? "border-primary bg-primary/10 font-semibold" : "border-border"}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <Button className="w-full gap-2" disabled={buildRoute.isPending} onClick={buildNearMe}>
+                  {buildRoute.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Navigation className="w-4 h-4" /> Build {routeCount} stops near me</>}
+                </Button>
+                <p className="text-[11px] text-muted-foreground mt-2 text-center">You can also add specific businesses from the Targets tab with <PlusCircle className="w-3 h-3 inline" />.</p>
+              </Card>
+            )}
+
+            {route.data && (
+              <>
+                {route.data.status === "completed" && (
+                  <Card className="mt-5 p-4 border-emerald-300 bg-emerald-50/50">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><Flag className="w-4 h-4" /> Route complete — great day!</div>
+                    <p className="text-[12px] text-muted-foreground mt-1">
+                      {route.data.stops.filter((s) => s.status === "done").length} visited
+                      {route.data.stops.some((s) => s.status === "skipped") && <> · {route.data.stops.filter((s) => s.status === "skipped").length} skipped</>}
+                      {" "}— check the Earnings tab for claims in motion, then build tomorrow's route fresh.
+                    </p>
+                  </Card>
+                )}
+
+                <div className="mt-5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <RouteIcon className="w-4 h-4 text-primary" />
+                    {route.data.stops.filter((s) => s.status === "done").length}/{route.data.stops.length} done
+                    {route.data.totalMiles > 0 && <span className="text-muted-foreground font-normal">· {route.data.totalMiles.toFixed(1)} mi</span>}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {navigateAllUrl(route.data.stops) && (
+                      <a href={navigateAllUrl(route.data.stops)!} target="_blank" rel="noreferrer">
+                        <Button size="sm" variant="outline"><Navigation className="w-3.5 h-3.5 mr-1" />Navigate all</Button>
+                      </a>
+                    )}
+                    <Button size="sm" variant="outline" title="Clear today's route" onClick={() => { if (confirm("Clear today's route?")) clearRoute.mutate(); }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-2 flex flex-col gap-2">
+                  {route.data.stops.map((s, i) => (
+                    <Card key={s.businessId} className={`p-3 ${s.status !== "pending" ? "opacity-70" : ""}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <span className={`mt-0.5 w-6 h-6 shrink-0 rounded-full text-[11px] font-bold flex items-center justify-center ${
+                            s.status === "done" ? "bg-emerald-600 text-white" : s.status === "skipped" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                          }`}>
+                            {s.status === "done" ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className={`font-semibold text-sm truncate ${s.status === "skipped" ? "line-through text-muted-foreground" : "text-foreground"}`}>{s.name ?? "(unnamed)"}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {[s.address, s.city].filter(Boolean).join(" · ") || "—"}
+                              {s.distanceFromPrevMiles != null && <> · +{s.distanceFromPrevMiles.toFixed(1)} mi</>}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          {s.status === "pending" ? (
+                            <>
+                              <a href={directionsUrl(s)} target="_blank" rel="noreferrer">
+                                <Button size="sm" variant="outline" title="Directions"><Navigation className="w-3.5 h-3.5" /></Button>
+                              </a>
+                              {canShare && (
+                                <Button size="sm" variant="outline" title="Claim QR" onClick={() => setQrFor({ businessId: s.businessId, name: s.name })}>
+                                  <QrCode className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                              <Button size="sm" variant={openVisitFor === s.businessId ? "secondary" : "default"} onClick={() => setOpenVisitFor(openVisitFor === s.businessId ? null : s.businessId)}>
+                                <ClipboardCheck className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Skip" onClick={() => setStopStatus.mutate({ businessId: s.businessId, status: "skipped" })}>
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button size="sm" variant="ghost" title="Back to pending" onClick={() => setStopStatus.mutate({ businessId: s.businessId, status: "pending" })}>
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {openVisitFor === s.businessId && s.status === "pending" && (
+                        <VisitForm businessId={s.businessId} businessName={s.name ?? "business"} onDone={() => setOpenVisitFor(null)} />
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -483,9 +676,10 @@ export default function Crm() {
 
       {/* ── Bottom nav ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border">
-        <div className="mx-auto max-w-md grid grid-cols-3">
+        <div className="mx-auto max-w-md grid grid-cols-4">
           {([
             { key: "targets", label: "Targets", Icon: MapPin },
+            { key: "route", label: "Route", Icon: RouteIcon },
             { key: "pipeline", label: "Pipeline", Icon: ClipboardList },
             { key: "earnings", label: "Earnings", Icon: DollarSign },
           ] as { key: Tab; label: string; Icon: typeof MapPin }[]).map(({ key, label, Icon }) => (

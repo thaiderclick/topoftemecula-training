@@ -4,7 +4,7 @@
  * from the directory sync. Bounty is config-driven.
  */
 import { randomBytes } from "crypto";
-import { and, desc, eq, gt, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   Ambassador,
@@ -16,6 +16,8 @@ import {
   followupTask,
   InsertCurriculumGap,
   InsertVisit,
+  routePlan,
+  RouteStop,
   visit,
 } from "../drizzle/schema";
 
@@ -325,6 +327,257 @@ export async function setBounty(amountCents: number) {
   return { ...inserted[0], backfilledClaims: backfilled.length };
 }
 
+
+// ─── Day routes (§2c) ───────────────────────────────────────────────────────
+
+/** Today's date string in the ambassadors' timezone (routes are a PT concept). */
+export function ptToday(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+}
+
+// JS haversine for ordering a handful of stops; the SQL version stays the way
+// large target sets are ranked.
+function haversineMiles(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 3958.8;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+const MAX_ROUTE_STOPS = 20;
+
+export interface EnrichedRouteStop extends RouteStop {
+  name: string | null;
+  address: string | null;
+  city: string | null;
+  lat: number | null;
+  lng: number | null;
+  localClaimStatus: string | null;
+  /** Miles from the previous stop (null for the first stop or missing coords). */
+  distanceFromPrevMiles: number | null;
+}
+
+export interface RoutePlanView {
+  planDate: string;
+  status: string;
+  stops: EnrichedRouteStop[];
+  totalMiles: number;
+}
+
+async function enrichPlan(db: Db, plan: { planDate: string; status: string; stops: RouteStop[] }): Promise<RoutePlanView> {
+  const ids = plan.stops.map((st) => st.businessId);
+  const rows = ids.length
+    ? await db
+        .select({
+          businessId: business.businessId,
+          name: business.name,
+          address: business.address,
+          city: business.city,
+          lat: business.lat,
+          lng: business.lng,
+          localClaimStatus: business.localClaimStatus,
+        })
+        .from(business)
+        .where(inArray(business.businessId, ids))
+    : [];
+  const byId = new Map(rows.map((r) => [r.businessId, r]));
+
+  let prev: { lat: number; lng: number } | null = null;
+  let totalMiles = 0;
+  const stops: EnrichedRouteStop[] = plan.stops.map((st) => {
+    const b = byId.get(st.businessId);
+    let distanceFromPrevMiles: number | null = null;
+    if (b?.lat != null && b?.lng != null) {
+      if (prev) {
+        distanceFromPrevMiles = haversineMiles(prev.lat, prev.lng, b.lat, b.lng);
+        totalMiles += distanceFromPrevMiles;
+      }
+      prev = { lat: b.lat, lng: b.lng };
+    }
+    return {
+      ...st,
+      name: b?.name ?? null,
+      address: b?.address ?? null,
+      city: b?.city ?? null,
+      lat: b?.lat ?? null,
+      lng: b?.lng ?? null,
+      localClaimStatus: b?.localClaimStatus ?? null,
+      distanceFromPrevMiles,
+    };
+  });
+
+  return { planDate: plan.planDate, status: plan.status, stops, totalMiles };
+}
+
+export async function getRoutePlan(ambassadorId: number): Promise<RoutePlanView | null> {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(routePlan)
+    .where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday())))
+    .limit(1);
+  if (!rows[0]) return null;
+  return enrichPlan(db, rows[0]);
+}
+
+/** Nearest-neighbor ordering: greedy walk from the start point. Stops without
+ *  coordinates keep their relative order at the end. */
+function orderNearestNeighbor(
+  ids: string[],
+  coords: Map<string, { lat: number | null; lng: number | null }>,
+  start: { lat: number; lng: number } | null
+): string[] {
+  const withCoords = ids.filter((id) => coords.get(id)?.lat != null && coords.get(id)?.lng != null);
+  const without = ids.filter((id) => !withCoords.includes(id));
+  if (!start || withCoords.length < 2) return [...withCoords, ...without];
+
+  const remaining = new Set(withCoords);
+  const ordered: string[] = [];
+  let cur = { lat: start.lat, lng: start.lng };
+  while (remaining.size) {
+    let best: string | null = null;
+    let bestD = Infinity;
+    remaining.forEach((id) => {
+      const c = coords.get(id)!;
+      const d = haversineMiles(cur.lat, cur.lng, c.lat!, c.lng!);
+      if (d < bestD) { bestD = d; best = id; }
+    });
+    ordered.push(best!);
+    remaining.delete(best!);
+    const c = coords.get(best!)!;
+    cur = { lat: c.lat!, lng: c.lng! };
+  }
+  return [...ordered, ...without];
+}
+
+/**
+ * Build (or rebuild) today's route: the ambassador's open follow-ups first,
+ * filled to `count` with the nearest unclaimed targets, then ordered
+ * nearest-neighbor from their location.
+ */
+export async function buildRoutePlan(
+  ambassadorId: number,
+  opts: { lat?: number | null; lng?: number | null; count?: number; includeFollowups?: boolean }
+): Promise<RoutePlanView> {
+  const db = await requireDb();
+  const count = Math.max(1, Math.min(MAX_ROUTE_STOPS, opts.count ?? 8));
+  const includeFollowups = opts.includeFollowups ?? true;
+  const hasLoc = typeof opts.lat === "number" && typeof opts.lng === "number";
+
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const push = (id: string) => { if (!seen.has(id)) { seen.add(id); ids.push(id); } };
+
+  if (includeFollowups) {
+    const visits = await getVisitsByAmbassador(ambassadorId, 100);
+    const latestPerBusiness = new Set<string>();
+    for (const v of visits) {
+      if (latestPerBusiness.has(v.businessId)) continue;
+      latestPerBusiness.add(v.businessId);
+      const needsFollowup = (v.outcome === "left_info_needs_followup" || v.outcome === "no_decision_maker") && v.localClaimStatus !== "claimed";
+      if (needsFollowup && ids.length < count) push(v.businessId);
+    }
+  }
+
+  if (ids.length < count) {
+    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 2) });
+    for (const t of targets) {
+      if (ids.length >= count) break;
+      push(t.businessId);
+    }
+  }
+
+  const coordRows = ids.length
+    ? await db
+        .select({ businessId: business.businessId, lat: business.lat, lng: business.lng })
+        .from(business)
+        .where(inArray(business.businessId, ids))
+    : [];
+  const coords = new Map(coordRows.map((r) => [r.businessId, { lat: r.lat, lng: r.lng }]));
+  const ordered = orderNearestNeighbor(ids, coords, hasLoc ? { lat: opts.lat!, lng: opts.lng! } : null);
+  const stops: RouteStop[] = ordered.map((businessId) => ({ businessId, status: "pending" }));
+
+  await db
+    .insert(routePlan)
+    .values({ ambassadorId, planDate: ptToday(), stops, status: "active" })
+    .onConflictDoUpdate({
+      target: [routePlan.ambassadorId, routePlan.planDate],
+      set: { stops, status: "active", updatedAt: new Date() },
+    });
+
+  return (await getRoutePlan(ambassadorId))!;
+}
+
+async function loadTodayPlan(db: Db, ambassadorId: number) {
+  const rows = await db
+    .select()
+    .from(routePlan)
+    .where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday())))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+async function savePlanStops(db: Db, planId: number, stops: RouteStop[]) {
+  const done = stops.length > 0 && stops.every((st) => st.status !== "pending");
+  await db
+    .update(routePlan)
+    .set({ stops, status: done ? "completed" : "active", updatedAt: new Date() })
+    .where(eq(routePlan.id, planId));
+}
+
+/** Append one business to today's route (creates the plan if none exists). */
+export async function addRouteStop(ambassadorId: number, businessId: string): Promise<RoutePlanView> {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan) {
+    await db.insert(routePlan).values({
+      ambassadorId,
+      planDate: ptToday(),
+      stops: [{ businessId, status: "pending" }],
+      status: "active",
+    });
+  } else if (!plan.stops.some((st) => st.businessId === businessId)) {
+    if (plan.stops.length >= MAX_ROUTE_STOPS) throw new Error(`Routes cap at ${MAX_ROUTE_STOPS} stops.`);
+    await savePlanStops(db, plan.id, [...plan.stops, { businessId, status: "pending" }]);
+  }
+  return (await getRoutePlan(ambassadorId))!;
+}
+
+export async function setRouteStopStatus(
+  ambassadorId: number,
+  businessId: string,
+  status: RouteStop["status"]
+): Promise<RoutePlanView | null> {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan) return null;
+  const stops = plan.stops.map((st) => (st.businessId === businessId ? { ...st, status } : st));
+  await savePlanStops(db, plan.id, stops);
+  return getRoutePlan(ambassadorId);
+}
+
+/** Best-effort: logging a visit checks the business off today's route. */
+export async function markRouteStopDone(ambassadorId: number, businessId: string): Promise<void> {
+  try {
+    const db = await requireDb();
+    const plan = await loadTodayPlan(db, ambassadorId);
+    if (!plan || !plan.stops.some((st) => st.businessId === businessId)) return;
+    const stops = plan.stops.map((st): RouteStop => (st.businessId === businessId ? { ...st, status: "done" } : st));
+    await savePlanStops(db, plan.id, stops);
+  } catch (e) {
+    console.warn("[route] could not mark stop done:", e);
+  }
+}
+
+export async function clearRoutePlan(ambassadorId: number): Promise<void> {
+  const db = await requireDb();
+  await db
+    .delete(routePlan)
+    .where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday())));
+}
 // ─── Curriculum gaps (§8) ───────────────────────────────────────────────────
 
 export async function submitCurriculumGap(data: InsertCurriculumGap) {

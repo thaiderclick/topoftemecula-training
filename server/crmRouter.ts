@@ -9,6 +9,9 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import {
+  addRouteStop,
+  buildRoutePlan,
+  clearRoutePlan,
   createVisit,
   ensureAmbassador,
   getActiveBounty,
@@ -18,9 +21,12 @@ import {
   getEarnings,
   getLeaderboard,
   getOpenFollowups,
+  getRoutePlan,
   getTargets,
   getVisitsByAmbassador,
+  markRouteStopDone,
   setBounty,
+  setRouteStopStatus,
   submitCurriculumGap,
 } from "./crmDb";
 import { getCredentialByUserId } from "./db";
@@ -136,6 +142,9 @@ export const crmRouter = router({
         device: input.device ?? null,
       });
 
+      // A logged visit checks the business off today's route (best-effort).
+      await markRouteStopDone(amb.id, input.businessId);
+
       let liveCheck: string | null = null;
       if (input.outcome === "claimed_onsite") {
         try {
@@ -179,6 +188,40 @@ export const crmRouter = router({
       getActiveBounty(),
     ]);
     return { ...earnings, openFollowups: followups, activeBountyCents: bounty?.amountCents ?? null };
+  }),
+
+  // ── Day routes (§2c) ─────────────────────────────────────────────────────
+  route: ambassadorProcedure.query(async ({ ctx }) => getRoutePlan(ctx.ambassador.id)),
+
+  buildRoute: ambassadorProcedure
+    .input(
+      z.object({
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        count: z.number().int().min(1).max(20).optional(),
+        includeFollowups: z.boolean().optional(),
+      }).optional()
+    )
+    .mutation(async ({ ctx, input }) =>
+      buildRoutePlan(ctx.ambassador.id, {
+        lat: input?.lat ?? null,
+        lng: input?.lng ?? null,
+        count: input?.count,
+        includeFollowups: input?.includeFollowups,
+      })
+    ),
+
+  addRouteStop: ambassadorProcedure
+    .input(z.object({ businessId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => addRouteStop(ctx.ambassador.id, input.businessId)),
+
+  setRouteStopStatus: ambassadorProcedure
+    .input(z.object({ businessId: z.string().uuid(), status: z.enum(["pending", "done", "skipped"]) }))
+    .mutation(async ({ ctx, input }) => setRouteStopStatus(ctx.ambassador.id, input.businessId, input.status)),
+
+  clearRoute: ambassadorProcedure.mutation(async ({ ctx }) => {
+    await clearRoutePlan(ctx.ambassador.id);
+    return { success: true };
   }),
 
   // Curriculum-gap capture (§8).

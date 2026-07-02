@@ -46520,6 +46520,15 @@ var payoutBatch = pgTable("payout_batch", {
   exportedAt: timestamp("exported_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+var routePlan = pgTable("route_plan", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  planDate: date("plan_date").notNull(),
+  stops: jsonb("stops").$type().notNull().default([]),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
 var authResetCode = pgTable("auth_reset_code", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 320 }).notNull(),
@@ -47106,6 +47115,172 @@ async function setBounty(amountCents) {
   const inserted = await db.insert(bountyConfig).values({ amountCents, effectiveFrom: now }).returning();
   const backfilled = await db.update(claim).set({ bountyAmountCents: amountCents, updatedAt: now }).where(and(eq(claim.state, "verified"), isNull(claim.bountyAmountCents))).returning({ id: claim.id });
   return { ...inserted[0], backfilledClaims: backfilled.length };
+}
+function ptToday() {
+  return (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+}
+function haversineMiles(aLat, aLng, bLat, bLng) {
+  const R = 3958.8;
+  const dLat = (bLat - aLat) * Math.PI / 180;
+  const dLng = (bLng - aLng) * Math.PI / 180;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+var MAX_ROUTE_STOPS = 20;
+async function enrichPlan(db, plan) {
+  const ids = plan.stops.map((st) => st.businessId);
+  const rows = ids.length ? await db.select({
+    businessId: business.businessId,
+    name: business.name,
+    address: business.address,
+    city: business.city,
+    lat: business.lat,
+    lng: business.lng,
+    localClaimStatus: business.localClaimStatus
+  }).from(business).where(inArray(business.businessId, ids)) : [];
+  const byId = new Map(rows.map((r) => [r.businessId, r]));
+  let prev = null;
+  let totalMiles = 0;
+  const stops = plan.stops.map((st) => {
+    const b = byId.get(st.businessId);
+    let distanceFromPrevMiles = null;
+    if (b?.lat != null && b?.lng != null) {
+      if (prev) {
+        distanceFromPrevMiles = haversineMiles(prev.lat, prev.lng, b.lat, b.lng);
+        totalMiles += distanceFromPrevMiles;
+      }
+      prev = { lat: b.lat, lng: b.lng };
+    }
+    return {
+      ...st,
+      name: b?.name ?? null,
+      address: b?.address ?? null,
+      city: b?.city ?? null,
+      lat: b?.lat ?? null,
+      lng: b?.lng ?? null,
+      localClaimStatus: b?.localClaimStatus ?? null,
+      distanceFromPrevMiles
+    };
+  });
+  return { planDate: plan.planDate, status: plan.status, stops, totalMiles };
+}
+async function getRoutePlan(ambassadorId) {
+  const db = await requireDb();
+  const rows = await db.select().from(routePlan).where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday()))).limit(1);
+  if (!rows[0]) return null;
+  return enrichPlan(db, rows[0]);
+}
+function orderNearestNeighbor(ids, coords, start) {
+  const withCoords = ids.filter((id) => coords.get(id)?.lat != null && coords.get(id)?.lng != null);
+  const without = ids.filter((id) => !withCoords.includes(id));
+  if (!start || withCoords.length < 2) return [...withCoords, ...without];
+  const remaining = new Set(withCoords);
+  const ordered = [];
+  let cur = { lat: start.lat, lng: start.lng };
+  while (remaining.size) {
+    let best = null;
+    let bestD = Infinity;
+    remaining.forEach((id) => {
+      const c2 = coords.get(id);
+      const d = haversineMiles(cur.lat, cur.lng, c2.lat, c2.lng);
+      if (d < bestD) {
+        bestD = d;
+        best = id;
+      }
+    });
+    ordered.push(best);
+    remaining.delete(best);
+    const c = coords.get(best);
+    cur = { lat: c.lat, lng: c.lng };
+  }
+  return [...ordered, ...without];
+}
+async function buildRoutePlan(ambassadorId, opts) {
+  const db = await requireDb();
+  const count = Math.max(1, Math.min(MAX_ROUTE_STOPS, opts.count ?? 8));
+  const includeFollowups = opts.includeFollowups ?? true;
+  const hasLoc = typeof opts.lat === "number" && typeof opts.lng === "number";
+  const ids = [];
+  const seen = /* @__PURE__ */ new Set();
+  const push = (id) => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  };
+  if (includeFollowups) {
+    const visits = await getVisitsByAmbassador(ambassadorId, 100);
+    const latestPerBusiness = /* @__PURE__ */ new Set();
+    for (const v of visits) {
+      if (latestPerBusiness.has(v.businessId)) continue;
+      latestPerBusiness.add(v.businessId);
+      const needsFollowup = (v.outcome === "left_info_needs_followup" || v.outcome === "no_decision_maker") && v.localClaimStatus !== "claimed";
+      if (needsFollowup && ids.length < count) push(v.businessId);
+    }
+  }
+  if (ids.length < count) {
+    const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 2) });
+    for (const t2 of targets) {
+      if (ids.length >= count) break;
+      push(t2.businessId);
+    }
+  }
+  const coordRows = ids.length ? await db.select({ businessId: business.businessId, lat: business.lat, lng: business.lng }).from(business).where(inArray(business.businessId, ids)) : [];
+  const coords = new Map(coordRows.map((r) => [r.businessId, { lat: r.lat, lng: r.lng }]));
+  const ordered = orderNearestNeighbor(ids, coords, hasLoc ? { lat: opts.lat, lng: opts.lng } : null);
+  const stops = ordered.map((businessId) => ({ businessId, status: "pending" }));
+  await db.insert(routePlan).values({ ambassadorId, planDate: ptToday(), stops, status: "active" }).onConflictDoUpdate({
+    target: [routePlan.ambassadorId, routePlan.planDate],
+    set: { stops, status: "active", updatedAt: /* @__PURE__ */ new Date() }
+  });
+  return await getRoutePlan(ambassadorId);
+}
+async function loadTodayPlan(db, ambassadorId) {
+  const rows = await db.select().from(routePlan).where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday()))).limit(1);
+  return rows[0] ?? null;
+}
+async function savePlanStops(db, planId, stops) {
+  const done = stops.length > 0 && stops.every((st) => st.status !== "pending");
+  await db.update(routePlan).set({ stops, status: done ? "completed" : "active", updatedAt: /* @__PURE__ */ new Date() }).where(eq(routePlan.id, planId));
+}
+async function addRouteStop(ambassadorId, businessId) {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan) {
+    await db.insert(routePlan).values({
+      ambassadorId,
+      planDate: ptToday(),
+      stops: [{ businessId, status: "pending" }],
+      status: "active"
+    });
+  } else if (!plan.stops.some((st) => st.businessId === businessId)) {
+    if (plan.stops.length >= MAX_ROUTE_STOPS) throw new Error(`Routes cap at ${MAX_ROUTE_STOPS} stops.`);
+    await savePlanStops(db, plan.id, [...plan.stops, { businessId, status: "pending" }]);
+  }
+  return await getRoutePlan(ambassadorId);
+}
+async function setRouteStopStatus(ambassadorId, businessId, status) {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan) return null;
+  const stops = plan.stops.map((st) => st.businessId === businessId ? { ...st, status } : st);
+  await savePlanStops(db, plan.id, stops);
+  return getRoutePlan(ambassadorId);
+}
+async function markRouteStopDone(ambassadorId, businessId) {
+  try {
+    const db = await requireDb();
+    const plan = await loadTodayPlan(db, ambassadorId);
+    if (!plan || !plan.stops.some((st) => st.businessId === businessId)) return;
+    const stops = plan.stops.map((st) => st.businessId === businessId ? { ...st, status: "done" } : st);
+    await savePlanStops(db, plan.id, stops);
+  } catch (e) {
+    console.warn("[route] could not mark stop done:", e);
+  }
+}
+async function clearRoutePlan(ambassadorId) {
+  const db = await requireDb();
+  await db.delete(routePlan).where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday())));
 }
 async function submitCurriculumGap(data) {
   const db = await requireDb();
@@ -60533,6 +60708,7 @@ var crmRouter = router({
       photoUrls: input.photoUrls ?? null,
       device: input.device ?? null
     });
+    await markRouteStopDone(amb.id, input.businessId);
     let liveCheck = null;
     if (input.outcome === "claimed_onsite") {
       try {
@@ -60567,6 +60743,29 @@ var crmRouter = router({
       getActiveBounty()
     ]);
     return { ...earnings, openFollowups: followups, activeBountyCents: bounty?.amountCents ?? null };
+  }),
+  // ── Day routes (§2c) ─────────────────────────────────────────────────────
+  route: ambassadorProcedure.query(async ({ ctx }) => getRoutePlan(ctx.ambassador.id)),
+  buildRoute: ambassadorProcedure.input(
+    external_exports.object({
+      lat: external_exports.number().optional(),
+      lng: external_exports.number().optional(),
+      count: external_exports.number().int().min(1).max(20).optional(),
+      includeFollowups: external_exports.boolean().optional()
+    }).optional()
+  ).mutation(
+    async ({ ctx, input }) => buildRoutePlan(ctx.ambassador.id, {
+      lat: input?.lat ?? null,
+      lng: input?.lng ?? null,
+      count: input?.count,
+      includeFollowups: input?.includeFollowups
+    })
+  ),
+  addRouteStop: ambassadorProcedure.input(external_exports.object({ businessId: external_exports.string().uuid() })).mutation(async ({ ctx, input }) => addRouteStop(ctx.ambassador.id, input.businessId)),
+  setRouteStopStatus: ambassadorProcedure.input(external_exports.object({ businessId: external_exports.string().uuid(), status: external_exports.enum(["pending", "done", "skipped"]) })).mutation(async ({ ctx, input }) => setRouteStopStatus(ctx.ambassador.id, input.businessId, input.status)),
+  clearRoute: ambassadorProcedure.mutation(async ({ ctx }) => {
+    await clearRoutePlan(ctx.ambassador.id);
+    return { success: true };
   }),
   // Curriculum-gap capture (§8).
   submitGap: ambassadorProcedure.input(external_exports.object({ businessId: external_exports.string().uuid().optional(), objectionText: external_exports.string().min(1).max(2e3), context: external_exports.string().max(2e3).optional() })).mutation(async ({ ctx, input }) => {

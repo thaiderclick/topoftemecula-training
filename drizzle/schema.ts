@@ -256,6 +256,24 @@ export const payoutBatch = pgTable("payout_batch", {
 export type PayoutBatch = typeof payoutBatch.$inferSelect;
 export type InsertPayoutBatch = typeof payoutBatch.$inferInsert;
 
+/** A stop on a planned day route. Stored ordered inside route_plan.stops. */
+export interface RouteStop {
+  businessId: string;
+  status: "pending" | "done" | "skipped";
+}
+
+/** One planned route per ambassador per (Pacific-time) day. */
+export const routePlan = pgTable("route_plan", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  planDate: date("plan_date").notNull(),
+  stops: jsonb("stops").$type<RouteStop[]>().notNull().default([]),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type RoutePlan = typeof routePlan.$inferSelect;
+
 /** One-time 6-digit password-reset codes (hashes only; emailed via Resend). */
 export const authResetCode = pgTable("auth_reset_code", {
   id: serial("id").primaryKey(),
