@@ -490,6 +490,21 @@ export async function buildRoutePlan(
     }
   }
 
+  // Out-of-coverage location (traveling, bad GPS): the ~±28mi bounding box
+  // found nothing — build by confidence instead so the route still works.
+  let useLocationOrdering = hasLoc;
+  if (ids.length === 0 && hasLoc) {
+    useLocationOrdering = false;
+    const fallback = await getTargets({ lat: null, lng: null, limit: count });
+    for (const t of fallback) {
+      if (ids.length >= count) break;
+      push(t.businessId);
+    }
+  }
+  if (ids.length === 0) {
+    throw new Error("No unclaimed businesses available to route — the directory may not be synced yet.");
+  }
+
   const coordRows = ids.length
     ? await db
         .select({ businessId: business.businessId, lat: business.lat, lng: business.lng })
@@ -497,7 +512,7 @@ export async function buildRoutePlan(
         .where(inArray(business.businessId, ids))
     : [];
   const coords = new Map(coordRows.map((r) => [r.businessId, { lat: r.lat, lng: r.lng }]));
-  const ordered = orderNearestNeighbor(ids, coords, hasLoc ? { lat: opts.lat!, lng: opts.lng! } : null);
+  const ordered = orderNearestNeighbor(ids, coords, useLocationOrdering ? { lat: opts.lat!, lng: opts.lng! } : null);
   const stops: RouteStop[] = ordered.map((businessId) => ({ businessId, status: "pending" }));
 
   await db

@@ -251,6 +251,7 @@ export default function Crm() {
   });
 
   const route = trpc.crm.route.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const activePlan = route.data && route.data.stops.length > 0 ? route.data : null;
   const utils = trpc.useUtils();
   const [routeCount, setRouteCount] = useState(8);
   const buildRoute = trpc.crm.buildRoute.useMutation({
@@ -431,7 +432,7 @@ export default function Crm() {
           <>
             {route.isLoading && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto my-8" />}
 
-            {!route.isLoading && !route.data && (
+            {!route.isLoading && !activePlan && (
               <Card className="mt-5 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1"><RouteIcon className="w-4 h-4 text-primary" /> Plan your day</div>
                 <p className="text-[12px] text-muted-foreground mb-3">
@@ -455,14 +456,14 @@ export default function Crm() {
               </Card>
             )}
 
-            {route.data && (
+            {activePlan && (
               <>
-                {route.data.status === "completed" && (
+                {activePlan.status === "completed" && (
                   <Card className="mt-5 p-4 border-emerald-300 bg-emerald-50/50">
                     <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><Flag className="w-4 h-4" /> Route complete — great day!</div>
                     <p className="text-[12px] text-muted-foreground mt-1">
-                      {route.data.stops.filter((s) => s.status === "done").length} visited
-                      {route.data.stops.some((s) => s.status === "skipped") && <> · {route.data.stops.filter((s) => s.status === "skipped").length} skipped</>}
+                      {activePlan.stops.filter((s) => s.status === "done").length} visited
+                      {activePlan.stops.some((s) => s.status === "skipped") && <> · {activePlan.stops.filter((s) => s.status === "skipped").length} skipped</>}
                       {" "}— check the Earnings tab for claims in motion, then build tomorrow's route fresh.
                     </p>
                   </Card>
@@ -471,12 +472,12 @@ export default function Crm() {
                 <div className="mt-5 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <RouteIcon className="w-4 h-4 text-primary" />
-                    {route.data.stops.filter((s) => s.status === "done").length}/{route.data.stops.length} done
-                    {route.data.totalMiles > 0 && <span className="text-muted-foreground font-normal">· {route.data.totalMiles.toFixed(1)} mi</span>}
+                    {activePlan.stops.filter((s) => s.status === "done").length}/{activePlan.stops.length} done
+                    {activePlan.totalMiles > 0 && <span className="text-muted-foreground font-normal">· {activePlan.totalMiles.toFixed(1)} mi</span>}
                   </div>
                   <div className="flex gap-1.5">
-                    {navigateAllUrl(route.data.stops) && (
-                      <a href={navigateAllUrl(route.data.stops)!} target="_blank" rel="noreferrer">
+                    {navigateAllUrl(activePlan.stops) && (
+                      <a href={navigateAllUrl(activePlan.stops)!} target="_blank" rel="noreferrer">
                         <Button size="sm" variant="outline"><Navigation className="w-3.5 h-3.5 mr-1" />Navigate all</Button>
                       </a>
                     )}
@@ -487,7 +488,7 @@ export default function Crm() {
                 </div>
 
                 <div className="mt-2 flex flex-col gap-2">
-                  {route.data.stops.map((s, i) => (
+                  {activePlan.stops.map((s, i) => (
                     <Card key={s.businessId} className={`p-3 ${s.status !== "pending" ? "opacity-70" : ""}`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5 min-w-0">

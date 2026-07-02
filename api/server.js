@@ -47225,9 +47225,21 @@ async function buildRoutePlan(ambassadorId, opts) {
       push(t2.businessId);
     }
   }
+  let useLocationOrdering = hasLoc;
+  if (ids.length === 0 && hasLoc) {
+    useLocationOrdering = false;
+    const fallback = await getTargets({ lat: null, lng: null, limit: count });
+    for (const t2 of fallback) {
+      if (ids.length >= count) break;
+      push(t2.businessId);
+    }
+  }
+  if (ids.length === 0) {
+    throw new Error("No unclaimed businesses available to route \u2014 the directory may not be synced yet.");
+  }
   const coordRows = ids.length ? await db.select({ businessId: business.businessId, lat: business.lat, lng: business.lng }).from(business).where(inArray(business.businessId, ids)) : [];
   const coords = new Map(coordRows.map((r) => [r.businessId, { lat: r.lat, lng: r.lng }]));
-  const ordered = orderNearestNeighbor(ids, coords, hasLoc ? { lat: opts.lat, lng: opts.lng } : null);
+  const ordered = orderNearestNeighbor(ids, coords, useLocationOrdering ? { lat: opts.lat, lng: opts.lng } : null);
   const stops = ordered.map((businessId) => ({ businessId, status: "pending" }));
   await db.insert(routePlan).values({ ambassadorId, planDate: ptToday(), stops, status: "active" }).onConflictDoUpdate({
     target: [routePlan.ambassadorId, routePlan.planDate],
