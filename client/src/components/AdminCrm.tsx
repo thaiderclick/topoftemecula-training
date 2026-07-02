@@ -2,7 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DollarSign, Trophy, AlertTriangle, MessageSquareWarning, Radar, Loader2 } from "lucide-react";
+import { DollarSign, Trophy, AlertTriangle, MessageSquareWarning, Radar, Loader2, Banknote } from "lucide-react";
 
 const dollars = (cents: number | null | undefined) => `$${(((cents ?? 0) as number) / 100).toFixed(2)}`;
 
@@ -25,6 +25,17 @@ export function AdminCrm({ adminPassword }: { adminPassword: string }) {
   const auth = { adminPassword };
   const bounty = trpc.crm.adminGetActiveBounty.useQuery(auth);
   const upgradeBounties = trpc.crm.adminGetUpgradeBounties.useQuery(auth);
+  const unpaid = trpc.crm.adminUnpaidBalances.useQuery(auth);
+  const payoutHistory = trpc.crm.adminPayoutHistory.useQuery(auth);
+  const recordPayout = trpc.crm.adminRecordPayout.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Payout recorded: ${dollars(r.totalCents)} (${r.claimCount} claim(s), ${r.bonusCount} bonus(es)).`);
+      utils.crm.adminUnpaidBalances.invalidate();
+      utils.crm.adminPayoutHistory.invalidate();
+      utils.crm.adminLeaderboard.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const setUpgradeBounty = trpc.crm.adminSetUpgradeBounty.useMutation({
     onSuccess: (r) => {
       toast.success(
@@ -131,6 +142,54 @@ export function AdminCrm({ adminPassword }: { adminPassword: string }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Payouts */}
+      <div className={card}>
+        <div className="flex items-center gap-2 mb-3">
+          <Banknote className="w-4 h-4 text-amber-600" />
+          <h3 className="font-serif font-bold text-slate-800">Payouts</h3>
+          <span className="text-xs text-slate-400">pay outside the app (Venmo/Zelle/check), then record it here</span>
+        </div>
+        {unpaid.data?.length === 0 && <p className="text-sm text-slate-400">No unpaid balances.</p>}
+        {(unpaid.data ?? []).map((row) => {
+          const total = row.claim_cents + row.bonus_cents;
+          return (
+            <div key={row.ambassador_id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-700 truncate">{row.name ?? "(unknown)"} <span className="font-mono text-xs text-slate-400">{row.referral_code}</span></p>
+                <p className="text-xs text-slate-400">
+                  {row.claim_count > 0 && `${row.claim_count} claim(s) · ${dollars(row.claim_cents)}`}
+                  {row.claim_count > 0 && row.bonus_count > 0 && "  +  "}
+                  {row.bonus_count > 0 && `${row.bonus_count} bonus(es) · ${dollars(row.bonus_cents)}`}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                disabled={recordPayout.isPending}
+                style={{ background: "oklch(0.22 0.01 65)", color: "white" }}
+                onClick={() => {
+                  if (confirm(`Record that you paid ${row.name ?? "this ambassador"} ${dollars(total)}? This marks ${row.claim_count} claim(s) and ${row.bonus_count} bonus(es) as paid.`)) {
+                    recordPayout.mutate({ adminPassword, ambassadorId: row.ambassador_id });
+                  }
+                }}
+              >
+                Mark paid {dollars(total)}
+              </Button>
+            </div>
+          );
+        })}
+        {(payoutHistory.data?.length ?? 0) > 0 && (
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <p className="text-xs font-bold text-slate-500 uppercase mb-1">History</p>
+            {payoutHistory.data!.map((p) => (
+              <p key={p.id} className="text-xs text-slate-500 py-0.5">
+                {new Date(p.created_at).toLocaleDateString()} — {p.name ?? "(unknown)"} · <span className="font-semibold text-slate-700">{dollars(p.total_cents)}</span>
+                {p.note && <> · {p.note}</>}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Leaderboard */}

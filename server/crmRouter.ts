@@ -21,11 +21,14 @@ import {
   getEarnings,
   getLeaderboard,
   getOpenFollowups,
+  getPayoutHistory,
   getRoutePlan,
   getTargets,
+  getUnpaidBalances,
   getUpgradeBountyConfig,
   getVisitsByAmbassador,
   markRouteStopDone,
+  recordPayout,
   recordRoutePing,
   setBounty,
   setRouteStopStatus,
@@ -278,4 +281,13 @@ export const crmRouter = router({
   adminLeaderboard: crmAdminProcedure.query(async () => getLeaderboard()),
 
   adminAttributionLeak: crmAdminProcedure.query(async () => getAttributionLeakCount()),
+
+  // ── Payouts: record that an ambassador was paid (money moves outside the app) ──
+  adminUnpaidBalances: crmAdminProcedure.query(async () => getUnpaidBalances()),
+
+  adminRecordPayout: crmAdminProcedure
+    .input(z.object({ ambassadorId: z.number().int(), note: z.string().max(500).optional() }))
+    .mutation(async ({ input }) => recordPayout(input.ambassadorId, input.note ?? null)),
+
+  adminPayoutHistory: crmAdminProcedure.query(async () => getPayoutHistory()),
 });

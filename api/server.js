@@ -46521,7 +46521,8 @@ var upgradeBonus = pgTable("upgrade_bonus", {
   tier: text("tier").notNull(),
   amountCents: integer("amount_cents"),
   detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
-  paidAt: timestamp("paid_at", { withTimezone: true })
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  payoutBatchId: integer("payout_batch_id")
 });
 var payoutPeriod = pgTable("payout_period", {
   id: serial("id").primaryKey(),
@@ -46537,6 +46538,7 @@ var payoutBatch = pgTable("payout_batch", {
   ambassadorId: integer("ambassador_id"),
   totalCents: integer("total_cents"),
   status: text("status").notNull().default("pending"),
+  note: text("note"),
   exportedAt: timestamp("exported_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
@@ -47645,6 +47647,62 @@ async function recordRoutePing(ambassadorId, lat, lng) {
 async function clearRoutePlan(ambassadorId) {
   const db = await requireDb();
   await db.delete(routePlan).where(and(eq(routePlan.ambassadorId, ambassadorId), eq(routePlan.planDate, ptToday())));
+}
+async function getUnpaidBalances() {
+  const db = await requireDb();
+  const rows = await db.execute(sql`
+    select a.id as ambassador_id,
+           u.name,
+           a.referral_code::text as referral_code,
+           coalesce(c.claim_cents, 0)::int as claim_cents,
+           coalesce(c.claim_count, 0)::int as claim_count,
+           coalesce(b.bonus_cents, 0)::int as bonus_cents,
+           coalesce(b.bonus_count, 0)::int as bonus_count
+    from ambassador a
+    join users u on u.id = a.user_id
+    left join (
+      select ambassador_id, sum(bounty_amount_cents) claim_cents, count(*) claim_count
+      from claim where state = 'verified' and bounty_amount_cents is not null
+      group by ambassador_id
+    ) c on c.ambassador_id = a.id
+    left join (
+      select ambassador_id, sum(amount_cents) bonus_cents, count(*) bonus_count
+      from upgrade_bonus where paid_at is null and amount_cents is not null
+      group by ambassador_id
+    ) b on b.ambassador_id = a.id
+    where coalesce(c.claim_cents, 0) + coalesce(b.bonus_cents, 0) > 0
+    order by coalesce(c.claim_cents, 0) + coalesce(b.bonus_cents, 0) desc`);
+  return rows.rows;
+}
+async function recordPayout(ambassadorId, note) {
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const claims = await tx.select({ id: claim.id, cents: claim.bountyAmountCents }).from(claim).where(and(eq(claim.ambassadorId, ambassadorId), eq(claim.state, "verified"), sql`${claim.bountyAmountCents} is not null`)).for("update");
+    const bonuses = await tx.select({ id: upgradeBonus.id, cents: upgradeBonus.amountCents }).from(upgradeBonus).where(and(eq(upgradeBonus.ambassadorId, ambassadorId), isNull(upgradeBonus.paidAt), sql`${upgradeBonus.amountCents} is not null`)).for("update");
+    const totalCents = [...claims, ...bonuses].reduce((sum, r) => sum + (r.cents ?? 0), 0);
+    if (totalCents <= 0) throw new Error("Nothing unpaid for this ambassador.");
+    const now = /* @__PURE__ */ new Date();
+    const batch = await tx.insert(payoutBatch).values({ ambassadorId, totalCents, status: "paid", note: note ?? null, exportedAt: now }).returning({ id: payoutBatch.id });
+    const batchId = batch[0].id;
+    if (claims.length) {
+      await tx.update(claim).set({ state: "paid", paidAt: now, payoutBatchId: batchId, updatedAt: now }).where(sql`${claim.id} in (${sql.join(claims.map((c) => sql`${c.id}`), sql`, `)})`);
+    }
+    if (bonuses.length) {
+      await tx.update(upgradeBonus).set({ paidAt: now, payoutBatchId: batchId }).where(sql`${upgradeBonus.id} in (${sql.join(bonuses.map((b) => sql`${b.id}`), sql`, `)})`);
+    }
+    return { batchId, totalCents, claimCount: claims.length, bonusCount: bonuses.length };
+  });
+}
+async function getPayoutHistory(limit = 50) {
+  const db = await requireDb();
+  const rows = await db.execute(sql`
+    select p.id, p.total_cents, p.note, p.created_at, u.name, a.referral_code::text as referral_code
+    from payout_batch p
+    left join ambassador a on a.id = p.ambassador_id
+    left join users u on u.id = a.user_id
+    order by p.created_at desc
+    limit ${limit}`);
+  return rows.rows;
 }
 async function submitCurriculumGap(data) {
   const db = await requireDb();
@@ -61215,7 +61273,11 @@ var crmRouter = router({
   adminAnomalies: crmAdminProcedure.query(async () => getAnomalyClaims()),
   adminGaps: crmAdminProcedure.query(async () => getCurriculumGaps()),
   adminLeaderboard: crmAdminProcedure.query(async () => getLeaderboard()),
-  adminAttributionLeak: crmAdminProcedure.query(async () => getAttributionLeakCount())
+  adminAttributionLeak: crmAdminProcedure.query(async () => getAttributionLeakCount()),
+  // ── Payouts: record that an ambassador was paid (money moves outside the app) ──
+  adminUnpaidBalances: crmAdminProcedure.query(async () => getUnpaidBalances()),
+  adminRecordPayout: crmAdminProcedure.input(external_exports.object({ ambassadorId: external_exports.number().int(), note: external_exports.string().max(500).optional() })).mutation(async ({ input }) => recordPayout(input.ambassadorId, input.note ?? null)),
+  adminPayoutHistory: crmAdminProcedure.query(async () => getPayoutHistory())
 });
 
 // server/routers.ts

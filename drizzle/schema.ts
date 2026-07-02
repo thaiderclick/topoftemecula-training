@@ -256,6 +256,7 @@ export const upgradeBonus = pgTable("upgrade_bonus", {
   amountCents: integer("amount_cents"),
   detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
+  payoutBatchId: integer("payout_batch_id"),
 });
 export type UpgradeBonus = typeof upgradeBonus.$inferSelect;
 
@@ -276,6 +277,7 @@ export const payoutBatch = pgTable("payout_batch", {
   ambassadorId: integer("ambassador_id"),
   totalCents: integer("total_cents"),
   status: text("status").notNull().default("pending"),
+  note: text("note"),
   exportedAt: timestamp("exported_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
