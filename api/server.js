@@ -61340,15 +61340,15 @@ var crmRouter = router({
     });
     await markRouteStopDone(amb.id, input.businessId);
     let liveCheck = null;
-    if (input.outcome === "claimed_onsite") {
-      try {
-        const results = await reconcileLiveCheck(input.businessId);
-        const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
-        const someoneElses = !mine && results.some((r) => r.state === "verified");
-        liveCheck = mine ? "verified" : someoneElses ? "already_attributed" : "logged";
-      } catch {
-        liveCheck = "pending";
-      }
+    try {
+      const results = await reconcileLiveCheck(input.businessId);
+      const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
+      const someoneElses = !mine && results.some((r) => r.state === "verified");
+      if (mine) liveCheck = "verified";
+      else if (someoneElses && input.outcome === "claimed_onsite") liveCheck = "already_attributed";
+      else if (input.outcome === "claimed_onsite") liveCheck = "logged";
+    } catch {
+      if (input.outcome === "claimed_onsite") liveCheck = "pending";
     }
     return { visitId, loggedClaimId, liveCheck };
   }),

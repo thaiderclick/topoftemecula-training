@@ -16,8 +16,10 @@ import {
   Route as RouteIcon, Check, RotateCcw, Trash2, PlusCircle, Flag, Sparkles,
 } from "lucide-react";
 
+// What happened in the CONVERSATION — the ambassador never declares a claim.
+// Claims are detected automatically against the website on every logged visit.
 const OUTCOMES: { value: string; label: string; hint?: string }[] = [
-  { value: "claimed_onsite", label: "Claimed on-site 🎉", hint: "Owner claimed while you were there" },
+  { value: "claimed_onsite", label: "Owner said yes — claiming now 🎉", hint: "They're doing the claim while you're there (show your QR) — we'll verify it automatically" },
   { value: "first_visit", label: "First visit" },
   { value: "follow_up", label: "Follow-up visit" },
   { value: "left_info_needs_followup", label: "Left info — needs follow-up" },
@@ -183,7 +185,7 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
 
   const logVisit = trpc.crm.logVisit.useMutation({
     onSuccess: (r) => {
-      if (r.liveCheck === "verified") toast.success("Visit logged — claim verified instantly! 🎉");
+      if (r.liveCheck === "verified") toast.success("Claim detected and verified — payout is on the books! 🎉");
       else if (r.liveCheck === "already_attributed")
         toast.info("Visit logged — this business's claim is already attributed to another referral code.");
       else if (r.liveCheck) toast.success("Visit logged — claim pending owner completion.");

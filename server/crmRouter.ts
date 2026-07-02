@@ -156,19 +156,22 @@ export const crmRouter = router({
       // A logged visit checks the business off today's route (best-effort).
       await markRouteStopDone(amb.id, input.businessId);
 
+      // The system detects claims — the ambassador never declares one. Every
+      // visit triggers a live check against the website, whatever the outcome:
+      // if the owner scanned the QR and claimed while the ambassador was
+      // standing there, it verifies on the spot.
       let liveCheck: string | null = null;
-      if (input.outcome === "claimed_onsite") {
-        try {
-          const results = await reconcileLiveCheck(input.businessId);
-          // Only a verified claim OWNED BY THIS AMBASSADOR counts — a claim
-          // already verified for someone else's code must not show them a
-          // "verified instantly" success.
-          const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
-          const someoneElses = !mine && results.some((r) => r.state === "verified");
-          liveCheck = mine ? "verified" : someoneElses ? "already_attributed" : "logged";
-        } catch {
-          liveCheck = "pending"; // website unreachable — daily poll will resolve it
-        }
+      try {
+        const results = await reconcileLiveCheck(input.businessId);
+        // Only a verified claim OWNED BY THIS AMBASSADOR counts — a claim
+        // verified for someone else's code must not read as their success.
+        const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
+        const someoneElses = !mine && results.some((r) => r.state === "verified");
+        if (mine) liveCheck = "verified";
+        else if (someoneElses && input.outcome === "claimed_onsite") liveCheck = "already_attributed";
+        else if (input.outcome === "claimed_onsite") liveCheck = "logged";
+      } catch {
+        if (input.outcome === "claimed_onsite") liveCheck = "pending"; // website unreachable — daily poll resolves it
       }
       return { visitId, loggedClaimId, liveCheck };
     }),
