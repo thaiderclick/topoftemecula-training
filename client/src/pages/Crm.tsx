@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "wouter";
 import QRCode from "react-qr-code";
 
@@ -37,8 +37,6 @@ const OUTCOMES: { value: string; label: string }[] = [
   { value: "no_decision_maker", label: "No decision-maker present" },
   { value: "not_interested_no_revisit", label: "Not interested — no revisit" },
 ];
-
-const FOLLOWUP_OUTCOMES = new Set(["left_info_needs_followup", "no_decision_maker"]);
 
 const dollars = (cents: number | null | undefined) =>
   `$${(((cents ?? 0) as number) / 100).toFixed(2)}`;
@@ -206,6 +204,7 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
       utils.crm.myClaims.invalidate();
       utils.crm.targets.invalidate();
       utils.crm.route.invalidate();
+      utils.crm.revisits.invalidate();
       onDone();
     },
     onError: (e) => toast.error(e.message),
@@ -391,17 +390,7 @@ export default function Crm() {
     );
   };
 
-  // Latest visit per business that still needs a follow-up (and isn't claimed yet).
-  const followupsNeeded = useMemo(() => {
-    const seen = new Set<string>();
-    const out: NonNullable<typeof myVisits.data> = [];
-    for (const v of myVisits.data ?? []) {
-      if (seen.has(v.businessId)) continue;
-      seen.add(v.businessId);
-      if (FOLLOWUP_OUTCOMES.has(v.outcome) && v.localClaimStatus !== "claimed") out.push(v);
-    }
-    return out;
-  }, [myVisits.data]);
+  const revisits = trpc.crm.revisits.useQuery(undefined, { enabled: isAuthenticated, retry: false });
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -676,6 +665,7 @@ export default function Crm() {
                               {[s.address, s.city].filter(Boolean).join(" · ") || "—"}
                               {s.distanceFromPrevMiles != null && <> · +{s.distanceFromPrevMiles.toFixed(1)} mi</>}
                             </p>
+                            {s.note && <p className="text-[11px] text-amber-700 mt-0.5">↻ {s.note}</p>}
                           </div>
                         </div>
                         <div className="flex gap-1.5 shrink-0">
@@ -722,25 +712,27 @@ export default function Crm() {
         {/* ── Pipeline tab ── */}
         {tab === "pipeline" && (
           <>
-            {followupsNeeded.length > 0 && (
+            {(revisits.data?.length ?? 0) > 0 && (
               <Card className="mt-5 p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2"><ClipboardList className="w-4 h-4 text-primary" /> Needs a follow-up</div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2"><ClipboardList className="w-4 h-4 text-primary" /> Due for a check-in</div>
+                <p className="text-[11px] text-muted-foreground mb-2">These come back onto your route automatically — friendly follow-ups, not hard sells.</p>
                 <div className="flex flex-col divide-y divide-border/60">
-                  {followupsNeeded.map((v) => (
-                    <div key={v.id} className="py-2 flex items-center justify-between gap-2">
+                  {revisits.data!.map((v) => (
+                    <div key={v.businessId} className="py-2 flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{v.businessName ?? "(unnamed)"}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {[
-                            v.ownerNameForFollowup && `ask for ${v.ownerNameForFollowup}`,
-                            v.bestTimeToReturn && `best: ${v.bestTimeToReturn}`,
-                            v.ownerEmailCaptured,
-                          ].filter(Boolean).join(" · ") || OUTCOMES.find((o) => o.value === v.outcome)?.label}
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {v.name ?? "(unnamed)"}
+                          {v.kind === "upgrade_checkin" && <span className="ml-1.5 text-[10px] font-bold text-emerald-600 align-middle">$ upgrade window</span>}
+                          {v.kind === "claim_stalled" && <span className="ml-1.5 text-[10px] font-bold text-amber-600 align-middle">claim stalled</span>}
                         </p>
+                        <p className="text-[11px] text-muted-foreground">{v.reason}</p>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
+                        <Button size="sm" variant="outline" title="Pre-call intel" onClick={() => setIntelFor(intelFor === v.businessId ? null : v.businessId)}>
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </Button>
                         {canShare && (
-                          <Button size="sm" variant="outline" onClick={() => setQrFor({ businessId: v.businessId, name: v.businessName })}>
+                          <Button size="sm" variant="outline" onClick={() => setQrFor({ businessId: v.businessId, name: v.name })}>
                             <QrCode className="w-3.5 h-3.5" />
                           </Button>
                         )}
@@ -751,10 +743,11 @@ export default function Crm() {
                     </div>
                   ))}
                 </div>
-                {openVisitFor && followupsNeeded.some((v) => v.businessId === openVisitFor) && (
+                {intelFor && revisits.data!.some((v) => v.businessId === intelFor) && <StopIntelPanel businessId={intelFor} />}
+                {openVisitFor && revisits.data!.some((v) => v.businessId === openVisitFor) && (
                   <VisitForm
                     businessId={openVisitFor}
-                    businessName={followupsNeeded.find((v) => v.businessId === openVisitFor)?.businessName ?? "business"}
+                    businessName={revisits.data!.find((v) => v.businessId === openVisitFor)?.name ?? "business"}
                     onDone={() => setOpenVisitFor(null)}
                   />
                 )}

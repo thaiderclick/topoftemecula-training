@@ -552,6 +552,107 @@ export async function getRoutePlan(ambassadorId: number): Promise<RoutePlanView 
   return enrichPlan(db, rows[0]);
 }
 
+/**
+ * Relationship cadence: when should a visited business re-enter the route?
+ * Follow-ups are check-ins, not hard sells — the note carries the framing.
+ *  - no decision-maker → back in 3 days; left info → 4 days
+ *  - their claim VERIFIED and business still on free tier → friendly check-in
+ *    after 7 days (the upgrade conversation lives here, if it fits)
+ *  - owner said yes but claim never completed → after 5 days, offer to help
+ *  - neutral touch-base, still unclaimed → gentle re-touch after 14 days
+ *  - not interested → never
+ */
+export interface RevisitDue {
+  businessId: string;
+  name: string | null;
+  reason: string;
+  kind: "claim_stalled" | "upgrade_checkin" | "followup" | "retouch";
+  dueDays: number; // how many days overdue (0 = due today)
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export async function getRevisitQueue(ambassadorId: number): Promise<RevisitDue[]> {
+  const db = await requireDb();
+  const rows = await db.execute(sql`
+    with latest as (
+      select distinct on (v.business_id)
+        v.business_id, v.outcome, v.created_at, v.best_time_to_return
+      from visit v
+      where v.ambassador_id = ${ambassadorId}
+      order by v.business_id, v.created_at desc
+    )
+    select l.business_id, l.outcome, l.created_at as last_visit_at, l.best_time_to_return,
+           b.name, b.subscription_tier, b.directory_claim_status, b.local_claim_status,
+           c.state as my_claim_state, c.verified_at as my_claim_verified_at
+    from latest l
+    join business b on b.business_id = l.business_id
+    left join lateral (
+      select state, verified_at from claim
+      where claim.business_id = l.business_id and claim.ambassador_id = ${ambassadorId}
+      order by claim.created_at desc limit 1
+    ) c on true
+    where l.outcome <> 'not_interested_no_revisit' and b.status = 'active'`);
+
+  const now = Date.now();
+  const out: RevisitDue[] = [];
+  for (const r of rows.rows as Record<string, unknown>[]) {
+    const lastVisit = new Date(r.last_visit_at as string).getTime();
+    const daysSinceVisit = (now - lastVisit) / DAY_MS;
+    const name = (r.name as string | null) ?? null;
+    const businessId = r.business_id as string;
+    const bestTime = r.best_time_to_return as string | null;
+
+    // 1. Verified claim, business still free → friendly upgrade check-in.
+    if (r.my_claim_state === "verified" && (r.subscription_tier == null || r.subscription_tier === "free")) {
+      const verifiedAt = r.my_claim_verified_at ? new Date(r.my_claim_verified_at as string).getTime() : lastVisit;
+      const daysSince = (now - Math.max(verifiedAt, lastVisit)) / DAY_MS;
+      if (daysSince >= 7) {
+        out.push({
+          businessId, name, kind: "upgrade_checkin", dueDays: Math.floor(daysSince - 7),
+          reason: `Their listing went live ${Math.floor((now - verifiedAt) / DAY_MS)} days ago — friendly check-in; upgrade if the moment's right`,
+        });
+        continue;
+      }
+      continue;
+    }
+    // 2. Owner said yes but the claim never landed → help them finish.
+    if (r.outcome === "claimed_onsite" && r.my_claim_state === "logged" && daysSinceVisit >= 5) {
+      out.push({
+        businessId, name, kind: "claim_stalled", dueDays: Math.floor(daysSinceVisit - 5),
+        reason: "Said yes but never finished the claim — stop by and walk them through it",
+      });
+      continue;
+    }
+    // 3. Explicit follow-up outcomes.
+    if (r.outcome === "no_decision_maker" && daysSinceVisit >= 3) {
+      out.push({
+        businessId, name, kind: "followup", dueDays: Math.floor(daysSinceVisit - 3),
+        reason: bestTime ? `Decision-maker was out — best time: ${bestTime}` : "Decision-maker was out — try again",
+      });
+      continue;
+    }
+    if (r.outcome === "left_info_needs_followup" && daysSinceVisit >= 4) {
+      out.push({
+        businessId, name, kind: "followup", dueDays: Math.floor(daysSinceVisit - 4),
+        reason: bestTime ? `Left info — they said: ${bestTime}` : "Left info — see where they landed",
+      });
+      continue;
+    }
+    // 4. Neutral touch, still unclaimed → gentle re-touch.
+    if ((r.outcome === "first_visit" || r.outcome === "follow_up") && r.directory_claim_status === "unclaimed" && daysSinceVisit >= 14) {
+      out.push({
+        businessId, name, kind: "retouch", dueDays: Math.floor(daysSinceVisit - 14),
+        reason: `Visited ${Math.floor(daysSinceVisit)} days ago, still unclaimed — light touch`,
+      });
+    }
+  }
+
+  const priority: Record<RevisitDue["kind"], number> = { claim_stalled: 0, upgrade_checkin: 1, followup: 2, retouch: 3 };
+  out.sort((a, b) => priority[a.kind] - priority[b.kind] || b.dueDays - a.dueDays);
+  return out;
+}
+
 /** Nearest-neighbor ordering: greedy walk from the start point. Stops without
  *  coordinates keep their relative order at the end. */
 function orderNearestNeighbor(
@@ -598,16 +699,17 @@ export async function buildRoutePlan(
 
   const ids: string[] = [];
   const seen = new Set<string>();
+  const notes = new Map<string, string>();
   const push = (id: string) => { if (!seen.has(id)) { seen.add(id); ids.push(id); } };
 
+  // Relationship stops first: everything the cadence says is due (check-ins,
+  // stalled claims, follow-ups), then fill with fresh prospects.
   if (includeFollowups) {
-    const visits = await getVisitsByAmbassador(ambassadorId, 100);
-    const latestPerBusiness = new Set<string>();
-    for (const v of visits) {
-      if (latestPerBusiness.has(v.businessId)) continue;
-      latestPerBusiness.add(v.businessId);
-      const needsFollowup = (v.outcome === "left_info_needs_followup" || v.outcome === "no_decision_maker") && v.localClaimStatus !== "claimed";
-      if (needsFollowup && ids.length < count) push(v.businessId);
+    const due = await getRevisitQueue(ambassadorId);
+    for (const d of due) {
+      if (ids.length >= count) break;
+      push(d.businessId);
+      notes.set(d.businessId, d.reason);
     }
   }
 
@@ -648,7 +750,11 @@ export async function buildRoutePlan(
     : [];
   const coords = new Map(coordRows.map((r) => [r.businessId, { lat: r.lat, lng: r.lng }]));
   const ordered = orderNearestNeighbor(ids, coords, useLocationOrdering ? { lat: opts.lat!, lng: opts.lng! } : null);
-  const stops: RouteStop[] = ordered.map((businessId) => ({ businessId, status: "pending" }));
+  const stops: RouteStop[] = ordered.map((businessId) => ({
+    businessId,
+    status: "pending",
+    ...(notes.has(businessId) ? { note: notes.get(businessId)! } : {}),
+  }));
 
   await db
     .insert(routePlan)

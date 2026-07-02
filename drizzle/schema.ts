@@ -288,6 +288,8 @@ export type InsertPayoutBatch = typeof payoutBatch.$inferInsert;
 export interface RouteStop {
   businessId: string;
   status: "pending" | "done" | "skipped";
+  /** Why this stop is on the route (relationship follow-ups carry coaching). */
+  note?: string;
 }
 
 /** One planned route per ambassador per (Pacific-time) day. */

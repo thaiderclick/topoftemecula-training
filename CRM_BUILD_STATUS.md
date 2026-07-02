@@ -1,6 +1,13 @@
 # Ambassador Field CRM — Build Status & Resume Doc
 
-**Last updated:** 2026-07-02 (post code-review fixes). This file is the single source of truth for where the CRM build stands. Read it first when resuming.
+**Last updated:** 2026-07-02 (launch-ready). This file is the build history/resume log. **For how the system actually works, read `docs/CRM.md` first** — architecture, money-path invariants, cadence rules, env vars, and the gotchas.
+
+## 0.9 Revenue effectiveness pass (2026-07-02)
+
+- **Pre-call intel** (`server/precallIntel.ts`, crm_0011): ✨ per-business briefing from real model responses — probe ("what does AI know about them"), weekly category check ("who AI recommends instead"), synthesis (spoken opener + insight + objection/counter). Cached 7d, pre-warmed on route build. Verified live in prod (~12s first generation, real competitor names).
+- **Claims detected, never declared:** live website check on EVERY logged visit; outcome list reduced to the one human fact — how the conversation ended (neutral resolves to first-visit/follow-up server-side from history).
+- **Relationship cadence** (`getRevisitQueue`): visited businesses re-enter routes automatically with coaching notes — stalled claims (5d), upgrade check-ins for verified-but-still-free businesses (7d, where the upgrade conversation lives), decision-maker retries (3d), left-info follow-ups (4d), gentle re-touches (14d), never for not-interested. Pipeline tab shows the due queue; route stops carry the ↻ reason.
+- Bounties live in prod: $20/claim; upgrade bonuses $30/$79/$299 by tier. Payout recording in admin. Legacy test users purged.
 
 ## 0. Code-review fixes (2026-07-02)
 

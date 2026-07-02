@@ -23,6 +23,7 @@ import {
   getLeaderboard,
   getOpenFollowups,
   getPayoutHistory,
+  getRevisitQueue,
   getRoutePlan,
   getTargets,
   getUnpaidBalances,
@@ -212,6 +213,9 @@ export const crmRouter = router({
     ]);
     return { ...earnings, openFollowups: followups, activeBountyCents: bounty?.amountCents ?? null };
   }),
+
+  // Relationship cadence: who's due for a check-in/follow-up and why.
+  revisits: ambassadorProcedure.query(async ({ ctx }) => getRevisitQueue(ctx.ambassador.id)),
 
   // ── Day routes (§2c) ─────────────────────────────────────────────────────
   route: ambassadorProcedure.query(async ({ ctx }) => getRoutePlan(ctx.ambassador.id)),
