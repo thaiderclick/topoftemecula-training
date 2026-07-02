@@ -45,6 +45,11 @@ Registration/login rebuilt (the name + shared-password gate was a placeholder):
 - **Category names:** website grant landed (their PR #32) → sync mirrors `category_name`/`neighborhood_name` (crm_0006), and the marketing-value classifier scores from an explicit 76-category tier map (see `server/marketingValue.ts`).
 - Verified: 31/31 tests, tsc clean, build passes, live smoke of every admin endpoint (401 on bad password; set-bounty round-trip tested then reset to the intentional "not set" prelaunch state).
 
+## 0.8 Upgrade bonuses + in-app maps (2026-07-02)
+
+- **Two-tier bounties (merged):** claim fee (existing) + per-tier upgrade bonus when an attributed business goes paid within 90 days of its claim. `bounty_config.kind/tier` + `upgrade_bonus` table (crm_0007); detector runs after the nightly sync, idempotent; unset amounts backfill on set. Admin panel has per-tier setters (Enhanced/$29 · Premium/$79 · Growth Partner/$299 tiers priced per trainingData.ts:869). Recommended amounts (researched vs Meta-ads benchmarks): $20/claim, bonus = 100% of first month per tier. Earnings fold bonuses in + celebration line.
+- **In-app maps + tracking (branch crm-inapp-maps):** Mapbox map view on the Route tab (numbered pins, done=green, dashed route line through pending stops, follow-me geolocate control, tap pin → action card with Directions/QR/Visit). `VITE_MAPBOX_TOKEN` in .env + Vercel (public token, shared with the website's Mapbox account; free tier). mapbox-gl lazy-loaded (separate 1.8MB chunk, only on map view). **Shift-scoped tracking** (crm_0008): GPS stamped on every visit log (visit.lat/lng) + breadcrumb ping every 2 min while the Route tab is open with an active route (`route_ping` table via `crm.recordPing`) — no background tracking (web apps can't track when closed; a native wrapper would be needed for that). Admin day-replay UI = future work; data accrues now.
+
 ## 1. What this is
 
 A new **Ambassador Field CRM** built *inside* the training-app repo (`topoftemecula-training`). Field ambassadors (who are existing training-app users) log visits to local businesses, drive free directory claims via `?amb=CODE` referral links, and earn bounties on verified claims. Built to the plan in the conversation ("Build Plan — Ambassador Field CRM", §0–§11).

@@ -46464,6 +46464,8 @@ var visit = pgTable("visit", {
   rung: integer("rung"),
   photoUrls: text("photo_urls").array(),
   device: text("device"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 var claim = pgTable("claim", {
@@ -46543,6 +46545,14 @@ var routePlan = pgTable("route_plan", {
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+var routePing = pgTable("route_ping", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  routePlanId: integer("route_plan_id").notNull(),
+  lat: doublePrecision("lat").notNull(),
+  lng: doublePrecision("lng").notNull(),
+  at: timestamp("at", { withTimezone: true }).defaultNow().notNull()
 });
 var authResetCode = pgTable("auth_reset_code", {
   id: serial("id").primaryKey(),
@@ -47612,6 +47622,13 @@ async function markRouteStopDone(ambassadorId, businessId) {
   } catch (e) {
     console.warn("[route] could not mark stop done:", e);
   }
+}
+async function recordRoutePing(ambassadorId, lat, lng) {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan || plan.status !== "active") return false;
+  await db.insert(routePing).values({ ambassadorId, routePlanId: plan.id, lat, lng });
+  return true;
 }
 async function clearRoutePlan(ambassadorId) {
   const db = await requireDb();
@@ -61075,7 +61092,9 @@ var crmRouter = router({
       bestTimeToReturn: external_exports.string().max(200).optional(),
       rung: external_exports.number().int().min(1).max(8).optional(),
       photoUrls: external_exports.array(external_exports.string().url()).max(10).optional(),
-      device: external_exports.string().max(200).optional()
+      device: external_exports.string().max(200).optional(),
+      lat: external_exports.number().min(-90).max(90).optional(),
+      lng: external_exports.number().min(-180).max(180).optional()
     })
   ).mutation(async ({ ctx, input }) => {
     const amb = ctx.ambassador;
@@ -61090,7 +61109,9 @@ var crmRouter = router({
       bestTimeToReturn: input.bestTimeToReturn ?? null,
       rung: input.rung ?? null,
       photoUrls: input.photoUrls ?? null,
-      device: input.device ?? null
+      device: input.device ?? null,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null
     });
     await markRouteStopDone(amb.id, input.businessId);
     let liveCheck = null;
@@ -61150,6 +61171,11 @@ var crmRouter = router({
   clearRoute: ambassadorProcedure.mutation(async ({ ctx }) => {
     await clearRoutePlan(ctx.ambassador.id);
     return { success: true };
+  }),
+  // Shift-scoped breadcrumb: only stored while today's route is active.
+  recordPing: ambassadorProcedure.input(external_exports.object({ lat: external_exports.number().min(-90).max(90), lng: external_exports.number().min(-180).max(180) })).mutation(async ({ ctx, input }) => {
+    const tracked2 = await recordRoutePing(ctx.ambassador.id, input.lat, input.lng);
+    return { tracked: tracked2 };
   }),
   // Curriculum-gap capture (§8).
   submitGap: ambassadorProcedure.input(external_exports.object({ businessId: external_exports.string().uuid().optional(), objectionText: external_exports.string().min(1).max(2e3), context: external_exports.string().max(2e3).optional() })).mutation(async ({ ctx, input }) => {

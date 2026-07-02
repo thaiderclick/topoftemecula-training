@@ -26,6 +26,7 @@ import {
   getUpgradeBountyConfig,
   getVisitsByAmbassador,
   markRouteStopDone,
+  recordRoutePing,
   setBounty,
   setRouteStopStatus,
   setUpgradeBounty,
@@ -126,6 +127,8 @@ export const crmRouter = router({
         rung: z.number().int().min(1).max(8).optional(),
         photoUrls: z.array(z.string().url()).max(10).optional(),
         device: z.string().max(200).optional(),
+        lat: z.number().min(-90).max(90).optional(),
+        lng: z.number().min(-180).max(180).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -142,6 +145,8 @@ export const crmRouter = router({
         rung: input.rung ?? null,
         photoUrls: input.photoUrls ?? null,
         device: input.device ?? null,
+        lat: input.lat ?? null,
+        lng: input.lng ?? null,
       });
 
       // A logged visit checks the business off today's route (best-effort).
@@ -225,6 +230,14 @@ export const crmRouter = router({
     await clearRoutePlan(ctx.ambassador.id);
     return { success: true };
   }),
+
+  // Shift-scoped breadcrumb: only stored while today's route is active.
+  recordPing: ambassadorProcedure
+    .input(z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }))
+    .mutation(async ({ ctx, input }) => {
+      const tracked = await recordRoutePing(ctx.ambassador.id, input.lat, input.lng);
+      return { tracked };
+    }),
 
   // Curriculum-gap capture (§8).
   submitGap: ambassadorProcedure

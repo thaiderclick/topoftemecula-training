@@ -17,6 +17,7 @@ import {
   followupTask,
   InsertCurriculumGap,
   InsertVisit,
+  routePing,
   routePlan,
   RouteStop,
   upgradeBonus,
@@ -698,6 +699,15 @@ export async function markRouteStopDone(ambassadorId: number, businessId: string
   } catch (e) {
     console.warn("[route] could not mark stop done:", e);
   }
+}
+
+/** Breadcrumb while a route is active; silently ignored when no route today. */
+export async function recordRoutePing(ambassadorId: number, lat: number, lng: number): Promise<boolean> {
+  const db = await requireDb();
+  const plan = await loadTodayPlan(db, ambassadorId);
+  if (!plan || plan.status !== "active") return false;
+  await db.insert(routePing).values({ ambassadorId, routePlanId: plan.id, lat, lng });
+  return true;
 }
 
 export async function clearRoutePlan(ambassadorId: number): Promise<void> {

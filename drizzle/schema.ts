@@ -177,6 +177,8 @@ export const visit = pgTable("visit", {
   rung: integer("rung"),
   photoUrls: text("photo_urls").array(),
   device: text("device"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 export type Visit = typeof visit.$inferSelect;
@@ -294,6 +296,17 @@ export const routePlan = pgTable("route_plan", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 export type RoutePlan = typeof routePlan.$inferSelect;
+
+/** Breadcrumbs recorded only while a day route is active (shift-scoped tracking). */
+export const routePing = pgTable("route_ping", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  routePlanId: integer("route_plan_id").notNull(),
+  lat: doublePrecision("lat").notNull(),
+  lng: doublePrecision("lng").notNull(),
+  at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type RoutePing = typeof routePing.$inferSelect;
 
 /** One-time 6-digit password-reset codes (hashes only; emailed via Resend). */
 export const authResetCode = pgTable("auth_reset_code", {

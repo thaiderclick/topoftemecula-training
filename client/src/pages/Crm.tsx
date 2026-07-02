@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import QRCode from "react-qr-code";
+
+// Code-split: mapbox-gl is heavy and only needed on the Route tab's map view.
+const RouteMap = lazy(() => import("@/components/RouteMap").then((m) => ({ default: m.RouteMap })));
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AuthGate } from "@/components/AuthGate";
@@ -117,6 +120,15 @@ function ClaimQrModal({ base, code, business, onClose }: {
 function VisitForm({ businessId, businessName, onDone }: { businessId: string; businessName: string; onDone: () => void }) {
   const utils = trpc.useUtils();
   const [outcome, setOutcome] = useState("first_visit");
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    // Stamp the visit with where it was logged (best-effort, non-blocking).
+    navigator.geolocation?.getCurrentPosition(
+      (p) => setGps({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  }, []);
   const [spokeWithName, setSpokeWithName] = useState("");
   const [spokeWithRole, setSpokeWithRole] = useState<string>("");
   const [notes, setNotes] = useState("");
@@ -209,6 +221,8 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
               ownerNameForFollowup: ownerName || undefined,
               bestTimeToReturn: bestTime || undefined,
               device: navigator.userAgent.slice(0, 180),
+              lat: gps?.lat,
+              lng: gps?.lng,
             })
           }
         >
@@ -253,6 +267,26 @@ export default function Crm() {
 
   const route = trpc.crm.route.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const activePlan = route.data && route.data.stops.length > 0 ? route.data : null;
+  const [routeView, setRouteView] = useState<"list" | "map">("list");
+  const [mapSelected, setMapSelected] = useState<string | null>(null);
+  const recordPing = trpc.crm.recordPing.useMutation();
+
+  // Shift-scoped breadcrumbs: only while the Route tab is open with an active
+  // route (never in the background, never outside a planned day).
+  const routeActive = tab === "route" && activePlan?.status === "active";
+  useEffect(() => {
+    if (!routeActive || !navigator.geolocation) return;
+    const ping = () =>
+      navigator.geolocation.getCurrentPosition(
+        (p) => recordPing.mutate({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    ping();
+    const id = setInterval(ping, 120_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeActive]);
   const utils = trpc.useUtils();
   const [routeCount, setRouteCount] = useState(8);
   const buildRoute = trpc.crm.buildRoute.useMutation({
@@ -477,6 +511,17 @@ export default function Crm() {
                     {activePlan.totalMiles > 0 && <span className="text-muted-foreground font-normal">· {activePlan.totalMiles.toFixed(1)} mi</span>}
                   </div>
                   <div className="flex gap-1.5">
+                    <div className="flex rounded-lg border border-border overflow-hidden">
+                      {(["list", "map"] as const).map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setRouteView(v)}
+                          className={`px-2.5 py-1 text-[11px] font-semibold capitalize ${routeView === v ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
                     {navigateAllUrl(activePlan.stops) && (
                       <a href={navigateAllUrl(activePlan.stops)!} target="_blank" rel="noreferrer">
                         <Button size="sm" variant="outline"><Navigation className="w-3.5 h-3.5 mr-1" />Navigate all</Button>
@@ -488,6 +533,51 @@ export default function Crm() {
                   </div>
                 </div>
 
+                {routeView === "map" && (
+                  <div className="mt-2">
+                    <Suspense fallback={<div className="h-[360px] rounded-xl bg-muted/40 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+                      <RouteMap stops={activePlan.stops} selected={mapSelected} onSelect={setMapSelected} />
+                    </Suspense>
+                    {(() => {
+                      const s = activePlan.stops.find((st) => st.businessId === mapSelected);
+                      if (!s) return <p className="text-[11px] text-muted-foreground text-center mt-2">Tap a numbered pin to work that stop.</p>;
+                      return (
+                        <Card className="mt-2 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-foreground truncate">{s.name ?? "(unnamed)"}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{[s.address, s.city].filter(Boolean).join(" · ") || "—"}</p>
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              <a href={directionsUrl(s)} target="_blank" rel="noreferrer">
+                                <Button size="sm" variant="outline" title="Directions"><Navigation className="w-3.5 h-3.5" /></Button>
+                              </a>
+                              {canShare && (
+                                <Button size="sm" variant="outline" title="Claim QR" onClick={() => setQrFor({ businessId: s.businessId, name: s.name })}>
+                                  <QrCode className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                              {s.status === "pending" ? (
+                                <Button size="sm" variant={openVisitFor === s.businessId ? "secondary" : "default"} onClick={() => setOpenVisitFor(openVisitFor === s.businessId ? null : s.businessId)}>
+                                  <ClipboardCheck className="w-3.5 h-3.5" />
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="ghost" title="Back to pending" onClick={() => setStopStatus.mutate({ businessId: s.businessId, status: "pending" })}>
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {openVisitFor === s.businessId && s.status === "pending" && (
+                            <VisitForm businessId={s.businessId} businessName={s.name ?? "business"} onDone={() => setOpenVisitFor(null)} />
+                          )}
+                        </Card>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {routeView === "list" && (
                 <div className="mt-2 flex flex-col gap-2">
                   {activePlan.stops.map((s, i) => (
                     <Card key={s.businessId} className={`p-3 ${s.status !== "pending" ? "opacity-70" : ""}`}>
@@ -544,6 +634,7 @@ export default function Crm() {
                     </Card>
                   ))}
                 </div>
+                )}
               </>
             )}
           </>
