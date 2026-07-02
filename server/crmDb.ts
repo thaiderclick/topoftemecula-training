@@ -199,6 +199,7 @@ const TARGET_COLUMNS = {
   lng: business.lng,
   confidenceScore: business.confidenceScore,
   verticalType: business.verticalType,
+  categoryName: business.categoryName,
 };
 
 /**
@@ -383,6 +384,7 @@ async function enrichPlan(db: Db, plan: { planDate: string; status: string; stop
           lng: business.lng,
           localClaimStatus: business.localClaimStatus,
           verticalType: business.verticalType,
+          categoryName: business.categoryName,
         })
         .from(business)
         .where(inArray(business.businessId, ids))
@@ -403,7 +405,7 @@ async function enrichPlan(db: Db, plan: { planDate: string; status: string; stop
     }
     return {
       ...st,
-      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null),
+      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null, b?.categoryName ?? null),
       name: b?.name ?? null,
       address: b?.address ?? null,
       city: b?.city ?? null,
@@ -493,7 +495,7 @@ export async function buildRoutePlan(
     // keeps getTargets' distance/confidence order within each tier.
     const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 5) });
     const ranked = targets
-      .map((t) => ({ id: t.businessId, tier: marketingValueTier(t.name, t.verticalType) }))
+      .map((t) => ({ id: t.businessId, tier: marketingValueTier(t.name, t.verticalType, t.categoryName) }))
       .sort((a, b) => b.tier - a.tier);
     for (const t of ranked) {
       if (ids.length >= count) break;

@@ -19,6 +19,8 @@ import {
   cursorFromWatermark,
   fetchBusinessById,
   fetchBusinessesPage,
+  fetchCategoryNames,
+  fetchNeighborhoodNames,
   KeysetCursor,
   WebsiteBusinessRow,
 } from "./websiteDb";
@@ -32,13 +34,27 @@ const WATERMARK_OVERLAP_MS = 60 * 60 * 1000;
 // the process — progress is persisted per page, so the next run resumes.
 const DEFAULT_TIME_BUDGET_MS = 45_000;
 
-function mapRow(r: WebsiteBusinessRow): InsertBusiness {
+/** id→name lookups, fetched once per sync run. Self-healing: empty when the
+ *  website-side grant is absent, populated automatically once it lands. */
+export interface NameMaps {
+  categories: Map<string, string>;
+  neighborhoods: Map<string, string>;
+}
+
+export async function fetchNameMaps(): Promise<NameMaps> {
+  const [categories, neighborhoods] = await Promise.all([fetchCategoryNames(), fetchNeighborhoodNames()]);
+  return { categories, neighborhoods };
+}
+
+function mapRow(r: WebsiteBusinessRow, names: NameMaps): InsertBusiness {
   return {
     businessId: r.id,
     name: r.name,
     slug: r.slug,
     categoryId: r.category_id,
+    categoryName: r.category_id ? names.categories.get(r.category_id) ?? null : null,
     neighborhoodId: r.neighborhood_id,
+    neighborhoodName: r.neighborhood_id ? names.neighborhoods.get(r.neighborhood_id) ?? null : null,
     city: r.city,
     address: r.address,
     phone: r.phone,
@@ -67,7 +83,9 @@ const CONFLICT_SET = {
   name: sql`excluded.name`,
   slug: sql`excluded.slug`,
   categoryId: sql`excluded.category_id`,
+  categoryName: sql`excluded.category_name`,
   neighborhoodId: sql`excluded.neighborhood_id`,
+  neighborhoodName: sql`excluded.neighborhood_name`,
   city: sql`excluded.city`,
   address: sql`excluded.address`,
   phone: sql`excluded.phone`,
@@ -124,6 +142,7 @@ export async function runDirectorySync(opts: {
   const stateRow = stateRows[0];
   const since: Date | null = full ? null : stateRow?.watermark ?? null;
   let cursor: KeysetCursor | null = cursorFromWatermark(since, WATERMARK_OVERLAP_MS);
+  const names = await fetchNameMaps();
 
   let processed = 0;
   let maxEffective: Date | null = null;
@@ -147,7 +166,7 @@ export async function runDirectorySync(opts: {
 
     await db
       .insert(business)
-      .values(rows.map(mapRow))
+      .values(rows.map((r) => mapRow(r, names)))
       .onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
 
     // Ascending (effective_at, id) order ⇒ the page's last row carries the max.
@@ -208,9 +227,10 @@ export async function ensureBusinessMirror(businessId: string): Promise<boolean>
 
   const row = await fetchBusinessById(businessId);
   if (!row) return false;
+  const names = await fetchNameMaps();
   await db
     .insert(business)
-    .values(mapRow(row))
+    .values(mapRow(row, names))
     .onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
   return true;
 }

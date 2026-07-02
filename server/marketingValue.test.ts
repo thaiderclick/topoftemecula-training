@@ -38,4 +38,20 @@ describe("marketingValueTier (route prioritization)", () => {
     // hospitality vertical (2) but it's a wedding venue (3)
     expect(marketingValueTier("Grand Tradition Estate & Gardens", "hospitality")).toBe(3);
   });
+
+  it("category name is the strongest signal when present", () => {
+    expect(marketingValueTier("Bella Vita", null, "Med Spas")).toBe(3);
+    expect(marketingValueTier("The Corner Spot", null, "Restaurants")).toBe(2);
+    expect(marketingValueTier("Second Chance", null, "Thrift & Resale Stores")).toBe(1);
+    expect(marketingValueTier("Rancho Community", null, "Churches")).toBe(0);
+  });
+
+  it("category 0 overrides a tier-3 name keyword", () => {
+    // "law" in the name, but it's a school
+    expect(marketingValueTier("Lawson Academy", null, "Schools & Education")).toBe(0);
+  });
+
+  it("a strong name keyword can upgrade a generic category", () => {
+    expect(marketingValueTier("Temecula Plumbing Supply", null, "Shops")).toBe(3);
+  });
 });

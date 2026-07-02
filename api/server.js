@@ -46428,7 +46428,9 @@ var business = pgTable("business", {
   name: text("name"),
   slug: text("slug"),
   categoryId: uuid("category_id"),
+  categoryName: text("category_name"),
   neighborhoodId: uuid("neighborhood_id"),
+  neighborhoodName: text("neighborhood_name"),
   city: text("city"),
   address: text("address"),
   phone: text("phone"),
@@ -46962,6 +46964,88 @@ var VERTICAL_TIER = {
   hospitality: 2,
   retail: 1
 };
+var CATEGORY_TIER = {
+  // 3 — heavy marketing buyers (high LTV, competitive local ad markets)
+  "Accounting Firms": 3,
+  "Auto Repair Shops": 3,
+  "Banks & Credit Unions": 3,
+  "Car Dealerships": 3,
+  "Chiropractic Offices": 3,
+  "Cleaning Services": 3,
+  "Dental Practices": 3,
+  "Doctors & Medical Offices": 3,
+  "Electricians": 3,
+  "Eye Care & Optometry": 3,
+  "Furniture Stores": 3,
+  "HVAC Services": 3,
+  "Home Services": 3,
+  "IT Services": 3,
+  "Insurance Agencies": 3,
+  "Landscaping Companies": 3,
+  "Law Firms": 3,
+  "Med Spas": 3,
+  "Mental Health & Therapy": 3,
+  "Moving & Storage": 3,
+  "Plumbers": 3,
+  "Pool Services": 3,
+  "Property Management": 3,
+  "Real Estate Agents": 3,
+  "Restoration Companies": 3,
+  "Roofers": 3,
+  "Senior Living & Care": 3,
+  "Solar Installers": 3,
+  "Veterinary Clinics": 3,
+  "Wedding Venues": 3,
+  "Wineries": 3,
+  // 2 — moderate buyers
+  "Bakeries & Dessert Shops": 2,
+  "Bars": 2,
+  "Breweries": 2,
+  "Bridal Shops & Tuxedo Rentals": 2,
+  "Bowling & Entertainment": 2,
+  "Car Wash & Detailing": 2,
+  "Catering Services": 2,
+  "Child Care & Daycares": 2,
+  "Clothing Boutiques": 2,
+  "Coffee & Cafes": 2,
+  "Escape Rooms": 2,
+  "Event Planners": 2,
+  "Fitness Studios": 2,
+  "Florists": 2,
+  "Food Trucks": 2,
+  "Gyms": 2,
+  "Hair Salons": 2,
+  "Massage & Bodywork": 2,
+  "Nail Salons": 2,
+  "Pet Services": 2,
+  "Photography Studios": 2,
+  "Places to Stay": 2,
+  "Restaurants": 2,
+  "Staffing & Recruiting": 2,
+  "Tours & Experiences": 2,
+  "Transportation & Limo": 2,
+  "Wedding DJs & Entertainment": 2,
+  "Wedding Officiants": 2,
+  "Wedding Photographers": 2,
+  "Wedding Videographers": 2,
+  // 1 — default retail/recreation
+  "Big Box & Department Stores": 1,
+  "Bike Shops": 1,
+  "Farmers Markets": 1,
+  "Outdoor Recreation": 1,
+  "Pickleball Courts": 1,
+  "Shopping Centers & Plazas": 1,
+  "Shops": 1,
+  "Specialty Grocery": 1,
+  "Theater & Performing Arts": 1,
+  "Things to Do": 1,
+  "Thrift & Resale Stores": 1,
+  "Yogurt Shops": 1,
+  // 0 — rarely buy marketing
+  "Churches": 0,
+  "Non-Profits & Charities": 0,
+  "Schools & Education": 0
+};
 var TIER0_KEYWORDS = [
   "church",
   "ministry",
@@ -47105,11 +47189,12 @@ function keywordTier(name) {
   if (TIER2_KEYWORDS.some((k) => n.includes(k))) return 2;
   return null;
 }
-function marketingValueTier(name, verticalType) {
+function marketingValueTier(name, verticalType, categoryName) {
+  const fromCategory = categoryName ? CATEGORY_TIER[categoryName] ?? null : null;
   const fromKeyword = name ? keywordTier(name) : null;
-  if (fromKeyword === 0) return 0;
+  if (fromCategory === 0 || fromKeyword === 0) return 0;
   const fromVertical = verticalType ? VERTICAL_TIER[verticalType] ?? null : null;
-  return Math.max(fromKeyword ?? 1, fromVertical ?? 1);
+  return Math.max(fromCategory ?? 1, fromKeyword ?? 1, fromVertical ?? 1);
 }
 
 // server/crmDb.ts
@@ -47206,7 +47291,8 @@ var TARGET_COLUMNS = {
   lat: business.lat,
   lng: business.lng,
   confidenceScore: business.confidenceScore,
-  verticalType: business.verticalType
+  verticalType: business.verticalType,
+  categoryName: business.categoryName
 };
 async function getTargets(q) {
   const db = await requireDb();
@@ -47298,7 +47384,8 @@ async function enrichPlan(db, plan) {
     lat: business.lat,
     lng: business.lng,
     localClaimStatus: business.localClaimStatus,
-    verticalType: business.verticalType
+    verticalType: business.verticalType,
+    categoryName: business.categoryName
   }).from(business).where(inArray(business.businessId, ids)) : [];
   const byId = new Map(rows.map((r) => [r.businessId, r]));
   let prev = null;
@@ -47315,7 +47402,7 @@ async function enrichPlan(db, plan) {
     }
     return {
       ...st,
-      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null),
+      valueTier: marketingValueTier(b?.name ?? null, b?.verticalType ?? null, b?.categoryName ?? null),
       name: b?.name ?? null,
       address: b?.address ?? null,
       city: b?.city ?? null,
@@ -47383,7 +47470,7 @@ async function buildRoutePlan(ambassadorId, opts) {
   }
   if (ids.length < count) {
     const targets = await getTargets({ lat: opts.lat ?? null, lng: opts.lng ?? null, limit: Math.min(200, count * 5) });
-    const ranked = targets.map((t2) => ({ id: t2.businessId, tier: marketingValueTier(t2.name, t2.verticalType) })).sort((a, b) => b.tier - a.tier);
+    const ranked = targets.map((t2) => ({ id: t2.businessId, tier: marketingValueTier(t2.name, t2.verticalType, t2.categoryName) })).sort((a, b) => b.tier - a.tier);
     for (const t2 of ranked) {
       if (ids.length >= count) break;
       push(t2.id);
@@ -47567,19 +47654,43 @@ async function fetchBusinessUsersByBusiness(businessId) {
   const { rows } = await pool.query(sql2);
   return rows;
 }
+async function fetchCategoryNames() {
+  return fetchIdNameMap("public.categories");
+}
+async function fetchNeighborhoodNames() {
+  return fetchIdNameMap("public.neighborhoods");
+}
+async function fetchIdNameMap(relation) {
+  const pool = getWebsitePool();
+  if (!pool) return /* @__PURE__ */ new Map();
+  try {
+    const { rows } = await pool.query(
+      `select id, name from ${relation}`
+    );
+    return new Map(rows.filter((r) => r.name != null).map((r) => [r.id, r.name]));
+  } catch {
+    return /* @__PURE__ */ new Map();
+  }
+}
 
 // server/directorySync.ts
 var PAGE_SIZE = 1e3;
 var SYNC_SOURCE = "directory_listings";
 var WATERMARK_OVERLAP_MS = 60 * 60 * 1e3;
 var DEFAULT_TIME_BUDGET_MS = 45e3;
-function mapRow(r) {
+async function fetchNameMaps() {
+  const [categories, neighborhoods] = await Promise.all([fetchCategoryNames(), fetchNeighborhoodNames()]);
+  return { categories, neighborhoods };
+}
+function mapRow(r, names) {
   return {
     businessId: r.id,
     name: r.name,
     slug: r.slug,
     categoryId: r.category_id,
+    categoryName: r.category_id ? names.categories.get(r.category_id) ?? null : null,
     neighborhoodId: r.neighborhood_id,
+    neighborhoodName: r.neighborhood_id ? names.neighborhoods.get(r.neighborhood_id) ?? null : null,
     city: r.city,
     address: r.address,
     phone: r.phone,
@@ -47606,7 +47717,9 @@ var CONFLICT_SET = {
   name: sql`excluded.name`,
   slug: sql`excluded.slug`,
   categoryId: sql`excluded.category_id`,
+  categoryName: sql`excluded.category_name`,
   neighborhoodId: sql`excluded.neighborhood_id`,
+  neighborhoodName: sql`excluded.neighborhood_name`,
   city: sql`excluded.city`,
   address: sql`excluded.address`,
   phone: sql`excluded.phone`,
@@ -47633,6 +47746,7 @@ async function runDirectorySync(opts = {}) {
   const stateRow = stateRows[0];
   const since = full ? null : stateRow?.watermark ?? null;
   let cursor = cursorFromWatermark(since, WATERMARK_OVERLAP_MS);
+  const names = await fetchNameMaps();
   let processed = 0;
   let maxEffective = null;
   let completed = true;
@@ -47646,7 +47760,7 @@ async function runDirectorySync(opts = {}) {
     const limit = Math.min(PAGE_SIZE, remaining);
     const rows = await fetchBusinessesPage({ after: cursor, limit });
     if (rows.length === 0) break;
-    await db.insert(business).values(rows.map(mapRow)).onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
+    await db.insert(business).values(rows.map((r) => mapRow(r, names))).onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
     const last = rows[rows.length - 1];
     const lastEffective = last.effective_at ? new Date(last.effective_at) : null;
     if (lastEffective && (!maxEffective || lastEffective > maxEffective)) maxEffective = lastEffective;
@@ -47681,7 +47795,8 @@ async function ensureBusinessMirror(businessId) {
   if (existing[0]) return true;
   const row = await fetchBusinessById(businessId);
   if (!row) return false;
-  await db.insert(business).values(mapRow(row)).onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
+  const names = await fetchNameMaps();
+  await db.insert(business).values(mapRow(row, names)).onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
   return true;
 }
 
