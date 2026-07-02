@@ -148,6 +148,9 @@ export const business = pgTable("business", {
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   directoryClaimStatus: text("directory_claim_status"),
+  /** Website's generated column (NOT is_public_place): false = park/public
+   *  facility with no owner to claim it. Authoritative — never inferred here. */
+  claimable: boolean("claimable"),
   verticalType: text("vertical_type"),
   subscriptionTier: text("subscription_tier"),
   isFeatured: boolean("is_featured"),

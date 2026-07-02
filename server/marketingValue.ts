@@ -101,30 +101,6 @@ const TIER2_KEYWORDS = [
   "hotel", "inn", "resort", "golf",
 ];
 
-/**
- * Directory categories that are visitor content, not field targets: no
- * storefront, no owner to pitch (parks/trails, public courts, weekly markets,
- * the plaza entity itself). Excluded from the target queue and route builder
- * entirely — they remain in the directory for website visitors.
- */
-export const FIELD_EXCLUDED_CATEGORIES = [
-  "Outdoor Recreation",
-  "Pickleball Courts",
-  "Farmers Markets",
-  "Shopping Centers & Plazas",
-] as const;
-
-/**
- * Public facilities and POIs by name — applied to every row (categories can be
- * miscategorized): trails, parks, playgrounds, city facilities. Phrases are
- * kept unambiguous to avoid catching real businesses like "Park Avenue Dental".
- */
-export const POI_NAME_PATTERN =
-  "(trailhead|\\yfalls\\y|campground|nature preserve|ecological reserve|day use area|" +
-  "\\ystate park\\y|\\ycounty park\\y|\\ycity park\\y|\\ycommunity park\\y|\\ysports park\\y|" +
-  "\\ydog park\\y|\\yskate park\\y|playground|community center|senior center|recreation center|" +
-  "\\ycity hall\\y|\\ypublic library\\y|\\ypost office\\y|\\ysplash pad\\y|\\ypicnic area\\y)";
-
 function keywordTier(name: string): ValueTier | null {
   const n = name.toLowerCase();
   if (TIER0_KEYWORDS.some((k) => n.includes(k))) return 0;

@@ -50,6 +50,7 @@ export interface WebsiteBusinessRow {
   latitude: number | null;
   longitude: number | null;
   claim_status: string | null;
+  claimable: boolean | null;
   vertical_type: string | null;
   subscription_tier: string | null;
   is_featured: boolean | null;
@@ -117,7 +118,7 @@ export function cursorFromWatermark(watermark: Date | null, overlapMs: number): 
 // be fed back verbatim as the next page's cursor.
 const BUSINESS_SELECT = `
     select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
-           latitude, longitude, claim_status, vertical_type, subscription_tier, is_featured,
+           latitude, longitude, claim_status, claimable, vertical_type, subscription_tier, is_featured,
            confidence_score, status, signup_source, owner_contact_email,
            to_char(coalesce(updated_at, created_at) at time zone 'UTC', ${ISO_US}) as effective_at
     from public.businesses`;

@@ -6,7 +6,7 @@
 import { randomBytes } from "crypto";
 import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { FIELD_EXCLUDED_CATEGORIES, marketingValueTier, POI_NAME_PATTERN, ValueTier } from "./marketingValue";
+import { marketingValueTier, ValueTier } from "./marketingValue";
 import {
   Ambassador,
   ambassador,
@@ -218,14 +218,12 @@ export async function getTargets(q: TargetQuery) {
   const conds = [
     eq(business.directoryClaimStatus, "unclaimed"),
     ne(business.localClaimStatus, "claimed"),
-    // Visitor-content entries (parks, trails, playgrounds, city facilities…)
-    // are not field targets — nothing to claim, no one to pitch. They stay in
-    // the directory for website visitors.
-    or(
-      isNull(business.categoryName),
-      sql`${business.categoryName} not in (${sql.join(FIELD_EXCLUDED_CATEGORIES.map((c) => sql`${c}`), sql`, `)})`
-    )!,
-    sql`${business.name} !~* ${POI_NAME_PATTERN}`,
+    // The website's authoritative claimability flag: false = park/trail/public
+    // facility with no owner to claim it (their generated column; per-listing,
+    // never inferred from category). Null-safe for rows synced pre-column.
+    sql`${business.claimable} is not false`,
+    // Only live listings are field targets (excludes inactive/pending/archived).
+    eq(business.status, "active"),
   ];
 
   if (!hasLoc) {

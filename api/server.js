@@ -46439,6 +46439,9 @@ var business = pgTable("business", {
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   directoryClaimStatus: text("directory_claim_status"),
+  /** Website's generated column (NOT is_public_place): false = park/public
+   *  facility with no owner to claim it. Authoritative — never inferred here. */
+  claimable: boolean("claimable"),
   verticalType: text("vertical_type"),
   subscriptionTier: text("subscription_tier"),
   isFeatured: boolean("is_featured"),
@@ -47204,13 +47207,6 @@ var TIER2_KEYWORDS = [
   "resort",
   "golf"
 ];
-var FIELD_EXCLUDED_CATEGORIES = [
-  "Outdoor Recreation",
-  "Pickleball Courts",
-  "Farmers Markets",
-  "Shopping Centers & Plazas"
-];
-var POI_NAME_PATTERN = "(trailhead|\\yfalls\\y|campground|nature preserve|ecological reserve|day use area|\\ystate park\\y|\\ycounty park\\y|\\ycity park\\y|\\ycommunity park\\y|\\ysports park\\y|\\ydog park\\y|\\yskate park\\y|playground|community center|senior center|recreation center|\\ycity hall\\y|\\ypublic library\\y|\\ypost office\\y|\\ysplash pad\\y|\\ypicnic area\\y)";
 function keywordTier(name) {
   const n = name.toLowerCase();
   if (TIER0_KEYWORDS.some((k) => n.includes(k))) return 0;
@@ -47330,14 +47326,12 @@ async function getTargets(q) {
   const conds = [
     eq(business.directoryClaimStatus, "unclaimed"),
     ne(business.localClaimStatus, "claimed"),
-    // Visitor-content entries (parks, trails, playgrounds, city facilities…)
-    // are not field targets — nothing to claim, no one to pitch. They stay in
-    // the directory for website visitors.
-    or(
-      isNull(business.categoryName),
-      sql`${business.categoryName} not in (${sql.join(FIELD_EXCLUDED_CATEGORIES.map((c) => sql`${c}`), sql`, `)})`
-    ),
-    sql`${business.name} !~* ${POI_NAME_PATTERN}`
+    // The website's authoritative claimability flag: false = park/trail/public
+    // facility with no owner to claim it (their generated column; per-listing,
+    // never inferred from category). Null-safe for rows synced pre-column.
+    sql`${business.claimable} is not false`,
+    // Only live listings are field targets (excludes inactive/pending/archived).
+    eq(business.status, "active")
   ];
   if (!hasLoc) {
     const rows2 = await db.select(TARGET_COLUMNS).from(business).where(and(...conds)).orderBy(sql`${business.confidenceScore} desc nulls last`).limit(limit);
@@ -47728,7 +47722,7 @@ function cursorFromWatermark(watermark, overlapMs) {
 }
 var BUSINESS_SELECT = `
     select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
-           latitude, longitude, claim_status, vertical_type, subscription_tier, is_featured,
+           latitude, longitude, claim_status, claimable, vertical_type, subscription_tier, is_featured,
            confidence_score, status, signup_source, owner_contact_email,
            to_char(coalesce(updated_at, created_at) at time zone 'UTC', ${ISO_US}) as effective_at
     from public.businesses`;
@@ -47825,6 +47819,7 @@ function mapRow(r, names) {
     lat: r.latitude,
     lng: r.longitude,
     directoryClaimStatus: r.claim_status,
+    claimable: r.claimable,
     verticalType: r.vertical_type,
     subscriptionTier: r.subscription_tier,
     isFeatured: r.is_featured,
@@ -47854,6 +47849,7 @@ var CONFLICT_SET = {
   lat: sql`excluded.lat`,
   lng: sql`excluded.lng`,
   directoryClaimStatus: sql`excluded.directory_claim_status`,
+  claimable: sql`excluded.claimable`,
   verticalType: sql`excluded.vertical_type`,
   subscriptionTier: sql`excluded.subscription_tier`,
   isFeatured: sql`excluded.is_featured`,
