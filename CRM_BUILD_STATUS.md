@@ -39,6 +39,12 @@ Registration/login rebuilt (the name + shared-password gate was a placeholder):
 - **2c (branch crm-phase2c-routes):** day routes — `route_plan` table (one per ambassador per PT day, ordered jsonb stops; `crm_0004_route.sql`, applied). `crm.buildRoute` pulls open follow-ups first, fills with nearest targets, orders nearest-neighbor from the ambassador's location; `crm.route/addRouteStop/setRouteStopStatus/clearRoute`; **logging a visit auto-checks the stop off**. Route tab UI: count picker builder, per-stop **Directions deep links** (Apple Maps on iOS / Google Maps elsewhere, no API key), one-tap "Navigate all" multi-stop Google link (≤9 waypoints), skip/undo, leg distances + total, completion recap. In-app maps = later upgrade; data model already supports it.
 - Verified: tsc clean, 22/22 tests, build passes; live dev smoke (built a 5-stop NN-ordered route near Old Town, skip persisted, logVisit auto-marked its stop done); smoke data fully removed.
 
+## 0.7 Phase 2d — Admin CRM panel (2026-07-02) + category names
+
+- **Admin panel:** `/admin` now has a "Field CRM Operations" section (`client/src/components/AdminCrm.tsx`): bounty setter (dollar input → `adminSetBounty`, reports backfilled claims), ambassador leaderboard (names + codes + earnings; null-ambassador rows excluded), anomaly-claim review queue, field objections (curriculum gaps), attribution-leak monitor status. Admin queries now join human-readable names. **The whole operation is now runnable from the dashboard — Next #1 is done; the only remaining prelaunch step is typing the bounty amount into the panel.**
+- **Category names:** website grant landed (their PR #32) → sync mirrors `category_name`/`neighborhood_name` (crm_0006), and the marketing-value classifier scores from an explicit 76-category tier map (see `server/marketingValue.ts`).
+- Verified: 31/31 tests, tsc clean, build passes, live smoke of every admin endpoint (401 on bad password; set-bounty round-trip tested then reset to the intentional "not set" prelaunch state).
+
 ## 1. What this is
 
 A new **Ambassador Field CRM** built *inside* the training-app repo (`topoftemecula-training`). Field ambassadors (who are existing training-app users) log visits to local businesses, drive free directory claims via `?amb=CODE` referral links, and earn bounties on verified claims. Built to the plan in the conversation ("Build Plan — Ambassador Field CRM", §0–§11).

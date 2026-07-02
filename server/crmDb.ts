@@ -615,25 +615,58 @@ export async function submitCurriculumGap(data: InsertCurriculumGap) {
 
 export async function getCurriculumGaps() {
   const db = await requireDb();
-  return db.select().from(curriculumGap).orderBy(desc(curriculumGap.createdAt));
+  return db
+    .select({
+      id: curriculumGap.id,
+      objectionText: curriculumGap.objectionText,
+      context: curriculumGap.context,
+      status: curriculumGap.status,
+      businessName: business.name,
+      ambassadorName: sql<string | null>`u.name`,
+      createdAt: curriculumGap.createdAt,
+    })
+    .from(curriculumGap)
+    .leftJoin(business, eq(business.businessId, curriculumGap.businessId))
+    .leftJoin(ambassador, eq(ambassador.id, curriculumGap.ambassadorId))
+    .leftJoin(sql`users u`, sql`u.id = ${ambassador.userId}`)
+    .orderBy(desc(curriculumGap.createdAt));
 }
 
 // ─── Admin views ────────────────────────────────────────────────────────────
 
 export async function getAnomalyClaims() {
   const db = await requireDb();
-  return db.select().from(claim).where(eq(claim.state, "anomaly")).orderBy(desc(claim.createdAt));
+  return db
+    .select({
+      id: claim.id,
+      businessId: claim.businessId,
+      businessName: business.name,
+      businessCity: business.city,
+      referralCode: claim.referralCode,
+      verificationSource: claim.verificationSource,
+      createdAt: claim.createdAt,
+    })
+    .from(claim)
+    .leftJoin(business, eq(business.businessId, claim.businessId))
+    .where(eq(claim.state, "anomaly"))
+    .orderBy(desc(claim.createdAt));
 }
 
-/** Opt-in leaderboard: verified-claim counts per ambassador. */
+/** Leaderboard with names: verified-claim counts per ambassador. */
 export async function getLeaderboard() {
   const db = await requireDb();
   return db
     .select({
       ambassadorId: claim.ambassadorId,
+      name: sql<string | null>`max(u.name)`,
+      referralCode: sql<string | null>`max(${ambassador.referralCode}::text)`,
       verified: sql<number>`count(*) filter (where ${claim.state} in ('verified','paid'))`,
+      earnedCents: sql<number>`coalesce(sum(case when ${claim.state} in ('verified','paid') then ${claim.bountyAmountCents} end), 0)`,
     })
     .from(claim)
+    .leftJoin(ambassador, eq(ambassador.id, claim.ambassadorId))
+    .leftJoin(sql`users u`, sql`u.id = ${ambassador.userId}`)
+    .where(sql`${claim.ambassadorId} is not null`)
     .groupBy(claim.ambassadorId)
     .orderBy(sql`count(*) filter (where ${claim.state} in ('verified','paid')) desc`);
 }

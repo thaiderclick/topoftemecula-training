@@ -2,8 +2,9 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Users, Award, Shield, Zap, ChevronDown, ChevronUp, LogOut, MessageSquare, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Users, Award, Shield, Zap, ChevronDown, ChevronUp, LogOut, MessageSquare, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "wouter";
+import { AdminCrm } from "@/components/AdminCrm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -216,6 +217,7 @@ function AdminLoginGate({ onAuth }: { onAuth: (pwd: string) => void }) {
 export default function Admin() {
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showCrm, setShowCrm] = useState(true);
 
   const { data: feedback } = trpc.feedback.getAll.useQuery(
     { adminPassword: adminPassword ?? "" },
@@ -295,6 +297,19 @@ export default function Admin() {
           {(trainees ?? []).map(t => (
             <TraineeRow key={t.id} trainee={t as Trainee} />
           ))}
+        </div>
+
+        {/* Field CRM Section */}
+        <div className="mt-10">
+          <button
+            onClick={() => setShowCrm(v => !v)}
+            className="flex items-center gap-2 font-serif font-bold text-slate-800 text-xl mb-4 hover:text-amber-700 transition-colors"
+          >
+            <MapPin className="w-5 h-5" />
+            Field CRM Operations
+            <ChevronRight className={`w-4 h-4 transition-transform ${showCrm ? 'rotate-90' : ''}`} />
+          </button>
+          {showCrm && <AdminCrm adminPassword={adminPassword} />}
         </div>
 
         {/* Feedback Section */}
