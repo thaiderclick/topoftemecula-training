@@ -47204,6 +47204,13 @@ var TIER2_KEYWORDS = [
   "resort",
   "golf"
 ];
+var FIELD_EXCLUDED_CATEGORIES = [
+  "Outdoor Recreation",
+  "Pickleball Courts",
+  "Farmers Markets",
+  "Shopping Centers & Plazas"
+];
+var POI_NAME_PATTERN = "(trailhead|\\yfalls\\y|campground|nature preserve|ecological reserve|day use area|\\ystate park\\y|\\ycounty park\\y|\\ycity park\\y|\\ycommunity park\\y|\\ysports park\\y|\\ydog park\\y|\\yskate park\\y|playground|community center|senior center|recreation center|\\ycity hall\\y|\\ypublic library\\y|\\ypost office\\y|\\ysplash pad\\y|\\ypicnic area\\y)";
 function keywordTier(name) {
   const n = name.toLowerCase();
   if (TIER0_KEYWORDS.some((k) => n.includes(k))) return 0;
@@ -47320,7 +47327,18 @@ async function getTargets(q) {
   const db = await requireDb();
   const limit = Math.max(1, Math.min(200, q.limit ?? 50));
   const hasLoc = typeof q.lat === "number" && typeof q.lng === "number";
-  const conds = [eq(business.directoryClaimStatus, "unclaimed"), ne(business.localClaimStatus, "claimed")];
+  const conds = [
+    eq(business.directoryClaimStatus, "unclaimed"),
+    ne(business.localClaimStatus, "claimed"),
+    // Visitor-content entries (parks, trails, playgrounds, city facilities…)
+    // are not field targets — nothing to claim, no one to pitch. They stay in
+    // the directory for website visitors.
+    or(
+      isNull(business.categoryName),
+      sql`${business.categoryName} not in (${sql.join(FIELD_EXCLUDED_CATEGORIES.map((c) => sql`${c}`), sql`, `)})`
+    ),
+    sql`${business.name} !~* ${POI_NAME_PATTERN}`
+  ];
   if (!hasLoc) {
     const rows2 = await db.select(TARGET_COLUMNS).from(business).where(and(...conds)).orderBy(sql`${business.confidenceScore} desc nulls last`).limit(limit);
     return rows2.map((r) => ({ ...r, distanceMiles: null }));

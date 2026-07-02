@@ -6,7 +6,7 @@
 import { randomBytes } from "crypto";
 import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { marketingValueTier, ValueTier } from "./marketingValue";
+import { FIELD_EXCLUDED_CATEGORIES, marketingValueTier, POI_NAME_PATTERN, ValueTier } from "./marketingValue";
 import {
   Ambassador,
   ambassador,
@@ -215,7 +215,18 @@ export async function getTargets(q: TargetQuery) {
   const limit = Math.max(1, Math.min(200, q.limit ?? 50));
   const hasLoc = typeof q.lat === "number" && typeof q.lng === "number";
 
-  const conds = [eq(business.directoryClaimStatus, "unclaimed"), ne(business.localClaimStatus, "claimed")];
+  const conds = [
+    eq(business.directoryClaimStatus, "unclaimed"),
+    ne(business.localClaimStatus, "claimed"),
+    // Visitor-content entries (parks, trails, playgrounds, city facilities…)
+    // are not field targets — nothing to claim, no one to pitch. They stay in
+    // the directory for website visitors.
+    or(
+      isNull(business.categoryName),
+      sql`${business.categoryName} not in (${sql.join(FIELD_EXCLUDED_CATEGORIES.map((c) => sql`${c}`), sql`, `)})`
+    )!,
+    sql`${business.name} !~* ${POI_NAME_PATTERN}`,
+  ];
 
   if (!hasLoc) {
     const rows = await db
