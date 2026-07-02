@@ -256,6 +256,17 @@ export const payoutBatch = pgTable("payout_batch", {
 export type PayoutBatch = typeof payoutBatch.$inferSelect;
 export type InsertPayoutBatch = typeof payoutBatch.$inferInsert;
 
+/** One-time 6-digit password-reset codes (hashes only; emailed via Resend). */
+export const authResetCode = pgTable("auth_reset_code", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type AuthResetCode = typeof authResetCode.$inferSelect;
+
 /** Watermarks for the two website read surfaces (directory sync + claim reconciliation). */
 export const syncState = pgTable("sync_state", {
   id: serial("id").primaryKey(),

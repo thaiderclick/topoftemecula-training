@@ -17,6 +17,12 @@ export const ENV = {
   websiteDatabaseUrl: process.env.WEBSITE_DATABASE_URL ?? "",
   // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
   cronSecret: process.env.CRON_SECRET ?? "",
+  // Supabase Auth (this app's own Supabase project) — email+password credentials.
+  // Server-side only: the client talks to OUR /api/auth/* endpoints, never to
+  // Supabase directly (public signups are gated by the enrollment code).
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
   posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
   posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",

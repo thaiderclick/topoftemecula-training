@@ -23,6 +23,16 @@ Verified: `tsc` clean, 22/22 tests, build passes, plus a live smoke against both
 
 ---
 
+## 0.5 Phase 2a — real auth + certification gating (2026-07-02, branch crm-phase2a-auth)
+
+Registration/login rebuilt (the name + shared-password gate was a placeholder):
+
+- **Identity = email, credentials = Supabase Auth** on THIS app's Supabase project (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — in local `.env`, must be added to Vercel). The client only talks to our `/api/auth/*` endpoints (`server/_core/oauth.ts` + `supabaseAuth.ts`); public self-signup doesn't exist — registration requires the **enrollment code** (`TRAINING_PASSWORD`, demoted from login credential to invite gate) and creates the user with the service role. Sessions stay on our JWT cookie (now 30 days, was 1 year). Users keyed `sb_<supabase uid>`; emails unique (`crm_0003_auth.sql`, applied). Password reset = 6-digit emailed code via Resend (`auth_reset_code` table, hashed, 15-min TTL, 3/hr rate limit).
+- **CRM gated on certification, server-side:** `ambassadorProcedure` (incl. `targets`) requires a `credentials` row (certificate) + `ambassador.active`; error prefixes `NOT_CERTIFIED:` / `DEACTIVATED:` drive a friendly gate screen on `/crm`. Referral codes are now only issued to certified ambassadors.
+- **Routing:** `/` redirects certified users → `/crm`; training lives on at `/learn` ("Learning Center" link + sign-out in the CRM header); cert card's button is now "Enter the Field CRM →". `AuthGate` (sign-in / register / forgot / reset) replaced `PasswordGate` everywhere.
+- **Legacy accounts** (name-keyed Frank/James/Stephanie): re-register with email; `scripts/link-legacy-user.mjs <legacyUserId> <email>` repoints training progress/credential/ambassador data if needed.
+- Verified: tsc clean, 22/22 tests, build passes, live smoke on a dev server (bad enrollment 401 → register → duplicate 409 → wrong password 401 → login → session works → CRM blocked NOT_CERTIFIED → certificate inserted → CRM unlocked with referral code), test user fully cleaned up.
+
 ## 1. What this is
 
 A new **Ambassador Field CRM** built *inside* the training-app repo (`topoftemecula-training`). Field ambassadors (who are existing training-app users) log visits to local businesses, drive free directory claims via `?amb=CODE` referral links, and earn bounties on verified claims. Built to the plan in the conversation ("Build Plan — Ambassador Field CRM", §0–§11).

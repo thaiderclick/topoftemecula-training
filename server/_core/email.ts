@@ -63,3 +63,26 @@ export async function sendCompletionAlert({
     `,
   });
 }
+
+/**
+ * Send a password-reset code. Throws if Resend isn't configured — the caller
+ * treats that as "reset unavailable" rather than silently succeeding.
+ */
+export async function sendPasswordResetCode({ to, code }: { to: string; code: string }): Promise<void> {
+  const resend = getResend();
+  if (!resend) throw new Error("email is not configured");
+
+  await resend.emails.send({
+    from: "Top of Temecula Training <training@topoftemecula.com>",
+    to,
+    subject: `Your password reset code: ${code}`,
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #faf8f4; border-radius: 12px;">
+        <h1 style="font-size: 20px; color: #1a1a1a; margin-bottom: 8px;">Password reset</h1>
+        <p style="color: #555; font-size: 15px;">Enter this code in the app to set a new password. It expires in 15 minutes.</p>
+        <p style="font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #1a1a1a; background: white; border: 1px solid #e5e0d8; border-radius: 8px; padding: 16px; text-align: center;">${code}</p>
+        <p style="color: #888; font-size: 13px; margin-top: 16px;">If you didn't request this, you can ignore this email.</p>
+      </div>
+    `,
+  });
+}

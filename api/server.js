@@ -23626,7 +23626,7 @@ var require_utils4 = __commonJS({
       postgresMd5PasswordHash,
       randomBytes: randomBytes3,
       deriveKey,
-      sha256,
+      sha256: sha2562,
       hashByName,
       hmacSha256,
       md5
@@ -23651,7 +23651,7 @@ var require_utils4 = __commonJS({
       const outer = await md5(Buffer.concat([Buffer.from(inner), salt]));
       return "md5" + outer;
     }
-    async function sha256(text2) {
+    async function sha2562(text2) {
       return await subtleCrypto.digest("SHA-256", text2);
     }
     async function hashByName(hashName, text2) {
@@ -27634,6 +27634,12 @@ var init_env = __esm({
       websiteDatabaseUrl: process.env.WEBSITE_DATABASE_URL ?? "",
       // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
       cronSecret: process.env.CRON_SECRET ?? "",
+      // Supabase Auth (this app's own Supabase project) — email+password credentials.
+      // Server-side only: the client talks to OUR /api/auth/* endpoints, never to
+      // Supabase directly (public signups are gated by the enrollment code).
+      supabaseUrl: process.env.SUPABASE_URL ?? "",
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
+      supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
       // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
       posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
       posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",
@@ -27646,1338 +27652,6 @@ var init_env = __esm({
       oAuthServerUrl: "",
       ownerOpenId: ""
     };
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/double-indexed-kv.js
-var require_double_indexed_kv = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/double-indexed-kv.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.DoubleIndexedKV = void 0;
-    var DoubleIndexedKV = (
-      /** @class */
-      (function() {
-        function DoubleIndexedKV2() {
-          this.keyToValue = /* @__PURE__ */ new Map();
-          this.valueToKey = /* @__PURE__ */ new Map();
-        }
-        DoubleIndexedKV2.prototype.set = function(key, value) {
-          this.keyToValue.set(key, value);
-          this.valueToKey.set(value, key);
-        };
-        DoubleIndexedKV2.prototype.getByKey = function(key) {
-          return this.keyToValue.get(key);
-        };
-        DoubleIndexedKV2.prototype.getByValue = function(value) {
-          return this.valueToKey.get(value);
-        };
-        DoubleIndexedKV2.prototype.clear = function() {
-          this.keyToValue.clear();
-          this.valueToKey.clear();
-        };
-        return DoubleIndexedKV2;
-      })()
-    );
-    exports2.DoubleIndexedKV = DoubleIndexedKV;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/registry.js
-var require_registry = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/registry.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.Registry = void 0;
-    var double_indexed_kv_1 = require_double_indexed_kv();
-    var Registry = (
-      /** @class */
-      (function() {
-        function Registry2(generateIdentifier) {
-          this.generateIdentifier = generateIdentifier;
-          this.kv = new double_indexed_kv_1.DoubleIndexedKV();
-        }
-        Registry2.prototype.register = function(value, identifier) {
-          if (this.kv.getByValue(value)) {
-            return;
-          }
-          if (!identifier) {
-            identifier = this.generateIdentifier(value);
-          }
-          this.kv.set(identifier, value);
-        };
-        Registry2.prototype.clear = function() {
-          this.kv.clear();
-        };
-        Registry2.prototype.getIdentifier = function(value) {
-          return this.kv.getByValue(value);
-        };
-        Registry2.prototype.getValue = function(identifier) {
-          return this.kv.getByKey(identifier);
-        };
-        return Registry2;
-      })()
-    );
-    exports2.Registry = Registry;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/class-registry.js
-var require_class_registry = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/class-registry.js"(exports2) {
-    "use strict";
-    var __extends = exports2 && exports2.__extends || /* @__PURE__ */ (function() {
-      var extendStatics = function(d, b) {
-        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
-          d2.__proto__ = b2;
-        } || function(d2, b2) {
-          for (var p in b2) if (Object.prototype.hasOwnProperty.call(b2, p)) d2[p] = b2[p];
-        };
-        return extendStatics(d, b);
-      };
-      return function(d, b) {
-        if (typeof b !== "function" && b !== null)
-          throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() {
-          this.constructor = d;
-        }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-      };
-    })();
-    exports2.__esModule = true;
-    exports2.ClassRegistry = void 0;
-    var registry_1 = require_registry();
-    var ClassRegistry = (
-      /** @class */
-      (function(_super) {
-        __extends(ClassRegistry2, _super);
-        function ClassRegistry2() {
-          var _this = _super.call(this, function(c) {
-            return c.name;
-          }) || this;
-          _this.classToAllowedProps = /* @__PURE__ */ new Map();
-          return _this;
-        }
-        ClassRegistry2.prototype.register = function(value, options) {
-          if (typeof options === "object") {
-            if (options.allowProps) {
-              this.classToAllowedProps.set(value, options.allowProps);
-            }
-            _super.prototype.register.call(this, value, options.identifier);
-          } else {
-            _super.prototype.register.call(this, value, options);
-          }
-        };
-        ClassRegistry2.prototype.getAllowedProps = function(value) {
-          return this.classToAllowedProps.get(value);
-        };
-        return ClassRegistry2;
-      })(registry_1.Registry)
-    );
-    exports2.ClassRegistry = ClassRegistry;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/util.js
-var require_util = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/util.js"(exports2) {
-    "use strict";
-    var __read = exports2 && exports2.__read || function(o, n) {
-      var m = typeof Symbol === "function" && o[Symbol.iterator];
-      if (!m) return o;
-      var i = m.call(o), r, ar = [], e;
-      try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-      } catch (error46) {
-        e = { error: error46 };
-      } finally {
-        try {
-          if (r && !r.done && (m = i["return"])) m.call(i);
-        } finally {
-          if (e) throw e.error;
-        }
-      }
-      return ar;
-    };
-    exports2.__esModule = true;
-    exports2.findArr = exports2.includes = exports2.forEach = exports2.find = void 0;
-    function valuesOfObj(record2) {
-      if ("values" in Object) {
-        return Object.values(record2);
-      }
-      var values = [];
-      for (var key in record2) {
-        if (record2.hasOwnProperty(key)) {
-          values.push(record2[key]);
-        }
-      }
-      return values;
-    }
-    function find(record2, predicate) {
-      var values = valuesOfObj(record2);
-      if ("find" in values) {
-        return values.find(predicate);
-      }
-      var valuesNotNever = values;
-      for (var i = 0; i < valuesNotNever.length; i++) {
-        var value = valuesNotNever[i];
-        if (predicate(value)) {
-          return value;
-        }
-      }
-      return void 0;
-    }
-    exports2.find = find;
-    function forEach(record2, run2) {
-      Object.entries(record2).forEach(function(_a) {
-        var _b = __read(_a, 2), key = _b[0], value = _b[1];
-        return run2(value, key);
-      });
-    }
-    exports2.forEach = forEach;
-    function includes(arr, value) {
-      return arr.indexOf(value) !== -1;
-    }
-    exports2.includes = includes;
-    function findArr(record2, predicate) {
-      for (var i = 0; i < record2.length; i++) {
-        var value = record2[i];
-        if (predicate(value)) {
-          return value;
-        }
-      }
-      return void 0;
-    }
-    exports2.findArr = findArr;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/custom-transformer-registry.js
-var require_custom_transformer_registry = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/custom-transformer-registry.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.CustomTransformerRegistry = void 0;
-    var util_1 = require_util();
-    var CustomTransformerRegistry = (
-      /** @class */
-      (function() {
-        function CustomTransformerRegistry2() {
-          this.transfomers = {};
-        }
-        CustomTransformerRegistry2.prototype.register = function(transformer) {
-          this.transfomers[transformer.name] = transformer;
-        };
-        CustomTransformerRegistry2.prototype.findApplicable = function(v) {
-          return util_1.find(this.transfomers, function(transformer) {
-            return transformer.isApplicable(v);
-          });
-        };
-        CustomTransformerRegistry2.prototype.findByName = function(name) {
-          return this.transfomers[name];
-        };
-        return CustomTransformerRegistry2;
-      })()
-    );
-    exports2.CustomTransformerRegistry = CustomTransformerRegistry;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/is.js
-var require_is = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/is.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.isURL = exports2.isTypedArray = exports2.isInfinite = exports2.isBigint = exports2.isPrimitive = exports2.isNaNValue = exports2.isError = exports2.isDate = exports2.isSymbol = exports2.isSet = exports2.isMap = exports2.isRegExp = exports2.isBoolean = exports2.isNumber = exports2.isString = exports2.isArray = exports2.isEmptyObject = exports2.isPlainObject = exports2.isNull = exports2.isUndefined = void 0;
-    var getType = function(payload) {
-      return Object.prototype.toString.call(payload).slice(8, -1);
-    };
-    var isUndefined = function(payload) {
-      return typeof payload === "undefined";
-    };
-    exports2.isUndefined = isUndefined;
-    var isNull2 = function(payload) {
-      return payload === null;
-    };
-    exports2.isNull = isNull2;
-    var isPlainObject3 = function(payload) {
-      if (typeof payload !== "object" || payload === null)
-        return false;
-      if (payload === Object.prototype)
-        return false;
-      if (Object.getPrototypeOf(payload) === null)
-        return true;
-      return Object.getPrototypeOf(payload) === Object.prototype;
-    };
-    exports2.isPlainObject = isPlainObject3;
-    var isEmptyObject = function(payload) {
-      return exports2.isPlainObject(payload) && Object.keys(payload).length === 0;
-    };
-    exports2.isEmptyObject = isEmptyObject;
-    var isArray = function(payload) {
-      return Array.isArray(payload);
-    };
-    exports2.isArray = isArray;
-    var isString = function(payload) {
-      return typeof payload === "string";
-    };
-    exports2.isString = isString;
-    var isNumber = function(payload) {
-      return typeof payload === "number" && !isNaN(payload);
-    };
-    exports2.isNumber = isNumber;
-    var isBoolean = function(payload) {
-      return typeof payload === "boolean";
-    };
-    exports2.isBoolean = isBoolean;
-    var isRegExp = function(payload) {
-      return payload instanceof RegExp;
-    };
-    exports2.isRegExp = isRegExp;
-    var isMap = function(payload) {
-      return payload instanceof Map;
-    };
-    exports2.isMap = isMap;
-    var isSet = function(payload) {
-      return payload instanceof Set;
-    };
-    exports2.isSet = isSet;
-    var isSymbol = function(payload) {
-      return getType(payload) === "Symbol";
-    };
-    exports2.isSymbol = isSymbol;
-    var isDate = function(payload) {
-      return payload instanceof Date && !isNaN(payload.valueOf());
-    };
-    exports2.isDate = isDate;
-    var isError = function(payload) {
-      return payload instanceof Error;
-    };
-    exports2.isError = isError;
-    var isNaNValue = function(payload) {
-      return typeof payload === "number" && isNaN(payload);
-    };
-    exports2.isNaNValue = isNaNValue;
-    var isPrimitive = function(payload) {
-      return exports2.isBoolean(payload) || exports2.isNull(payload) || exports2.isUndefined(payload) || exports2.isNumber(payload) || exports2.isString(payload) || exports2.isSymbol(payload);
-    };
-    exports2.isPrimitive = isPrimitive;
-    var isBigint = function(payload) {
-      return typeof payload === "bigint";
-    };
-    exports2.isBigint = isBigint;
-    var isInfinite = function(payload) {
-      return payload === Infinity || payload === -Infinity;
-    };
-    exports2.isInfinite = isInfinite;
-    var isTypedArray = function(payload) {
-      return ArrayBuffer.isView(payload) && !(payload instanceof DataView);
-    };
-    exports2.isTypedArray = isTypedArray;
-    var isURL = function(payload) {
-      return payload instanceof URL;
-    };
-    exports2.isURL = isURL;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/pathstringifier.js
-var require_pathstringifier = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/pathstringifier.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.parsePath = exports2.stringifyPath = exports2.escapeKey = void 0;
-    var escapeKey = function(key) {
-      return key.replace(/\./g, "\\.");
-    };
-    exports2.escapeKey = escapeKey;
-    var stringifyPath = function(path) {
-      return path.map(String).map(exports2.escapeKey).join(".");
-    };
-    exports2.stringifyPath = stringifyPath;
-    var parsePath = function(string4) {
-      var result = [];
-      var segment = "";
-      for (var i = 0; i < string4.length; i++) {
-        var char2 = string4.charAt(i);
-        var isEscapedDot = char2 === "\\" && string4.charAt(i + 1) === ".";
-        if (isEscapedDot) {
-          segment += ".";
-          i++;
-          continue;
-        }
-        var isEndOfSegment = char2 === ".";
-        if (isEndOfSegment) {
-          result.push(segment);
-          segment = "";
-          continue;
-        }
-        segment += char2;
-      }
-      var lastSegment = segment;
-      result.push(lastSegment);
-      return result;
-    };
-    exports2.parsePath = parsePath;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/transformer.js
-var require_transformer = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/transformer.js"(exports2) {
-    "use strict";
-    var __assign = exports2 && exports2.__assign || function() {
-      __assign = Object.assign || function(t2) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t2[p] = s[p];
-        }
-        return t2;
-      };
-      return __assign.apply(this, arguments);
-    };
-    var __read = exports2 && exports2.__read || function(o, n) {
-      var m = typeof Symbol === "function" && o[Symbol.iterator];
-      if (!m) return o;
-      var i = m.call(o), r, ar = [], e;
-      try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-      } catch (error46) {
-        e = { error: error46 };
-      } finally {
-        try {
-          if (r && !r.done && (m = i["return"])) m.call(i);
-        } finally {
-          if (e) throw e.error;
-        }
-      }
-      return ar;
-    };
-    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
-      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-      return to;
-    };
-    exports2.__esModule = true;
-    exports2.untransformValue = exports2.transformValue = exports2.isInstanceOfRegisteredClass = void 0;
-    var is_1 = require_is();
-    var util_1 = require_util();
-    function simpleTransformation(isApplicable, annotation, transform2, untransform) {
-      return {
-        isApplicable,
-        annotation,
-        transform: transform2,
-        untransform
-      };
-    }
-    var simpleRules = [
-      simpleTransformation(is_1.isUndefined, "undefined", function() {
-        return null;
-      }, function() {
-        return void 0;
-      }),
-      simpleTransformation(is_1.isBigint, "bigint", function(v) {
-        return v.toString();
-      }, function(v) {
-        if (typeof BigInt !== "undefined") {
-          return BigInt(v);
-        }
-        console.error("Please add a BigInt polyfill.");
-        return v;
-      }),
-      simpleTransformation(is_1.isDate, "Date", function(v) {
-        return v.toISOString();
-      }, function(v) {
-        return new Date(v);
-      }),
-      simpleTransformation(is_1.isError, "Error", function(v, superJson) {
-        var baseError = {
-          name: v.name,
-          message: v.message
-        };
-        superJson.allowedErrorProps.forEach(function(prop) {
-          baseError[prop] = v[prop];
-        });
-        return baseError;
-      }, function(v, superJson) {
-        var e = new Error(v.message);
-        e.name = v.name;
-        e.stack = v.stack;
-        superJson.allowedErrorProps.forEach(function(prop) {
-          e[prop] = v[prop];
-        });
-        return e;
-      }),
-      simpleTransformation(is_1.isRegExp, "regexp", function(v) {
-        return "" + v;
-      }, function(regex) {
-        var body = regex.slice(1, regex.lastIndexOf("/"));
-        var flags = regex.slice(regex.lastIndexOf("/") + 1);
-        return new RegExp(body, flags);
-      }),
-      simpleTransformation(
-        is_1.isSet,
-        "set",
-        // (sets only exist in es6+)
-        // eslint-disable-next-line es5/no-es6-methods
-        function(v) {
-          return __spreadArray([], __read(v.values()));
-        },
-        function(v) {
-          return new Set(v);
-        }
-      ),
-      simpleTransformation(is_1.isMap, "map", function(v) {
-        return __spreadArray([], __read(v.entries()));
-      }, function(v) {
-        return new Map(v);
-      }),
-      simpleTransformation(function(v) {
-        return is_1.isNaNValue(v) || is_1.isInfinite(v);
-      }, "number", function(v) {
-        if (is_1.isNaNValue(v)) {
-          return "NaN";
-        }
-        if (v > 0) {
-          return "Infinity";
-        } else {
-          return "-Infinity";
-        }
-      }, Number),
-      simpleTransformation(function(v) {
-        return v === 0 && 1 / v === -Infinity;
-      }, "number", function() {
-        return "-0";
-      }, Number),
-      simpleTransformation(is_1.isURL, "URL", function(v) {
-        return v.toString();
-      }, function(v) {
-        return new URL(v);
-      })
-    ];
-    function compositeTransformation(isApplicable, annotation, transform2, untransform) {
-      return {
-        isApplicable,
-        annotation,
-        transform: transform2,
-        untransform
-      };
-    }
-    var symbolRule = compositeTransformation(function(s, superJson) {
-      if (is_1.isSymbol(s)) {
-        var isRegistered = !!superJson.symbolRegistry.getIdentifier(s);
-        return isRegistered;
-      }
-      return false;
-    }, function(s, superJson) {
-      var identifier = superJson.symbolRegistry.getIdentifier(s);
-      return ["symbol", identifier];
-    }, function(v) {
-      return v.description;
-    }, function(_, a, superJson) {
-      var value = superJson.symbolRegistry.getValue(a[1]);
-      if (!value) {
-        throw new Error("Trying to deserialize unknown symbol");
-      }
-      return value;
-    });
-    var constructorToName = [
-      Int8Array,
-      Uint8Array,
-      Int16Array,
-      Uint16Array,
-      Int32Array,
-      Uint32Array,
-      Float32Array,
-      Float64Array,
-      Uint8ClampedArray
-    ].reduce(function(obj, ctor) {
-      obj[ctor.name] = ctor;
-      return obj;
-    }, {});
-    var typedArrayRule = compositeTransformation(is_1.isTypedArray, function(v) {
-      return ["typed-array", v.constructor.name];
-    }, function(v) {
-      return __spreadArray([], __read(v));
-    }, function(v, a) {
-      var ctor = constructorToName[a[1]];
-      if (!ctor) {
-        throw new Error("Trying to deserialize unknown typed array");
-      }
-      return new ctor(v);
-    });
-    function isInstanceOfRegisteredClass(potentialClass, superJson) {
-      if (potentialClass === null || potentialClass === void 0 ? void 0 : potentialClass.constructor) {
-        var isRegistered = !!superJson.classRegistry.getIdentifier(potentialClass.constructor);
-        return isRegistered;
-      }
-      return false;
-    }
-    exports2.isInstanceOfRegisteredClass = isInstanceOfRegisteredClass;
-    var classRule = compositeTransformation(isInstanceOfRegisteredClass, function(clazz, superJson) {
-      var identifier = superJson.classRegistry.getIdentifier(clazz.constructor);
-      return ["class", identifier];
-    }, function(clazz, superJson) {
-      var allowedProps = superJson.classRegistry.getAllowedProps(clazz.constructor);
-      if (!allowedProps) {
-        return __assign({}, clazz);
-      }
-      var result = {};
-      allowedProps.forEach(function(prop) {
-        result[prop] = clazz[prop];
-      });
-      return result;
-    }, function(v, a, superJson) {
-      var clazz = superJson.classRegistry.getValue(a[1]);
-      if (!clazz) {
-        throw new Error("Trying to deserialize unknown class - check https://github.com/blitz-js/superjson/issues/116#issuecomment-773996564");
-      }
-      return Object.assign(Object.create(clazz.prototype), v);
-    });
-    var customRule = compositeTransformation(function(value, superJson) {
-      return !!superJson.customTransformerRegistry.findApplicable(value);
-    }, function(value, superJson) {
-      var transformer = superJson.customTransformerRegistry.findApplicable(value);
-      return ["custom", transformer.name];
-    }, function(value, superJson) {
-      var transformer = superJson.customTransformerRegistry.findApplicable(value);
-      return transformer.serialize(value);
-    }, function(v, a, superJson) {
-      var transformer = superJson.customTransformerRegistry.findByName(a[1]);
-      if (!transformer) {
-        throw new Error("Trying to deserialize unknown custom value");
-      }
-      return transformer.deserialize(v);
-    });
-    var compositeRules = [classRule, symbolRule, customRule, typedArrayRule];
-    var transformValue = function(value, superJson) {
-      var applicableCompositeRule = util_1.findArr(compositeRules, function(rule) {
-        return rule.isApplicable(value, superJson);
-      });
-      if (applicableCompositeRule) {
-        return {
-          value: applicableCompositeRule.transform(value, superJson),
-          type: applicableCompositeRule.annotation(value, superJson)
-        };
-      }
-      var applicableSimpleRule = util_1.findArr(simpleRules, function(rule) {
-        return rule.isApplicable(value, superJson);
-      });
-      if (applicableSimpleRule) {
-        return {
-          value: applicableSimpleRule.transform(value, superJson),
-          type: applicableSimpleRule.annotation
-        };
-      }
-      return void 0;
-    };
-    exports2.transformValue = transformValue;
-    var simpleRulesByAnnotation = {};
-    simpleRules.forEach(function(rule) {
-      simpleRulesByAnnotation[rule.annotation] = rule;
-    });
-    var untransformValue = function(json3, type, superJson) {
-      if (is_1.isArray(type)) {
-        switch (type[0]) {
-          case "symbol":
-            return symbolRule.untransform(json3, type, superJson);
-          case "class":
-            return classRule.untransform(json3, type, superJson);
-          case "custom":
-            return customRule.untransform(json3, type, superJson);
-          case "typed-array":
-            return typedArrayRule.untransform(json3, type, superJson);
-          default:
-            throw new Error("Unknown transformation: " + type);
-        }
-      } else {
-        var transformation = simpleRulesByAnnotation[type];
-        if (!transformation) {
-          throw new Error("Unknown transformation: " + type);
-        }
-        return transformation.untransform(json3, superJson);
-      }
-    };
-    exports2.untransformValue = untransformValue;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/accessDeep.js
-var require_accessDeep = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/accessDeep.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.setDeep = exports2.getDeep = void 0;
-    var is_1 = require_is();
-    var util_1 = require_util();
-    var getNthKey = function(value, n) {
-      var keys = value.keys();
-      while (n > 0) {
-        keys.next();
-        n--;
-      }
-      return keys.next().value;
-    };
-    function validatePath(path) {
-      if (util_1.includes(path, "__proto__")) {
-        throw new Error("__proto__ is not allowed as a property");
-      }
-      if (util_1.includes(path, "prototype")) {
-        throw new Error("prototype is not allowed as a property");
-      }
-      if (util_1.includes(path, "constructor")) {
-        throw new Error("constructor is not allowed as a property");
-      }
-    }
-    var getDeep = function(object2, path) {
-      validatePath(path);
-      for (var i = 0; i < path.length; i++) {
-        var key = path[i];
-        if (is_1.isSet(object2)) {
-          object2 = getNthKey(object2, +key);
-        } else if (is_1.isMap(object2)) {
-          var row = +key;
-          var type = +path[++i] === 0 ? "key" : "value";
-          var keyOfRow = getNthKey(object2, row);
-          switch (type) {
-            case "key":
-              object2 = keyOfRow;
-              break;
-            case "value":
-              object2 = object2.get(keyOfRow);
-              break;
-          }
-        } else {
-          object2 = object2[key];
-        }
-      }
-      return object2;
-    };
-    exports2.getDeep = getDeep;
-    var setDeep = function(object2, path, mapper) {
-      validatePath(path);
-      if (path.length === 0) {
-        return mapper(object2);
-      }
-      var parent = object2;
-      for (var i = 0; i < path.length - 1; i++) {
-        var key = path[i];
-        if (is_1.isArray(parent)) {
-          var index = +key;
-          parent = parent[index];
-        } else if (is_1.isPlainObject(parent)) {
-          parent = parent[key];
-        } else if (is_1.isSet(parent)) {
-          var row = +key;
-          parent = getNthKey(parent, row);
-        } else if (is_1.isMap(parent)) {
-          var isEnd = i === path.length - 2;
-          if (isEnd) {
-            break;
-          }
-          var row = +key;
-          var type = +path[++i] === 0 ? "key" : "value";
-          var keyOfRow = getNthKey(parent, row);
-          switch (type) {
-            case "key":
-              parent = keyOfRow;
-              break;
-            case "value":
-              parent = parent.get(keyOfRow);
-              break;
-          }
-        }
-      }
-      var lastKey = path[path.length - 1];
-      if (is_1.isArray(parent)) {
-        parent[+lastKey] = mapper(parent[+lastKey]);
-      } else if (is_1.isPlainObject(parent)) {
-        parent[lastKey] = mapper(parent[lastKey]);
-      }
-      if (is_1.isSet(parent)) {
-        var oldValue = getNthKey(parent, +lastKey);
-        var newValue = mapper(oldValue);
-        if (oldValue !== newValue) {
-          parent["delete"](oldValue);
-          parent.add(newValue);
-        }
-      }
-      if (is_1.isMap(parent)) {
-        var row = +path[path.length - 2];
-        var keyToRow = getNthKey(parent, row);
-        var type = +lastKey === 0 ? "key" : "value";
-        switch (type) {
-          case "key": {
-            var newKey = mapper(keyToRow);
-            parent.set(newKey, parent.get(keyToRow));
-            if (newKey !== keyToRow) {
-              parent["delete"](keyToRow);
-            }
-            break;
-          }
-          case "value": {
-            parent.set(keyToRow, mapper(parent.get(keyToRow)));
-            break;
-          }
-        }
-      }
-      return object2;
-    };
-    exports2.setDeep = setDeep;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/plainer.js
-var require_plainer = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/plainer.js"(exports2) {
-    "use strict";
-    var __read = exports2 && exports2.__read || function(o, n) {
-      var m = typeof Symbol === "function" && o[Symbol.iterator];
-      if (!m) return o;
-      var i = m.call(o), r, ar = [], e;
-      try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-      } catch (error46) {
-        e = { error: error46 };
-      } finally {
-        try {
-          if (r && !r.done && (m = i["return"])) m.call(i);
-        } finally {
-          if (e) throw e.error;
-        }
-      }
-      return ar;
-    };
-    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
-      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-      return to;
-    };
-    exports2.__esModule = true;
-    exports2.walker = exports2.generateReferentialEqualityAnnotations = exports2.applyReferentialEqualityAnnotations = exports2.applyValueAnnotations = void 0;
-    var is_1 = require_is();
-    var pathstringifier_1 = require_pathstringifier();
-    var transformer_1 = require_transformer();
-    var util_1 = require_util();
-    var pathstringifier_2 = require_pathstringifier();
-    var accessDeep_1 = require_accessDeep();
-    function traverse(tree, walker2, origin) {
-      if (origin === void 0) {
-        origin = [];
-      }
-      if (!tree) {
-        return;
-      }
-      if (!is_1.isArray(tree)) {
-        util_1.forEach(tree, function(subtree, key) {
-          return traverse(subtree, walker2, __spreadArray(__spreadArray([], __read(origin)), __read(pathstringifier_2.parsePath(key))));
-        });
-        return;
-      }
-      var _a = __read(tree, 2), nodeValue = _a[0], children = _a[1];
-      if (children) {
-        util_1.forEach(children, function(child, key) {
-          traverse(child, walker2, __spreadArray(__spreadArray([], __read(origin)), __read(pathstringifier_2.parsePath(key))));
-        });
-      }
-      walker2(nodeValue, origin);
-    }
-    function applyValueAnnotations(plain, annotations, superJson) {
-      traverse(annotations, function(type, path) {
-        plain = accessDeep_1.setDeep(plain, path, function(v) {
-          return transformer_1.untransformValue(v, type, superJson);
-        });
-      });
-      return plain;
-    }
-    exports2.applyValueAnnotations = applyValueAnnotations;
-    function applyReferentialEqualityAnnotations(plain, annotations) {
-      function apply(identicalPaths, path) {
-        var object2 = accessDeep_1.getDeep(plain, pathstringifier_2.parsePath(path));
-        identicalPaths.map(pathstringifier_2.parsePath).forEach(function(identicalObjectPath) {
-          plain = accessDeep_1.setDeep(plain, identicalObjectPath, function() {
-            return object2;
-          });
-        });
-      }
-      if (is_1.isArray(annotations)) {
-        var _a = __read(annotations, 2), root = _a[0], other = _a[1];
-        root.forEach(function(identicalPath) {
-          plain = accessDeep_1.setDeep(plain, pathstringifier_2.parsePath(identicalPath), function() {
-            return plain;
-          });
-        });
-        if (other) {
-          util_1.forEach(other, apply);
-        }
-      } else {
-        util_1.forEach(annotations, apply);
-      }
-      return plain;
-    }
-    exports2.applyReferentialEqualityAnnotations = applyReferentialEqualityAnnotations;
-    var isDeep = function(object2, superJson) {
-      return is_1.isPlainObject(object2) || is_1.isArray(object2) || is_1.isMap(object2) || is_1.isSet(object2) || transformer_1.isInstanceOfRegisteredClass(object2, superJson);
-    };
-    function addIdentity(object2, path, identities) {
-      var existingSet = identities.get(object2);
-      if (existingSet) {
-        existingSet.push(path);
-      } else {
-        identities.set(object2, [path]);
-      }
-    }
-    function generateReferentialEqualityAnnotations(identitites, dedupe) {
-      var result = {};
-      var rootEqualityPaths = void 0;
-      identitites.forEach(function(paths) {
-        if (paths.length <= 1) {
-          return;
-        }
-        if (!dedupe) {
-          paths = paths.map(function(path) {
-            return path.map(String);
-          }).sort(function(a, b) {
-            return a.length - b.length;
-          });
-        }
-        var _a = __read(paths), representativePath = _a[0], identicalPaths = _a.slice(1);
-        if (representativePath.length === 0) {
-          rootEqualityPaths = identicalPaths.map(pathstringifier_1.stringifyPath);
-        } else {
-          result[pathstringifier_1.stringifyPath(representativePath)] = identicalPaths.map(pathstringifier_1.stringifyPath);
-        }
-      });
-      if (rootEqualityPaths) {
-        if (is_1.isEmptyObject(result)) {
-          return [rootEqualityPaths];
-        } else {
-          return [rootEqualityPaths, result];
-        }
-      } else {
-        return is_1.isEmptyObject(result) ? void 0 : result;
-      }
-    }
-    exports2.generateReferentialEqualityAnnotations = generateReferentialEqualityAnnotations;
-    var walker = function(object2, identities, superJson, dedupe, path, objectsInThisPath, seenObjects) {
-      var _a;
-      if (path === void 0) {
-        path = [];
-      }
-      if (objectsInThisPath === void 0) {
-        objectsInThisPath = [];
-      }
-      if (seenObjects === void 0) {
-        seenObjects = /* @__PURE__ */ new Map();
-      }
-      var primitive = is_1.isPrimitive(object2);
-      if (!primitive) {
-        addIdentity(object2, path, identities);
-        var seen = seenObjects.get(object2);
-        if (seen) {
-          return dedupe ? {
-            transformedValue: null
-          } : seen;
-        }
-      }
-      if (!isDeep(object2, superJson)) {
-        var transformed_1 = transformer_1.transformValue(object2, superJson);
-        var result_1 = transformed_1 ? {
-          transformedValue: transformed_1.value,
-          annotations: [transformed_1.type]
-        } : {
-          transformedValue: object2
-        };
-        if (!primitive) {
-          seenObjects.set(object2, result_1);
-        }
-        return result_1;
-      }
-      if (util_1.includes(objectsInThisPath, object2)) {
-        return {
-          transformedValue: null
-        };
-      }
-      var transformationResult = transformer_1.transformValue(object2, superJson);
-      var transformed = (_a = transformationResult === null || transformationResult === void 0 ? void 0 : transformationResult.value) !== null && _a !== void 0 ? _a : object2;
-      var transformedValue = is_1.isArray(transformed) ? [] : {};
-      var innerAnnotations = {};
-      util_1.forEach(transformed, function(value, index) {
-        var recursiveResult = exports2.walker(value, identities, superJson, dedupe, __spreadArray(__spreadArray([], __read(path)), [index]), __spreadArray(__spreadArray([], __read(objectsInThisPath)), [object2]), seenObjects);
-        transformedValue[index] = recursiveResult.transformedValue;
-        if (is_1.isArray(recursiveResult.annotations)) {
-          innerAnnotations[index] = recursiveResult.annotations;
-        } else if (is_1.isPlainObject(recursiveResult.annotations)) {
-          util_1.forEach(recursiveResult.annotations, function(tree, key) {
-            innerAnnotations[pathstringifier_1.escapeKey(index) + "." + key] = tree;
-          });
-        }
-      });
-      var result = is_1.isEmptyObject(innerAnnotations) ? {
-        transformedValue,
-        annotations: !!transformationResult ? [transformationResult.type] : void 0
-      } : {
-        transformedValue,
-        annotations: !!transformationResult ? [transformationResult.type, innerAnnotations] : innerAnnotations
-      };
-      if (!primitive) {
-        seenObjects.set(object2, result);
-      }
-      return result;
-    };
-    exports2.walker = walker;
-  }
-});
-
-// node_modules/.pnpm/is-what@4.1.16/node_modules/is-what/dist/cjs/index.cjs
-var require_cjs = __commonJS({
-  "node_modules/.pnpm/is-what@4.1.16/node_modules/is-what/dist/cjs/index.cjs"(exports2) {
-    "use strict";
-    function getType(payload) {
-      return Object.prototype.toString.call(payload).slice(8, -1);
-    }
-    function isAnyObject(payload) {
-      return getType(payload) === "Object";
-    }
-    function isArray(payload) {
-      return getType(payload) === "Array";
-    }
-    function isBlob(payload) {
-      return getType(payload) === "Blob";
-    }
-    function isBoolean(payload) {
-      return getType(payload) === "Boolean";
-    }
-    function isDate(payload) {
-      return getType(payload) === "Date" && !isNaN(payload);
-    }
-    function isEmptyArray(payload) {
-      return isArray(payload) && payload.length === 0;
-    }
-    function isPlainObject3(payload) {
-      if (getType(payload) !== "Object")
-        return false;
-      const prototype = Object.getPrototypeOf(payload);
-      return !!prototype && prototype.constructor === Object && prototype === Object.prototype;
-    }
-    function isEmptyObject(payload) {
-      return isPlainObject3(payload) && Object.keys(payload).length === 0;
-    }
-    function isEmptyString(payload) {
-      return payload === "";
-    }
-    function isError(payload) {
-      return getType(payload) === "Error" || payload instanceof Error;
-    }
-    function isFile(payload) {
-      return getType(payload) === "File";
-    }
-    function isFullArray(payload) {
-      return isArray(payload) && payload.length > 0;
-    }
-    function isFullObject(payload) {
-      return isPlainObject3(payload) && Object.keys(payload).length > 0;
-    }
-    function isString(payload) {
-      return getType(payload) === "String";
-    }
-    function isFullString(payload) {
-      return isString(payload) && payload !== "";
-    }
-    function isFunction2(payload) {
-      return typeof payload === "function";
-    }
-    function isType(payload, type) {
-      if (!(type instanceof Function)) {
-        throw new TypeError("Type must be a function");
-      }
-      if (!Object.prototype.hasOwnProperty.call(type, "prototype")) {
-        throw new TypeError("Type is not a class");
-      }
-      const name = type.name;
-      return getType(payload) === name || Boolean(payload && payload.constructor === type);
-    }
-    function isInstanceOf(value, classOrClassName) {
-      if (typeof classOrClassName === "function") {
-        for (let p = value; p; p = Object.getPrototypeOf(p)) {
-          if (isType(p, classOrClassName)) {
-            return true;
-          }
-        }
-        return false;
-      } else {
-        for (let p = value; p; p = Object.getPrototypeOf(p)) {
-          if (getType(p) === classOrClassName) {
-            return true;
-          }
-        }
-        return false;
-      }
-    }
-    function isMap(payload) {
-      return getType(payload) === "Map";
-    }
-    function isNaNValue(payload) {
-      return getType(payload) === "Number" && isNaN(payload);
-    }
-    function isNumber(payload) {
-      return getType(payload) === "Number" && !isNaN(payload);
-    }
-    function isNegativeNumber(payload) {
-      return isNumber(payload) && payload < 0;
-    }
-    function isNull2(payload) {
-      return getType(payload) === "Null";
-    }
-    function isOneOf(a, b, c, d, e) {
-      return (value) => a(value) || b(value) || !!c && c(value) || !!d && d(value) || !!e && e(value);
-    }
-    function isUndefined(payload) {
-      return getType(payload) === "Undefined";
-    }
-    var isNullOrUndefined = isOneOf(isNull2, isUndefined);
-    function isObject3(payload) {
-      return isPlainObject3(payload);
-    }
-    function isObjectLike2(payload) {
-      return isAnyObject(payload);
-    }
-    function isPositiveNumber(payload) {
-      return isNumber(payload) && payload > 0;
-    }
-    function isSymbol(payload) {
-      return getType(payload) === "Symbol";
-    }
-    function isPrimitive(payload) {
-      return isBoolean(payload) || isNull2(payload) || isUndefined(payload) || isNumber(payload) || isString(payload) || isSymbol(payload);
-    }
-    function isPromise2(payload) {
-      return getType(payload) === "Promise";
-    }
-    function isRegExp(payload) {
-      return getType(payload) === "RegExp";
-    }
-    function isSet(payload) {
-      return getType(payload) === "Set";
-    }
-    function isWeakMap(payload) {
-      return getType(payload) === "WeakMap";
-    }
-    function isWeakSet(payload) {
-      return getType(payload) === "WeakSet";
-    }
-    exports2.getType = getType;
-    exports2.isAnyObject = isAnyObject;
-    exports2.isArray = isArray;
-    exports2.isBlob = isBlob;
-    exports2.isBoolean = isBoolean;
-    exports2.isDate = isDate;
-    exports2.isEmptyArray = isEmptyArray;
-    exports2.isEmptyObject = isEmptyObject;
-    exports2.isEmptyString = isEmptyString;
-    exports2.isError = isError;
-    exports2.isFile = isFile;
-    exports2.isFullArray = isFullArray;
-    exports2.isFullObject = isFullObject;
-    exports2.isFullString = isFullString;
-    exports2.isFunction = isFunction2;
-    exports2.isInstanceOf = isInstanceOf;
-    exports2.isMap = isMap;
-    exports2.isNaNValue = isNaNValue;
-    exports2.isNegativeNumber = isNegativeNumber;
-    exports2.isNull = isNull2;
-    exports2.isNullOrUndefined = isNullOrUndefined;
-    exports2.isNumber = isNumber;
-    exports2.isObject = isObject3;
-    exports2.isObjectLike = isObjectLike2;
-    exports2.isOneOf = isOneOf;
-    exports2.isPlainObject = isPlainObject3;
-    exports2.isPositiveNumber = isPositiveNumber;
-    exports2.isPrimitive = isPrimitive;
-    exports2.isPromise = isPromise2;
-    exports2.isRegExp = isRegExp;
-    exports2.isSet = isSet;
-    exports2.isString = isString;
-    exports2.isSymbol = isSymbol;
-    exports2.isType = isType;
-    exports2.isUndefined = isUndefined;
-    exports2.isWeakMap = isWeakMap;
-    exports2.isWeakSet = isWeakSet;
-  }
-});
-
-// node_modules/.pnpm/copy-anything@3.0.5/node_modules/copy-anything/dist/cjs/index.cjs
-var require_cjs2 = __commonJS({
-  "node_modules/.pnpm/copy-anything@3.0.5/node_modules/copy-anything/dist/cjs/index.cjs"(exports2) {
-    "use strict";
-    var isWhat = require_cjs();
-    function assignProp2(carry, key, newVal, originalObject, includeNonenumerable) {
-      const propType = {}.propertyIsEnumerable.call(originalObject, key) ? "enumerable" : "nonenumerable";
-      if (propType === "enumerable")
-        carry[key] = newVal;
-      if (includeNonenumerable && propType === "nonenumerable") {
-        Object.defineProperty(carry, key, {
-          value: newVal,
-          enumerable: false,
-          writable: true,
-          configurable: true
-        });
-      }
-    }
-    function copy(target, options = {}) {
-      if (isWhat.isArray(target)) {
-        return target.map((item) => copy(item, options));
-      }
-      if (!isWhat.isPlainObject(target)) {
-        return target;
-      }
-      const props = Object.getOwnPropertyNames(target);
-      const symbols = Object.getOwnPropertySymbols(target);
-      return [...props, ...symbols].reduce((carry, key) => {
-        if (isWhat.isArray(options.props) && !options.props.includes(key)) {
-          return carry;
-        }
-        const val = target[key];
-        const newVal = copy(val, options);
-        assignProp2(carry, key, newVal, target, options.nonenumerable);
-        return carry;
-      }, {});
-    }
-    exports2.copy = copy;
-  }
-});
-
-// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/index.js
-var require_dist2 = __commonJS({
-  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/index.js"(exports2) {
-    "use strict";
-    var __assign = exports2 && exports2.__assign || function() {
-      __assign = Object.assign || function(t2) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t2[p] = s[p];
-        }
-        return t2;
-      };
-      return __assign.apply(this, arguments);
-    };
-    var __read = exports2 && exports2.__read || function(o, n) {
-      var m = typeof Symbol === "function" && o[Symbol.iterator];
-      if (!m) return o;
-      var i = m.call(o), r, ar = [], e;
-      try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-      } catch (error46) {
-        e = { error: error46 };
-      } finally {
-        try {
-          if (r && !r.done && (m = i["return"])) m.call(i);
-        } finally {
-          if (e) throw e.error;
-        }
-      }
-      return ar;
-    };
-    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
-      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-      return to;
-    };
-    exports2.__esModule = true;
-    exports2.allowErrorProps = exports2.registerSymbol = exports2.registerCustom = exports2.registerClass = exports2.parse = exports2.stringify = exports2.deserialize = exports2.serialize = exports2.SuperJSON = void 0;
-    var class_registry_1 = require_class_registry();
-    var registry_1 = require_registry();
-    var custom_transformer_registry_1 = require_custom_transformer_registry();
-    var plainer_1 = require_plainer();
-    var copy_anything_1 = require_cjs2();
-    var SuperJSON = (
-      /** @class */
-      (function() {
-        function SuperJSON2(_a) {
-          var _b = _a === void 0 ? {} : _a, _c = _b.dedupe, dedupe = _c === void 0 ? false : _c;
-          this.classRegistry = new class_registry_1.ClassRegistry();
-          this.symbolRegistry = new registry_1.Registry(function(s) {
-            var _a2;
-            return (_a2 = s.description) !== null && _a2 !== void 0 ? _a2 : "";
-          });
-          this.customTransformerRegistry = new custom_transformer_registry_1.CustomTransformerRegistry();
-          this.allowedErrorProps = [];
-          this.dedupe = dedupe;
-        }
-        SuperJSON2.prototype.serialize = function(object2) {
-          var identities = /* @__PURE__ */ new Map();
-          var output = plainer_1.walker(object2, identities, this, this.dedupe);
-          var res = {
-            json: output.transformedValue
-          };
-          if (output.annotations) {
-            res.meta = __assign(__assign({}, res.meta), { values: output.annotations });
-          }
-          var equalityAnnotations = plainer_1.generateReferentialEqualityAnnotations(identities, this.dedupe);
-          if (equalityAnnotations) {
-            res.meta = __assign(__assign({}, res.meta), { referentialEqualities: equalityAnnotations });
-          }
-          return res;
-        };
-        SuperJSON2.prototype.deserialize = function(payload) {
-          var json3 = payload.json, meta = payload.meta;
-          var result = copy_anything_1.copy(json3);
-          if (meta === null || meta === void 0 ? void 0 : meta.values) {
-            result = plainer_1.applyValueAnnotations(result, meta.values, this);
-          }
-          if (meta === null || meta === void 0 ? void 0 : meta.referentialEqualities) {
-            result = plainer_1.applyReferentialEqualityAnnotations(result, meta.referentialEqualities);
-          }
-          return result;
-        };
-        SuperJSON2.prototype.stringify = function(object2) {
-          return JSON.stringify(this.serialize(object2));
-        };
-        SuperJSON2.prototype.parse = function(string4) {
-          return this.deserialize(JSON.parse(string4));
-        };
-        SuperJSON2.prototype.registerClass = function(v, options) {
-          this.classRegistry.register(v, options);
-        };
-        SuperJSON2.prototype.registerSymbol = function(v, identifier) {
-          this.symbolRegistry.register(v, identifier);
-        };
-        SuperJSON2.prototype.registerCustom = function(transformer, name) {
-          this.customTransformerRegistry.register(__assign({ name }, transformer));
-        };
-        SuperJSON2.prototype.allowErrorProps = function() {
-          var _a;
-          var props = [];
-          for (var _i = 0; _i < arguments.length; _i++) {
-            props[_i] = arguments[_i];
-          }
-          (_a = this.allowedErrorProps).push.apply(_a, __spreadArray([], __read(props)));
-        };
-        SuperJSON2.defaultInstance = new SuperJSON2();
-        SuperJSON2.serialize = SuperJSON2.defaultInstance.serialize.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.deserialize = SuperJSON2.defaultInstance.deserialize.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.stringify = SuperJSON2.defaultInstance.stringify.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.parse = SuperJSON2.defaultInstance.parse.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.registerClass = SuperJSON2.defaultInstance.registerClass.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.registerSymbol = SuperJSON2.defaultInstance.registerSymbol.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.registerCustom = SuperJSON2.defaultInstance.registerCustom.bind(SuperJSON2.defaultInstance);
-        SuperJSON2.allowErrorProps = SuperJSON2.defaultInstance.allowErrorProps.bind(SuperJSON2.defaultInstance);
-        return SuperJSON2;
-      })()
-    );
-    exports2.SuperJSON = SuperJSON;
-    exports2["default"] = SuperJSON;
-    exports2.serialize = SuperJSON.serialize;
-    exports2.deserialize = SuperJSON.deserialize;
-    exports2.stringify = SuperJSON.stringify;
-    exports2.parse = SuperJSON.parse;
-    exports2.registerClass = SuperJSON.registerClass;
-    exports2.registerCustom = SuperJSON.registerCustom;
-    exports2.registerSymbol = SuperJSON.registerSymbol;
-    exports2.allowErrorProps = SuperJSON.allowErrorProps;
   }
 });
 
@@ -33124,18 +31798,18 @@ var require_sha256 = __commonJS({
     (function(root, factory) {
       var exports3 = {};
       factory(exports3);
-      var sha256 = exports3["default"];
+      var sha2562 = exports3["default"];
       for (var k in exports3) {
-        sha256[k] = exports3[k];
+        sha2562[k] = exports3[k];
       }
       if (typeof module2 === "object" && typeof module2.exports === "object") {
-        module2.exports = sha256;
+        module2.exports = sha2562;
       } else if (typeof define === "function" && define.amd) {
         define(function() {
-          return sha256;
+          return sha2562;
         });
       } else {
-        root.sha256 = sha256;
+        root.sha256 = sha2562;
       }
     })(exports2, function(exports3) {
       "use strict";
@@ -33543,14 +32217,14 @@ var require_sha256 = __commonJS({
 });
 
 // node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js
-var require_dist3 = __commonJS({
+var require_dist2 = __commonJS({
   "node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Webhook = exports2.WebhookVerificationError = void 0;
     var timing_safe_equal_1 = require_timing_safe_equal();
     var base643 = require_base64();
-    var sha256 = require_sha256();
+    var sha2562 = require_sha256();
     var WEBHOOK_TOLERANCE_IN_SECONDS = 5 * 60;
     var ExtendableError = class _ExtendableError extends Error {
       constructor(message2) {
@@ -33626,7 +32300,7 @@ var require_dist3 = __commonJS({
         const encoder2 = new TextEncoder();
         const timestampNumber = Math.floor(timestamp2.getTime() / 1e3);
         const toSign = encoder2.encode(`${msgId}.${timestampNumber}.${payload}`);
-        const expectedSignature = base643.encode(sha256.hmac(this.key, toSign));
+        const expectedSignature = base643.encode(sha2562.hmac(this.key, toSign));
         return `v1,${expectedSignature}`;
       }
       verifyTimestamp(timestampHeader) {
@@ -33846,12 +32520,12 @@ function getDefaultBaseUrl() {
 function getDefaultUserAgent() {
   return typeof process !== "undefined" && process.env ? process.env.RESEND_USER_AGENT || defaultUserAgent : defaultUserAgent;
 }
-var import_standardwebhooks, version3, ApiKeys, AutomationRuns, Automations, Batch, Broadcasts, ContactProperties, ContactImports, ContactSegments, ContactTopics, Contacts, DomainClaims, Domains, Attachments$1, Attachments, Receiving, Emails, Events, Logs, Segments, ChainableTemplateResult, Templates, Topics, Webhooks, defaultBaseUrl, defaultUserAgent, Resend;
+var import_standardwebhooks, version2, ApiKeys, AutomationRuns, Automations, Batch, Broadcasts, ContactProperties, ContactImports, ContactSegments, ContactTopics, Contacts, DomainClaims, Domains, Attachments$1, Attachments, Receiving, Emails, Events, Logs, Segments, ChainableTemplateResult, Templates, Topics, Webhooks, defaultBaseUrl, defaultUserAgent, Resend;
 var init_dist = __esm({
   "node_modules/.pnpm/resend@6.16.0/node_modules/resend/dist/index.mjs"() {
     init_postal_mime();
-    import_standardwebhooks = __toESM(require_dist3(), 1);
-    version3 = "6.16.0";
+    import_standardwebhooks = __toESM(require_dist2(), 1);
+    version2 = "6.16.0";
     ApiKeys = class {
       constructor(resend) {
         this.resend = resend;
@@ -34703,7 +33377,7 @@ var init_dist = __esm({
       }
     };
     defaultBaseUrl = "https://api.resend.com";
-    defaultUserAgent = `resend-node:${version3}`;
+    defaultUserAgent = `resend-node:${version2}`;
     Resend = class {
       constructor(key, options) {
         this.key = key;
@@ -34854,7 +33528,8 @@ var init_dist = __esm({
 // server/_core/email.ts
 var email_exports = {};
 __export(email_exports, {
-  sendCompletionAlert: () => sendCompletionAlert
+  sendCompletionAlert: () => sendCompletionAlert,
+  sendPasswordResetCode: () => sendPasswordResetCode
 });
 function getResend() {
   if (!ENV.resendApiKey) return null;
@@ -34905,6 +33580,23 @@ async function sendCompletionAlert({
     `
   });
 }
+async function sendPasswordResetCode({ to, code }) {
+  const resend = getResend();
+  if (!resend) throw new Error("email is not configured");
+  await resend.emails.send({
+    from: "Top of Temecula Training <training@topoftemecula.com>",
+    to,
+    subject: `Your password reset code: ${code}`,
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #faf8f4; border-radius: 12px;">
+        <h1 style="font-size: 20px; color: #1a1a1a; margin-bottom: 8px;">Password reset</h1>
+        <p style="color: #555; font-size: 15px;">Enter this code in the app to set a new password. It expires in 15 minutes.</p>
+        <p style="font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #1a1a1a; background: white; border: 1px solid #e5e0d8; border-radius: 8px; padding: 16px; text-align: center;">${code}</p>
+        <p style="color: #888; font-size: 13px; margin-top: 16px;">If you didn't request this, you can ignore this email.</p>
+      </div>
+    `
+  });
+}
 var _resend;
 var init_email = __esm({
   "server/_core/email.ts"() {
@@ -34912,6 +33604,1338 @@ var init_email = __esm({
     init_dist();
     init_env();
     _resend = null;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/double-indexed-kv.js
+var require_double_indexed_kv = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/double-indexed-kv.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.DoubleIndexedKV = void 0;
+    var DoubleIndexedKV = (
+      /** @class */
+      (function() {
+        function DoubleIndexedKV2() {
+          this.keyToValue = /* @__PURE__ */ new Map();
+          this.valueToKey = /* @__PURE__ */ new Map();
+        }
+        DoubleIndexedKV2.prototype.set = function(key, value) {
+          this.keyToValue.set(key, value);
+          this.valueToKey.set(value, key);
+        };
+        DoubleIndexedKV2.prototype.getByKey = function(key) {
+          return this.keyToValue.get(key);
+        };
+        DoubleIndexedKV2.prototype.getByValue = function(value) {
+          return this.valueToKey.get(value);
+        };
+        DoubleIndexedKV2.prototype.clear = function() {
+          this.keyToValue.clear();
+          this.valueToKey.clear();
+        };
+        return DoubleIndexedKV2;
+      })()
+    );
+    exports2.DoubleIndexedKV = DoubleIndexedKV;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/registry.js
+var require_registry = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/registry.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.Registry = void 0;
+    var double_indexed_kv_1 = require_double_indexed_kv();
+    var Registry = (
+      /** @class */
+      (function() {
+        function Registry2(generateIdentifier) {
+          this.generateIdentifier = generateIdentifier;
+          this.kv = new double_indexed_kv_1.DoubleIndexedKV();
+        }
+        Registry2.prototype.register = function(value, identifier) {
+          if (this.kv.getByValue(value)) {
+            return;
+          }
+          if (!identifier) {
+            identifier = this.generateIdentifier(value);
+          }
+          this.kv.set(identifier, value);
+        };
+        Registry2.prototype.clear = function() {
+          this.kv.clear();
+        };
+        Registry2.prototype.getIdentifier = function(value) {
+          return this.kv.getByValue(value);
+        };
+        Registry2.prototype.getValue = function(identifier) {
+          return this.kv.getByKey(identifier);
+        };
+        return Registry2;
+      })()
+    );
+    exports2.Registry = Registry;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/class-registry.js
+var require_class_registry = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/class-registry.js"(exports2) {
+    "use strict";
+    var __extends = exports2 && exports2.__extends || /* @__PURE__ */ (function() {
+      var extendStatics = function(d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+          d2.__proto__ = b2;
+        } || function(d2, b2) {
+          for (var p in b2) if (Object.prototype.hasOwnProperty.call(b2, p)) d2[p] = b2[p];
+        };
+        return extendStatics(d, b);
+      };
+      return function(d, b) {
+        if (typeof b !== "function" && b !== null)
+          throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() {
+          this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      };
+    })();
+    exports2.__esModule = true;
+    exports2.ClassRegistry = void 0;
+    var registry_1 = require_registry();
+    var ClassRegistry = (
+      /** @class */
+      (function(_super) {
+        __extends(ClassRegistry2, _super);
+        function ClassRegistry2() {
+          var _this = _super.call(this, function(c) {
+            return c.name;
+          }) || this;
+          _this.classToAllowedProps = /* @__PURE__ */ new Map();
+          return _this;
+        }
+        ClassRegistry2.prototype.register = function(value, options) {
+          if (typeof options === "object") {
+            if (options.allowProps) {
+              this.classToAllowedProps.set(value, options.allowProps);
+            }
+            _super.prototype.register.call(this, value, options.identifier);
+          } else {
+            _super.prototype.register.call(this, value, options);
+          }
+        };
+        ClassRegistry2.prototype.getAllowedProps = function(value) {
+          return this.classToAllowedProps.get(value);
+        };
+        return ClassRegistry2;
+      })(registry_1.Registry)
+    );
+    exports2.ClassRegistry = ClassRegistry;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/util.js
+var require_util = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/util.js"(exports2) {
+    "use strict";
+    var __read = exports2 && exports2.__read || function(o, n) {
+      var m = typeof Symbol === "function" && o[Symbol.iterator];
+      if (!m) return o;
+      var i = m.call(o), r, ar = [], e;
+      try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+      } catch (error46) {
+        e = { error: error46 };
+      } finally {
+        try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+        } finally {
+          if (e) throw e.error;
+        }
+      }
+      return ar;
+    };
+    exports2.__esModule = true;
+    exports2.findArr = exports2.includes = exports2.forEach = exports2.find = void 0;
+    function valuesOfObj(record2) {
+      if ("values" in Object) {
+        return Object.values(record2);
+      }
+      var values = [];
+      for (var key in record2) {
+        if (record2.hasOwnProperty(key)) {
+          values.push(record2[key]);
+        }
+      }
+      return values;
+    }
+    function find(record2, predicate) {
+      var values = valuesOfObj(record2);
+      if ("find" in values) {
+        return values.find(predicate);
+      }
+      var valuesNotNever = values;
+      for (var i = 0; i < valuesNotNever.length; i++) {
+        var value = valuesNotNever[i];
+        if (predicate(value)) {
+          return value;
+        }
+      }
+      return void 0;
+    }
+    exports2.find = find;
+    function forEach(record2, run2) {
+      Object.entries(record2).forEach(function(_a) {
+        var _b = __read(_a, 2), key = _b[0], value = _b[1];
+        return run2(value, key);
+      });
+    }
+    exports2.forEach = forEach;
+    function includes(arr, value) {
+      return arr.indexOf(value) !== -1;
+    }
+    exports2.includes = includes;
+    function findArr(record2, predicate) {
+      for (var i = 0; i < record2.length; i++) {
+        var value = record2[i];
+        if (predicate(value)) {
+          return value;
+        }
+      }
+      return void 0;
+    }
+    exports2.findArr = findArr;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/custom-transformer-registry.js
+var require_custom_transformer_registry = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/custom-transformer-registry.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.CustomTransformerRegistry = void 0;
+    var util_1 = require_util();
+    var CustomTransformerRegistry = (
+      /** @class */
+      (function() {
+        function CustomTransformerRegistry2() {
+          this.transfomers = {};
+        }
+        CustomTransformerRegistry2.prototype.register = function(transformer) {
+          this.transfomers[transformer.name] = transformer;
+        };
+        CustomTransformerRegistry2.prototype.findApplicable = function(v) {
+          return util_1.find(this.transfomers, function(transformer) {
+            return transformer.isApplicable(v);
+          });
+        };
+        CustomTransformerRegistry2.prototype.findByName = function(name) {
+          return this.transfomers[name];
+        };
+        return CustomTransformerRegistry2;
+      })()
+    );
+    exports2.CustomTransformerRegistry = CustomTransformerRegistry;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/is.js
+var require_is = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/is.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.isURL = exports2.isTypedArray = exports2.isInfinite = exports2.isBigint = exports2.isPrimitive = exports2.isNaNValue = exports2.isError = exports2.isDate = exports2.isSymbol = exports2.isSet = exports2.isMap = exports2.isRegExp = exports2.isBoolean = exports2.isNumber = exports2.isString = exports2.isArray = exports2.isEmptyObject = exports2.isPlainObject = exports2.isNull = exports2.isUndefined = void 0;
+    var getType = function(payload) {
+      return Object.prototype.toString.call(payload).slice(8, -1);
+    };
+    var isUndefined = function(payload) {
+      return typeof payload === "undefined";
+    };
+    exports2.isUndefined = isUndefined;
+    var isNull2 = function(payload) {
+      return payload === null;
+    };
+    exports2.isNull = isNull2;
+    var isPlainObject3 = function(payload) {
+      if (typeof payload !== "object" || payload === null)
+        return false;
+      if (payload === Object.prototype)
+        return false;
+      if (Object.getPrototypeOf(payload) === null)
+        return true;
+      return Object.getPrototypeOf(payload) === Object.prototype;
+    };
+    exports2.isPlainObject = isPlainObject3;
+    var isEmptyObject = function(payload) {
+      return exports2.isPlainObject(payload) && Object.keys(payload).length === 0;
+    };
+    exports2.isEmptyObject = isEmptyObject;
+    var isArray = function(payload) {
+      return Array.isArray(payload);
+    };
+    exports2.isArray = isArray;
+    var isString = function(payload) {
+      return typeof payload === "string";
+    };
+    exports2.isString = isString;
+    var isNumber = function(payload) {
+      return typeof payload === "number" && !isNaN(payload);
+    };
+    exports2.isNumber = isNumber;
+    var isBoolean = function(payload) {
+      return typeof payload === "boolean";
+    };
+    exports2.isBoolean = isBoolean;
+    var isRegExp = function(payload) {
+      return payload instanceof RegExp;
+    };
+    exports2.isRegExp = isRegExp;
+    var isMap = function(payload) {
+      return payload instanceof Map;
+    };
+    exports2.isMap = isMap;
+    var isSet = function(payload) {
+      return payload instanceof Set;
+    };
+    exports2.isSet = isSet;
+    var isSymbol = function(payload) {
+      return getType(payload) === "Symbol";
+    };
+    exports2.isSymbol = isSymbol;
+    var isDate = function(payload) {
+      return payload instanceof Date && !isNaN(payload.valueOf());
+    };
+    exports2.isDate = isDate;
+    var isError = function(payload) {
+      return payload instanceof Error;
+    };
+    exports2.isError = isError;
+    var isNaNValue = function(payload) {
+      return typeof payload === "number" && isNaN(payload);
+    };
+    exports2.isNaNValue = isNaNValue;
+    var isPrimitive = function(payload) {
+      return exports2.isBoolean(payload) || exports2.isNull(payload) || exports2.isUndefined(payload) || exports2.isNumber(payload) || exports2.isString(payload) || exports2.isSymbol(payload);
+    };
+    exports2.isPrimitive = isPrimitive;
+    var isBigint = function(payload) {
+      return typeof payload === "bigint";
+    };
+    exports2.isBigint = isBigint;
+    var isInfinite = function(payload) {
+      return payload === Infinity || payload === -Infinity;
+    };
+    exports2.isInfinite = isInfinite;
+    var isTypedArray = function(payload) {
+      return ArrayBuffer.isView(payload) && !(payload instanceof DataView);
+    };
+    exports2.isTypedArray = isTypedArray;
+    var isURL = function(payload) {
+      return payload instanceof URL;
+    };
+    exports2.isURL = isURL;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/pathstringifier.js
+var require_pathstringifier = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/pathstringifier.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.parsePath = exports2.stringifyPath = exports2.escapeKey = void 0;
+    var escapeKey = function(key) {
+      return key.replace(/\./g, "\\.");
+    };
+    exports2.escapeKey = escapeKey;
+    var stringifyPath = function(path) {
+      return path.map(String).map(exports2.escapeKey).join(".");
+    };
+    exports2.stringifyPath = stringifyPath;
+    var parsePath = function(string4) {
+      var result = [];
+      var segment = "";
+      for (var i = 0; i < string4.length; i++) {
+        var char2 = string4.charAt(i);
+        var isEscapedDot = char2 === "\\" && string4.charAt(i + 1) === ".";
+        if (isEscapedDot) {
+          segment += ".";
+          i++;
+          continue;
+        }
+        var isEndOfSegment = char2 === ".";
+        if (isEndOfSegment) {
+          result.push(segment);
+          segment = "";
+          continue;
+        }
+        segment += char2;
+      }
+      var lastSegment = segment;
+      result.push(lastSegment);
+      return result;
+    };
+    exports2.parsePath = parsePath;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/transformer.js
+var require_transformer = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/transformer.js"(exports2) {
+    "use strict";
+    var __assign = exports2 && exports2.__assign || function() {
+      __assign = Object.assign || function(t2) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t2[p] = s[p];
+        }
+        return t2;
+      };
+      return __assign.apply(this, arguments);
+    };
+    var __read = exports2 && exports2.__read || function(o, n) {
+      var m = typeof Symbol === "function" && o[Symbol.iterator];
+      if (!m) return o;
+      var i = m.call(o), r, ar = [], e;
+      try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+      } catch (error46) {
+        e = { error: error46 };
+      } finally {
+        try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+        } finally {
+          if (e) throw e.error;
+        }
+      }
+      return ar;
+    };
+    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
+      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+      return to;
+    };
+    exports2.__esModule = true;
+    exports2.untransformValue = exports2.transformValue = exports2.isInstanceOfRegisteredClass = void 0;
+    var is_1 = require_is();
+    var util_1 = require_util();
+    function simpleTransformation(isApplicable, annotation, transform2, untransform) {
+      return {
+        isApplicable,
+        annotation,
+        transform: transform2,
+        untransform
+      };
+    }
+    var simpleRules = [
+      simpleTransformation(is_1.isUndefined, "undefined", function() {
+        return null;
+      }, function() {
+        return void 0;
+      }),
+      simpleTransformation(is_1.isBigint, "bigint", function(v) {
+        return v.toString();
+      }, function(v) {
+        if (typeof BigInt !== "undefined") {
+          return BigInt(v);
+        }
+        console.error("Please add a BigInt polyfill.");
+        return v;
+      }),
+      simpleTransformation(is_1.isDate, "Date", function(v) {
+        return v.toISOString();
+      }, function(v) {
+        return new Date(v);
+      }),
+      simpleTransformation(is_1.isError, "Error", function(v, superJson) {
+        var baseError = {
+          name: v.name,
+          message: v.message
+        };
+        superJson.allowedErrorProps.forEach(function(prop) {
+          baseError[prop] = v[prop];
+        });
+        return baseError;
+      }, function(v, superJson) {
+        var e = new Error(v.message);
+        e.name = v.name;
+        e.stack = v.stack;
+        superJson.allowedErrorProps.forEach(function(prop) {
+          e[prop] = v[prop];
+        });
+        return e;
+      }),
+      simpleTransformation(is_1.isRegExp, "regexp", function(v) {
+        return "" + v;
+      }, function(regex) {
+        var body = regex.slice(1, regex.lastIndexOf("/"));
+        var flags = regex.slice(regex.lastIndexOf("/") + 1);
+        return new RegExp(body, flags);
+      }),
+      simpleTransformation(
+        is_1.isSet,
+        "set",
+        // (sets only exist in es6+)
+        // eslint-disable-next-line es5/no-es6-methods
+        function(v) {
+          return __spreadArray([], __read(v.values()));
+        },
+        function(v) {
+          return new Set(v);
+        }
+      ),
+      simpleTransformation(is_1.isMap, "map", function(v) {
+        return __spreadArray([], __read(v.entries()));
+      }, function(v) {
+        return new Map(v);
+      }),
+      simpleTransformation(function(v) {
+        return is_1.isNaNValue(v) || is_1.isInfinite(v);
+      }, "number", function(v) {
+        if (is_1.isNaNValue(v)) {
+          return "NaN";
+        }
+        if (v > 0) {
+          return "Infinity";
+        } else {
+          return "-Infinity";
+        }
+      }, Number),
+      simpleTransformation(function(v) {
+        return v === 0 && 1 / v === -Infinity;
+      }, "number", function() {
+        return "-0";
+      }, Number),
+      simpleTransformation(is_1.isURL, "URL", function(v) {
+        return v.toString();
+      }, function(v) {
+        return new URL(v);
+      })
+    ];
+    function compositeTransformation(isApplicable, annotation, transform2, untransform) {
+      return {
+        isApplicable,
+        annotation,
+        transform: transform2,
+        untransform
+      };
+    }
+    var symbolRule = compositeTransformation(function(s, superJson) {
+      if (is_1.isSymbol(s)) {
+        var isRegistered = !!superJson.symbolRegistry.getIdentifier(s);
+        return isRegistered;
+      }
+      return false;
+    }, function(s, superJson) {
+      var identifier = superJson.symbolRegistry.getIdentifier(s);
+      return ["symbol", identifier];
+    }, function(v) {
+      return v.description;
+    }, function(_, a, superJson) {
+      var value = superJson.symbolRegistry.getValue(a[1]);
+      if (!value) {
+        throw new Error("Trying to deserialize unknown symbol");
+      }
+      return value;
+    });
+    var constructorToName = [
+      Int8Array,
+      Uint8Array,
+      Int16Array,
+      Uint16Array,
+      Int32Array,
+      Uint32Array,
+      Float32Array,
+      Float64Array,
+      Uint8ClampedArray
+    ].reduce(function(obj, ctor) {
+      obj[ctor.name] = ctor;
+      return obj;
+    }, {});
+    var typedArrayRule = compositeTransformation(is_1.isTypedArray, function(v) {
+      return ["typed-array", v.constructor.name];
+    }, function(v) {
+      return __spreadArray([], __read(v));
+    }, function(v, a) {
+      var ctor = constructorToName[a[1]];
+      if (!ctor) {
+        throw new Error("Trying to deserialize unknown typed array");
+      }
+      return new ctor(v);
+    });
+    function isInstanceOfRegisteredClass(potentialClass, superJson) {
+      if (potentialClass === null || potentialClass === void 0 ? void 0 : potentialClass.constructor) {
+        var isRegistered = !!superJson.classRegistry.getIdentifier(potentialClass.constructor);
+        return isRegistered;
+      }
+      return false;
+    }
+    exports2.isInstanceOfRegisteredClass = isInstanceOfRegisteredClass;
+    var classRule = compositeTransformation(isInstanceOfRegisteredClass, function(clazz, superJson) {
+      var identifier = superJson.classRegistry.getIdentifier(clazz.constructor);
+      return ["class", identifier];
+    }, function(clazz, superJson) {
+      var allowedProps = superJson.classRegistry.getAllowedProps(clazz.constructor);
+      if (!allowedProps) {
+        return __assign({}, clazz);
+      }
+      var result = {};
+      allowedProps.forEach(function(prop) {
+        result[prop] = clazz[prop];
+      });
+      return result;
+    }, function(v, a, superJson) {
+      var clazz = superJson.classRegistry.getValue(a[1]);
+      if (!clazz) {
+        throw new Error("Trying to deserialize unknown class - check https://github.com/blitz-js/superjson/issues/116#issuecomment-773996564");
+      }
+      return Object.assign(Object.create(clazz.prototype), v);
+    });
+    var customRule = compositeTransformation(function(value, superJson) {
+      return !!superJson.customTransformerRegistry.findApplicable(value);
+    }, function(value, superJson) {
+      var transformer = superJson.customTransformerRegistry.findApplicable(value);
+      return ["custom", transformer.name];
+    }, function(value, superJson) {
+      var transformer = superJson.customTransformerRegistry.findApplicable(value);
+      return transformer.serialize(value);
+    }, function(v, a, superJson) {
+      var transformer = superJson.customTransformerRegistry.findByName(a[1]);
+      if (!transformer) {
+        throw new Error("Trying to deserialize unknown custom value");
+      }
+      return transformer.deserialize(v);
+    });
+    var compositeRules = [classRule, symbolRule, customRule, typedArrayRule];
+    var transformValue = function(value, superJson) {
+      var applicableCompositeRule = util_1.findArr(compositeRules, function(rule) {
+        return rule.isApplicable(value, superJson);
+      });
+      if (applicableCompositeRule) {
+        return {
+          value: applicableCompositeRule.transform(value, superJson),
+          type: applicableCompositeRule.annotation(value, superJson)
+        };
+      }
+      var applicableSimpleRule = util_1.findArr(simpleRules, function(rule) {
+        return rule.isApplicable(value, superJson);
+      });
+      if (applicableSimpleRule) {
+        return {
+          value: applicableSimpleRule.transform(value, superJson),
+          type: applicableSimpleRule.annotation
+        };
+      }
+      return void 0;
+    };
+    exports2.transformValue = transformValue;
+    var simpleRulesByAnnotation = {};
+    simpleRules.forEach(function(rule) {
+      simpleRulesByAnnotation[rule.annotation] = rule;
+    });
+    var untransformValue = function(json3, type, superJson) {
+      if (is_1.isArray(type)) {
+        switch (type[0]) {
+          case "symbol":
+            return symbolRule.untransform(json3, type, superJson);
+          case "class":
+            return classRule.untransform(json3, type, superJson);
+          case "custom":
+            return customRule.untransform(json3, type, superJson);
+          case "typed-array":
+            return typedArrayRule.untransform(json3, type, superJson);
+          default:
+            throw new Error("Unknown transformation: " + type);
+        }
+      } else {
+        var transformation = simpleRulesByAnnotation[type];
+        if (!transformation) {
+          throw new Error("Unknown transformation: " + type);
+        }
+        return transformation.untransform(json3, superJson);
+      }
+    };
+    exports2.untransformValue = untransformValue;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/accessDeep.js
+var require_accessDeep = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/accessDeep.js"(exports2) {
+    "use strict";
+    exports2.__esModule = true;
+    exports2.setDeep = exports2.getDeep = void 0;
+    var is_1 = require_is();
+    var util_1 = require_util();
+    var getNthKey = function(value, n) {
+      var keys = value.keys();
+      while (n > 0) {
+        keys.next();
+        n--;
+      }
+      return keys.next().value;
+    };
+    function validatePath(path) {
+      if (util_1.includes(path, "__proto__")) {
+        throw new Error("__proto__ is not allowed as a property");
+      }
+      if (util_1.includes(path, "prototype")) {
+        throw new Error("prototype is not allowed as a property");
+      }
+      if (util_1.includes(path, "constructor")) {
+        throw new Error("constructor is not allowed as a property");
+      }
+    }
+    var getDeep = function(object2, path) {
+      validatePath(path);
+      for (var i = 0; i < path.length; i++) {
+        var key = path[i];
+        if (is_1.isSet(object2)) {
+          object2 = getNthKey(object2, +key);
+        } else if (is_1.isMap(object2)) {
+          var row = +key;
+          var type = +path[++i] === 0 ? "key" : "value";
+          var keyOfRow = getNthKey(object2, row);
+          switch (type) {
+            case "key":
+              object2 = keyOfRow;
+              break;
+            case "value":
+              object2 = object2.get(keyOfRow);
+              break;
+          }
+        } else {
+          object2 = object2[key];
+        }
+      }
+      return object2;
+    };
+    exports2.getDeep = getDeep;
+    var setDeep = function(object2, path, mapper) {
+      validatePath(path);
+      if (path.length === 0) {
+        return mapper(object2);
+      }
+      var parent = object2;
+      for (var i = 0; i < path.length - 1; i++) {
+        var key = path[i];
+        if (is_1.isArray(parent)) {
+          var index = +key;
+          parent = parent[index];
+        } else if (is_1.isPlainObject(parent)) {
+          parent = parent[key];
+        } else if (is_1.isSet(parent)) {
+          var row = +key;
+          parent = getNthKey(parent, row);
+        } else if (is_1.isMap(parent)) {
+          var isEnd = i === path.length - 2;
+          if (isEnd) {
+            break;
+          }
+          var row = +key;
+          var type = +path[++i] === 0 ? "key" : "value";
+          var keyOfRow = getNthKey(parent, row);
+          switch (type) {
+            case "key":
+              parent = keyOfRow;
+              break;
+            case "value":
+              parent = parent.get(keyOfRow);
+              break;
+          }
+        }
+      }
+      var lastKey = path[path.length - 1];
+      if (is_1.isArray(parent)) {
+        parent[+lastKey] = mapper(parent[+lastKey]);
+      } else if (is_1.isPlainObject(parent)) {
+        parent[lastKey] = mapper(parent[lastKey]);
+      }
+      if (is_1.isSet(parent)) {
+        var oldValue = getNthKey(parent, +lastKey);
+        var newValue = mapper(oldValue);
+        if (oldValue !== newValue) {
+          parent["delete"](oldValue);
+          parent.add(newValue);
+        }
+      }
+      if (is_1.isMap(parent)) {
+        var row = +path[path.length - 2];
+        var keyToRow = getNthKey(parent, row);
+        var type = +lastKey === 0 ? "key" : "value";
+        switch (type) {
+          case "key": {
+            var newKey = mapper(keyToRow);
+            parent.set(newKey, parent.get(keyToRow));
+            if (newKey !== keyToRow) {
+              parent["delete"](keyToRow);
+            }
+            break;
+          }
+          case "value": {
+            parent.set(keyToRow, mapper(parent.get(keyToRow)));
+            break;
+          }
+        }
+      }
+      return object2;
+    };
+    exports2.setDeep = setDeep;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/plainer.js
+var require_plainer = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/plainer.js"(exports2) {
+    "use strict";
+    var __read = exports2 && exports2.__read || function(o, n) {
+      var m = typeof Symbol === "function" && o[Symbol.iterator];
+      if (!m) return o;
+      var i = m.call(o), r, ar = [], e;
+      try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+      } catch (error46) {
+        e = { error: error46 };
+      } finally {
+        try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+        } finally {
+          if (e) throw e.error;
+        }
+      }
+      return ar;
+    };
+    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
+      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+      return to;
+    };
+    exports2.__esModule = true;
+    exports2.walker = exports2.generateReferentialEqualityAnnotations = exports2.applyReferentialEqualityAnnotations = exports2.applyValueAnnotations = void 0;
+    var is_1 = require_is();
+    var pathstringifier_1 = require_pathstringifier();
+    var transformer_1 = require_transformer();
+    var util_1 = require_util();
+    var pathstringifier_2 = require_pathstringifier();
+    var accessDeep_1 = require_accessDeep();
+    function traverse(tree, walker2, origin) {
+      if (origin === void 0) {
+        origin = [];
+      }
+      if (!tree) {
+        return;
+      }
+      if (!is_1.isArray(tree)) {
+        util_1.forEach(tree, function(subtree, key) {
+          return traverse(subtree, walker2, __spreadArray(__spreadArray([], __read(origin)), __read(pathstringifier_2.parsePath(key))));
+        });
+        return;
+      }
+      var _a = __read(tree, 2), nodeValue = _a[0], children = _a[1];
+      if (children) {
+        util_1.forEach(children, function(child, key) {
+          traverse(child, walker2, __spreadArray(__spreadArray([], __read(origin)), __read(pathstringifier_2.parsePath(key))));
+        });
+      }
+      walker2(nodeValue, origin);
+    }
+    function applyValueAnnotations(plain, annotations, superJson) {
+      traverse(annotations, function(type, path) {
+        plain = accessDeep_1.setDeep(plain, path, function(v) {
+          return transformer_1.untransformValue(v, type, superJson);
+        });
+      });
+      return plain;
+    }
+    exports2.applyValueAnnotations = applyValueAnnotations;
+    function applyReferentialEqualityAnnotations(plain, annotations) {
+      function apply(identicalPaths, path) {
+        var object2 = accessDeep_1.getDeep(plain, pathstringifier_2.parsePath(path));
+        identicalPaths.map(pathstringifier_2.parsePath).forEach(function(identicalObjectPath) {
+          plain = accessDeep_1.setDeep(plain, identicalObjectPath, function() {
+            return object2;
+          });
+        });
+      }
+      if (is_1.isArray(annotations)) {
+        var _a = __read(annotations, 2), root = _a[0], other = _a[1];
+        root.forEach(function(identicalPath) {
+          plain = accessDeep_1.setDeep(plain, pathstringifier_2.parsePath(identicalPath), function() {
+            return plain;
+          });
+        });
+        if (other) {
+          util_1.forEach(other, apply);
+        }
+      } else {
+        util_1.forEach(annotations, apply);
+      }
+      return plain;
+    }
+    exports2.applyReferentialEqualityAnnotations = applyReferentialEqualityAnnotations;
+    var isDeep = function(object2, superJson) {
+      return is_1.isPlainObject(object2) || is_1.isArray(object2) || is_1.isMap(object2) || is_1.isSet(object2) || transformer_1.isInstanceOfRegisteredClass(object2, superJson);
+    };
+    function addIdentity(object2, path, identities) {
+      var existingSet = identities.get(object2);
+      if (existingSet) {
+        existingSet.push(path);
+      } else {
+        identities.set(object2, [path]);
+      }
+    }
+    function generateReferentialEqualityAnnotations(identitites, dedupe) {
+      var result = {};
+      var rootEqualityPaths = void 0;
+      identitites.forEach(function(paths) {
+        if (paths.length <= 1) {
+          return;
+        }
+        if (!dedupe) {
+          paths = paths.map(function(path) {
+            return path.map(String);
+          }).sort(function(a, b) {
+            return a.length - b.length;
+          });
+        }
+        var _a = __read(paths), representativePath = _a[0], identicalPaths = _a.slice(1);
+        if (representativePath.length === 0) {
+          rootEqualityPaths = identicalPaths.map(pathstringifier_1.stringifyPath);
+        } else {
+          result[pathstringifier_1.stringifyPath(representativePath)] = identicalPaths.map(pathstringifier_1.stringifyPath);
+        }
+      });
+      if (rootEqualityPaths) {
+        if (is_1.isEmptyObject(result)) {
+          return [rootEqualityPaths];
+        } else {
+          return [rootEqualityPaths, result];
+        }
+      } else {
+        return is_1.isEmptyObject(result) ? void 0 : result;
+      }
+    }
+    exports2.generateReferentialEqualityAnnotations = generateReferentialEqualityAnnotations;
+    var walker = function(object2, identities, superJson, dedupe, path, objectsInThisPath, seenObjects) {
+      var _a;
+      if (path === void 0) {
+        path = [];
+      }
+      if (objectsInThisPath === void 0) {
+        objectsInThisPath = [];
+      }
+      if (seenObjects === void 0) {
+        seenObjects = /* @__PURE__ */ new Map();
+      }
+      var primitive = is_1.isPrimitive(object2);
+      if (!primitive) {
+        addIdentity(object2, path, identities);
+        var seen = seenObjects.get(object2);
+        if (seen) {
+          return dedupe ? {
+            transformedValue: null
+          } : seen;
+        }
+      }
+      if (!isDeep(object2, superJson)) {
+        var transformed_1 = transformer_1.transformValue(object2, superJson);
+        var result_1 = transformed_1 ? {
+          transformedValue: transformed_1.value,
+          annotations: [transformed_1.type]
+        } : {
+          transformedValue: object2
+        };
+        if (!primitive) {
+          seenObjects.set(object2, result_1);
+        }
+        return result_1;
+      }
+      if (util_1.includes(objectsInThisPath, object2)) {
+        return {
+          transformedValue: null
+        };
+      }
+      var transformationResult = transformer_1.transformValue(object2, superJson);
+      var transformed = (_a = transformationResult === null || transformationResult === void 0 ? void 0 : transformationResult.value) !== null && _a !== void 0 ? _a : object2;
+      var transformedValue = is_1.isArray(transformed) ? [] : {};
+      var innerAnnotations = {};
+      util_1.forEach(transformed, function(value, index) {
+        var recursiveResult = exports2.walker(value, identities, superJson, dedupe, __spreadArray(__spreadArray([], __read(path)), [index]), __spreadArray(__spreadArray([], __read(objectsInThisPath)), [object2]), seenObjects);
+        transformedValue[index] = recursiveResult.transformedValue;
+        if (is_1.isArray(recursiveResult.annotations)) {
+          innerAnnotations[index] = recursiveResult.annotations;
+        } else if (is_1.isPlainObject(recursiveResult.annotations)) {
+          util_1.forEach(recursiveResult.annotations, function(tree, key) {
+            innerAnnotations[pathstringifier_1.escapeKey(index) + "." + key] = tree;
+          });
+        }
+      });
+      var result = is_1.isEmptyObject(innerAnnotations) ? {
+        transformedValue,
+        annotations: !!transformationResult ? [transformationResult.type] : void 0
+      } : {
+        transformedValue,
+        annotations: !!transformationResult ? [transformationResult.type, innerAnnotations] : innerAnnotations
+      };
+      if (!primitive) {
+        seenObjects.set(object2, result);
+      }
+      return result;
+    };
+    exports2.walker = walker;
+  }
+});
+
+// node_modules/.pnpm/is-what@4.1.16/node_modules/is-what/dist/cjs/index.cjs
+var require_cjs = __commonJS({
+  "node_modules/.pnpm/is-what@4.1.16/node_modules/is-what/dist/cjs/index.cjs"(exports2) {
+    "use strict";
+    function getType(payload) {
+      return Object.prototype.toString.call(payload).slice(8, -1);
+    }
+    function isAnyObject(payload) {
+      return getType(payload) === "Object";
+    }
+    function isArray(payload) {
+      return getType(payload) === "Array";
+    }
+    function isBlob(payload) {
+      return getType(payload) === "Blob";
+    }
+    function isBoolean(payload) {
+      return getType(payload) === "Boolean";
+    }
+    function isDate(payload) {
+      return getType(payload) === "Date" && !isNaN(payload);
+    }
+    function isEmptyArray(payload) {
+      return isArray(payload) && payload.length === 0;
+    }
+    function isPlainObject3(payload) {
+      if (getType(payload) !== "Object")
+        return false;
+      const prototype = Object.getPrototypeOf(payload);
+      return !!prototype && prototype.constructor === Object && prototype === Object.prototype;
+    }
+    function isEmptyObject(payload) {
+      return isPlainObject3(payload) && Object.keys(payload).length === 0;
+    }
+    function isEmptyString(payload) {
+      return payload === "";
+    }
+    function isError(payload) {
+      return getType(payload) === "Error" || payload instanceof Error;
+    }
+    function isFile(payload) {
+      return getType(payload) === "File";
+    }
+    function isFullArray(payload) {
+      return isArray(payload) && payload.length > 0;
+    }
+    function isFullObject(payload) {
+      return isPlainObject3(payload) && Object.keys(payload).length > 0;
+    }
+    function isString(payload) {
+      return getType(payload) === "String";
+    }
+    function isFullString(payload) {
+      return isString(payload) && payload !== "";
+    }
+    function isFunction2(payload) {
+      return typeof payload === "function";
+    }
+    function isType(payload, type) {
+      if (!(type instanceof Function)) {
+        throw new TypeError("Type must be a function");
+      }
+      if (!Object.prototype.hasOwnProperty.call(type, "prototype")) {
+        throw new TypeError("Type is not a class");
+      }
+      const name = type.name;
+      return getType(payload) === name || Boolean(payload && payload.constructor === type);
+    }
+    function isInstanceOf(value, classOrClassName) {
+      if (typeof classOrClassName === "function") {
+        for (let p = value; p; p = Object.getPrototypeOf(p)) {
+          if (isType(p, classOrClassName)) {
+            return true;
+          }
+        }
+        return false;
+      } else {
+        for (let p = value; p; p = Object.getPrototypeOf(p)) {
+          if (getType(p) === classOrClassName) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }
+    function isMap(payload) {
+      return getType(payload) === "Map";
+    }
+    function isNaNValue(payload) {
+      return getType(payload) === "Number" && isNaN(payload);
+    }
+    function isNumber(payload) {
+      return getType(payload) === "Number" && !isNaN(payload);
+    }
+    function isNegativeNumber(payload) {
+      return isNumber(payload) && payload < 0;
+    }
+    function isNull2(payload) {
+      return getType(payload) === "Null";
+    }
+    function isOneOf(a, b, c, d, e) {
+      return (value) => a(value) || b(value) || !!c && c(value) || !!d && d(value) || !!e && e(value);
+    }
+    function isUndefined(payload) {
+      return getType(payload) === "Undefined";
+    }
+    var isNullOrUndefined = isOneOf(isNull2, isUndefined);
+    function isObject3(payload) {
+      return isPlainObject3(payload);
+    }
+    function isObjectLike2(payload) {
+      return isAnyObject(payload);
+    }
+    function isPositiveNumber(payload) {
+      return isNumber(payload) && payload > 0;
+    }
+    function isSymbol(payload) {
+      return getType(payload) === "Symbol";
+    }
+    function isPrimitive(payload) {
+      return isBoolean(payload) || isNull2(payload) || isUndefined(payload) || isNumber(payload) || isString(payload) || isSymbol(payload);
+    }
+    function isPromise2(payload) {
+      return getType(payload) === "Promise";
+    }
+    function isRegExp(payload) {
+      return getType(payload) === "RegExp";
+    }
+    function isSet(payload) {
+      return getType(payload) === "Set";
+    }
+    function isWeakMap(payload) {
+      return getType(payload) === "WeakMap";
+    }
+    function isWeakSet(payload) {
+      return getType(payload) === "WeakSet";
+    }
+    exports2.getType = getType;
+    exports2.isAnyObject = isAnyObject;
+    exports2.isArray = isArray;
+    exports2.isBlob = isBlob;
+    exports2.isBoolean = isBoolean;
+    exports2.isDate = isDate;
+    exports2.isEmptyArray = isEmptyArray;
+    exports2.isEmptyObject = isEmptyObject;
+    exports2.isEmptyString = isEmptyString;
+    exports2.isError = isError;
+    exports2.isFile = isFile;
+    exports2.isFullArray = isFullArray;
+    exports2.isFullObject = isFullObject;
+    exports2.isFullString = isFullString;
+    exports2.isFunction = isFunction2;
+    exports2.isInstanceOf = isInstanceOf;
+    exports2.isMap = isMap;
+    exports2.isNaNValue = isNaNValue;
+    exports2.isNegativeNumber = isNegativeNumber;
+    exports2.isNull = isNull2;
+    exports2.isNullOrUndefined = isNullOrUndefined;
+    exports2.isNumber = isNumber;
+    exports2.isObject = isObject3;
+    exports2.isObjectLike = isObjectLike2;
+    exports2.isOneOf = isOneOf;
+    exports2.isPlainObject = isPlainObject3;
+    exports2.isPositiveNumber = isPositiveNumber;
+    exports2.isPrimitive = isPrimitive;
+    exports2.isPromise = isPromise2;
+    exports2.isRegExp = isRegExp;
+    exports2.isSet = isSet;
+    exports2.isString = isString;
+    exports2.isSymbol = isSymbol;
+    exports2.isType = isType;
+    exports2.isUndefined = isUndefined;
+    exports2.isWeakMap = isWeakMap;
+    exports2.isWeakSet = isWeakSet;
+  }
+});
+
+// node_modules/.pnpm/copy-anything@3.0.5/node_modules/copy-anything/dist/cjs/index.cjs
+var require_cjs2 = __commonJS({
+  "node_modules/.pnpm/copy-anything@3.0.5/node_modules/copy-anything/dist/cjs/index.cjs"(exports2) {
+    "use strict";
+    var isWhat = require_cjs();
+    function assignProp2(carry, key, newVal, originalObject, includeNonenumerable) {
+      const propType = {}.propertyIsEnumerable.call(originalObject, key) ? "enumerable" : "nonenumerable";
+      if (propType === "enumerable")
+        carry[key] = newVal;
+      if (includeNonenumerable && propType === "nonenumerable") {
+        Object.defineProperty(carry, key, {
+          value: newVal,
+          enumerable: false,
+          writable: true,
+          configurable: true
+        });
+      }
+    }
+    function copy(target, options = {}) {
+      if (isWhat.isArray(target)) {
+        return target.map((item) => copy(item, options));
+      }
+      if (!isWhat.isPlainObject(target)) {
+        return target;
+      }
+      const props = Object.getOwnPropertyNames(target);
+      const symbols = Object.getOwnPropertySymbols(target);
+      return [...props, ...symbols].reduce((carry, key) => {
+        if (isWhat.isArray(options.props) && !options.props.includes(key)) {
+          return carry;
+        }
+        const val = target[key];
+        const newVal = copy(val, options);
+        assignProp2(carry, key, newVal, target, options.nonenumerable);
+        return carry;
+      }, {});
+    }
+    exports2.copy = copy;
+  }
+});
+
+// node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/index.js
+var require_dist3 = __commonJS({
+  "node_modules/.pnpm/superjson@1.13.3/node_modules/superjson/dist/index.js"(exports2) {
+    "use strict";
+    var __assign = exports2 && exports2.__assign || function() {
+      __assign = Object.assign || function(t2) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t2[p] = s[p];
+        }
+        return t2;
+      };
+      return __assign.apply(this, arguments);
+    };
+    var __read = exports2 && exports2.__read || function(o, n) {
+      var m = typeof Symbol === "function" && o[Symbol.iterator];
+      if (!m) return o;
+      var i = m.call(o), r, ar = [], e;
+      try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+      } catch (error46) {
+        e = { error: error46 };
+      } finally {
+        try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+        } finally {
+          if (e) throw e.error;
+        }
+      }
+      return ar;
+    };
+    var __spreadArray = exports2 && exports2.__spreadArray || function(to, from) {
+      for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+      return to;
+    };
+    exports2.__esModule = true;
+    exports2.allowErrorProps = exports2.registerSymbol = exports2.registerCustom = exports2.registerClass = exports2.parse = exports2.stringify = exports2.deserialize = exports2.serialize = exports2.SuperJSON = void 0;
+    var class_registry_1 = require_class_registry();
+    var registry_1 = require_registry();
+    var custom_transformer_registry_1 = require_custom_transformer_registry();
+    var plainer_1 = require_plainer();
+    var copy_anything_1 = require_cjs2();
+    var SuperJSON = (
+      /** @class */
+      (function() {
+        function SuperJSON2(_a) {
+          var _b = _a === void 0 ? {} : _a, _c = _b.dedupe, dedupe = _c === void 0 ? false : _c;
+          this.classRegistry = new class_registry_1.ClassRegistry();
+          this.symbolRegistry = new registry_1.Registry(function(s) {
+            var _a2;
+            return (_a2 = s.description) !== null && _a2 !== void 0 ? _a2 : "";
+          });
+          this.customTransformerRegistry = new custom_transformer_registry_1.CustomTransformerRegistry();
+          this.allowedErrorProps = [];
+          this.dedupe = dedupe;
+        }
+        SuperJSON2.prototype.serialize = function(object2) {
+          var identities = /* @__PURE__ */ new Map();
+          var output = plainer_1.walker(object2, identities, this, this.dedupe);
+          var res = {
+            json: output.transformedValue
+          };
+          if (output.annotations) {
+            res.meta = __assign(__assign({}, res.meta), { values: output.annotations });
+          }
+          var equalityAnnotations = plainer_1.generateReferentialEqualityAnnotations(identities, this.dedupe);
+          if (equalityAnnotations) {
+            res.meta = __assign(__assign({}, res.meta), { referentialEqualities: equalityAnnotations });
+          }
+          return res;
+        };
+        SuperJSON2.prototype.deserialize = function(payload) {
+          var json3 = payload.json, meta = payload.meta;
+          var result = copy_anything_1.copy(json3);
+          if (meta === null || meta === void 0 ? void 0 : meta.values) {
+            result = plainer_1.applyValueAnnotations(result, meta.values, this);
+          }
+          if (meta === null || meta === void 0 ? void 0 : meta.referentialEqualities) {
+            result = plainer_1.applyReferentialEqualityAnnotations(result, meta.referentialEqualities);
+          }
+          return result;
+        };
+        SuperJSON2.prototype.stringify = function(object2) {
+          return JSON.stringify(this.serialize(object2));
+        };
+        SuperJSON2.prototype.parse = function(string4) {
+          return this.deserialize(JSON.parse(string4));
+        };
+        SuperJSON2.prototype.registerClass = function(v, options) {
+          this.classRegistry.register(v, options);
+        };
+        SuperJSON2.prototype.registerSymbol = function(v, identifier) {
+          this.symbolRegistry.register(v, identifier);
+        };
+        SuperJSON2.prototype.registerCustom = function(transformer, name) {
+          this.customTransformerRegistry.register(__assign({ name }, transformer));
+        };
+        SuperJSON2.prototype.allowErrorProps = function() {
+          var _a;
+          var props = [];
+          for (var _i = 0; _i < arguments.length; _i++) {
+            props[_i] = arguments[_i];
+          }
+          (_a = this.allowedErrorProps).push.apply(_a, __spreadArray([], __read(props)));
+        };
+        SuperJSON2.defaultInstance = new SuperJSON2();
+        SuperJSON2.serialize = SuperJSON2.defaultInstance.serialize.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.deserialize = SuperJSON2.defaultInstance.deserialize.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.stringify = SuperJSON2.defaultInstance.stringify.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.parse = SuperJSON2.defaultInstance.parse.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.registerClass = SuperJSON2.defaultInstance.registerClass.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.registerSymbol = SuperJSON2.defaultInstance.registerSymbol.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.registerCustom = SuperJSON2.defaultInstance.registerCustom.bind(SuperJSON2.defaultInstance);
+        SuperJSON2.allowErrorProps = SuperJSON2.defaultInstance.allowErrorProps.bind(SuperJSON2.defaultInstance);
+        return SuperJSON2;
+      })()
+    );
+    exports2.SuperJSON = SuperJSON;
+    exports2["default"] = SuperJSON;
+    exports2.serialize = SuperJSON.serialize;
+    exports2.deserialize = SuperJSON.deserialize;
+    exports2.stringify = SuperJSON.stringify;
+    exports2.parse = SuperJSON.parse;
+    exports2.registerClass = SuperJSON.registerClass;
+    exports2.registerCustom = SuperJSON.registerCustom;
+    exports2.registerSymbol = SuperJSON.registerSymbol;
+    exports2.allowErrorProps = SuperJSON.allowErrorProps;
   }
 });
 
@@ -37984,6 +38008,9 @@ function createExpressMiddleware(opts) {
     }, opts)));
   };
 }
+
+// server/_core/oauth.ts
+var import_crypto = require("crypto");
 
 // node_modules/.pnpm/jose@6.1.0/node_modules/jose/dist/webapi/lib/buffer_utils.js
 var encoder = new TextEncoder();
@@ -46490,6 +46517,14 @@ var payoutBatch = pgTable("payout_batch", {
   exportedAt: timestamp("exported_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+var authResetCode = pgTable("auth_reset_code", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
 var syncState = pgTable("sync_state", {
   id: serial("id").primaryKey(),
   source: text("source").notNull().unique(),
@@ -46563,6 +46598,41 @@ async function upsertUser(user) {
   } catch (error46) {
     console.warn("[Database] Failed to upsert user (non-fatal):", error46.message);
   }
+}
+async function getUserByEmail(email3) {
+  const db = await getDb();
+  if (!db) return void 0;
+  const result = await db.select().from(users).where(sql`lower(${users.email}) = lower(${email3})`).limit(1);
+  return result.length > 0 ? result[0] : void 0;
+}
+async function countRecentResetCodes(email3, sinceMs) {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ n: sql`count(*)` }).from(authResetCode).where(and(sql`lower(${authResetCode.email}) = lower(${email3})`, gt(authResetCode.createdAt, new Date(Date.now() - sinceMs))));
+  return Number(rows[0]?.n ?? 0);
+}
+async function createResetCode(email3, codeHash, ttlMs) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(authResetCode).values({ email: email3, codeHash, expiresAt: new Date(Date.now() + ttlMs) });
+}
+async function findValidResetCode(email3, codeHash) {
+  const db = await getDb();
+  if (!db) return void 0;
+  const rows = await db.select().from(authResetCode).where(
+    and(
+      sql`lower(${authResetCode.email}) = lower(${email3})`,
+      eq(authResetCode.codeHash, codeHash),
+      eq(authResetCode.used, false),
+      gt(authResetCode.expiresAt, /* @__PURE__ */ new Date())
+    )
+  ).orderBy(desc(authResetCode.createdAt)).limit(1);
+  return rows[0];
+}
+async function markResetCodeUsed(id) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(authResetCode).set({ used: true }).where(eq(authResetCode.id, id));
 }
 async function getUserByOpenId(openId) {
   const db = await getDb();
@@ -46680,36 +46750,184 @@ function getSessionCookieOptions(req) {
 }
 
 // server/_core/oauth.ts
+init_email();
 init_env();
+
+// server/_core/supabaseAuth.ts
+init_env();
+function supabaseAuthConfigured() {
+  return !!(ENV.supabaseUrl && ENV.supabaseAnonKey && ENV.supabaseServiceRoleKey);
+}
+function authUrl(path) {
+  return `${ENV.supabaseUrl.replace(/\/$/, "")}/auth/v1${path}`;
+}
+async function parseError(res, fallback) {
+  const body = await res.json().catch(() => ({}));
+  return body.msg ?? body.message ?? body.error_description ?? fallback;
+}
+async function signInWithPassword(email3, password) {
+  const res = await fetch(authUrl("/token?grant_type=password"), {
+    method: "POST",
+    headers: { apikey: ENV.supabaseAnonKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email3, password })
+  });
+  if (res.status === 400 || res.status === 401) return null;
+  if (!res.ok) throw new Error(await parseError(res, `auth sign-in failed (${res.status})`));
+  const body = await res.json();
+  return body.user ?? null;
+}
+async function adminCreateUser(opts) {
+  const res = await fetch(authUrl("/admin/users"), {
+    method: "POST",
+    headers: {
+      apikey: ENV.supabaseServiceRoleKey,
+      Authorization: `Bearer ${ENV.supabaseServiceRoleKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      email: opts.email,
+      password: opts.password,
+      email_confirm: true,
+      user_metadata: { name: opts.name }
+    })
+  });
+  if (res.status === 422 || res.status === 409) {
+    const err = new Error("An account with this email already exists.");
+    err.code = "exists";
+    throw err;
+  }
+  if (!res.ok) throw new Error(await parseError(res, `auth user creation failed (${res.status})`));
+  return await res.json();
+}
+async function adminUpdatePassword(userId, newPassword) {
+  const res = await fetch(authUrl(`/admin/users/${userId}`), {
+    method: "PUT",
+    headers: {
+      apikey: ENV.supabaseServiceRoleKey,
+      Authorization: `Bearer ${ENV.supabaseServiceRoleKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ password: newPassword })
+  });
+  if (!res.ok) throw new Error(await parseError(res, `password update failed (${res.status})`));
+}
+
+// server/_core/oauth.ts
 function getSessionSecret() {
   return new TextEncoder().encode(ENV.cookieSecret);
 }
-var ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1e3;
+var THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1e3;
+var RESET_CODE_TTL_MS = 15 * 60 * 1e3;
+var MAX_RESET_CODES_PER_HOUR = 3;
+var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function sha256(s) {
+  return (0, import_crypto.createHash)("sha256").update(s).digest("hex");
+}
+async function issueSession(req, res, openId, name) {
+  const expirationSeconds = Math.floor((Date.now() + THIRTY_DAYS_MS) / 1e3);
+  const token = await new SignJWT({ openId, appId: "tot-training", name }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(getSessionSecret());
+  const cookieOptions = getSessionCookieOptions(req);
+  res.cookie("tot_session", token, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
+}
+async function establishUser(req, res, authUser, fallbackName) {
+  const openId = `sb_${authUser.id}`;
+  const name = authUser.user_metadata?.name ?? fallbackName ?? authUser.email.split("@")[0];
+  await upsertUser({
+    openId,
+    name,
+    email: authUser.email,
+    loginMethod: "supabase",
+    lastSignedIn: /* @__PURE__ */ new Date()
+  });
+  await issueSession(req, res, openId, name);
+  return name;
+}
 function registerOAuthRoutes(app2) {
+  if (!supabaseAuthConfigured()) {
+    console.error(
+      "[auth] SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are not all set \u2014 registration and login will fail until they are configured."
+    );
+  }
+  app2.post("/api/auth/register", async (req, res) => {
+    try {
+      const { firstName, lastName, email: email3, password, enrollmentCode } = req.body;
+      if (!enrollmentCode || enrollmentCode !== ENV.trainingPassword) {
+        return res.status(401).json({ error: "Invalid enrollment code. Contact your training coordinator." });
+      }
+      const first = (firstName ?? "").trim();
+      const last = (lastName ?? "").trim();
+      if (!first || !last) return res.status(400).json({ error: "First and last name are required." });
+      if (!email3 || !EMAIL_RE.test(email3.trim())) return res.status(400).json({ error: "A valid email is required." });
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters." });
+      }
+      const name = `${first} ${last}`;
+      let authUser;
+      try {
+        authUser = await adminCreateUser({ email: email3.trim(), password, name });
+      } catch (e) {
+        if (e.code === "exists") {
+          return res.status(409).json({ error: "An account with this email already exists \u2014 sign in instead." });
+        }
+        throw e;
+      }
+      const finalName = await establishUser(req, res, authUser, name);
+      res.json({ success: true, name: finalName });
+    } catch (e) {
+      console.error("[auth] register failed:", e);
+      res.status(500).json({ error: "Registration failed. Please try again." });
+    }
+  });
   app2.post("/api/auth/login", async (req, res) => {
-    const { password, name } = req.body;
-    if (!password || password !== ENV.trainingPassword) {
-      res.status(401).json({ error: "Incorrect password" });
-      return;
+    try {
+      const { email: email3, password } = req.body;
+      if (!email3 || !password) return res.status(400).json({ error: "Email and password are required." });
+      const authUser = await signInWithPassword(email3.trim(), password);
+      if (!authUser) return res.status(401).json({ error: "Incorrect email or password." });
+      const name = await establishUser(req, res, authUser);
+      res.json({ success: true, name });
+    } catch (e) {
+      console.error("[auth] login failed:", e);
+      res.status(500).json({ error: "Sign-in failed. Please try again." });
     }
-    const safeName = (name ?? "ambassador").trim().toLowerCase().replace(/\s+/g, "_");
-    const openId = `pwd_${safeName}`;
-    if (process.env.DATABASE_URL) {
-      await upsertUser({
-        openId,
-        name: name ?? "Ambassador",
-        email: null,
-        loginMethod: "password",
-        lastSignedIn: /* @__PURE__ */ new Date()
-      });
+  });
+  app2.post("/api/auth/forgot", async (req, res) => {
+    try {
+      const { email: email3 } = req.body;
+      if (!email3 || !EMAIL_RE.test(email3.trim())) {
+        return res.status(400).json({ error: "A valid email is required." });
+      }
+      const user = await getUserByEmail(email3.trim());
+      if (user?.email) {
+        const recent = await countRecentResetCodes(user.email, 60 * 60 * 1e3);
+        if (recent < MAX_RESET_CODES_PER_HOUR) {
+          const code = String((0, import_crypto.randomInt)(0, 1e6)).padStart(6, "0");
+          await createResetCode(user.email, sha256(code), RESET_CODE_TTL_MS);
+          await sendPasswordResetCode({ to: user.email, code });
+        }
+      }
+      res.json({ success: true });
+    } catch (e) {
+      console.error("[auth] forgot failed:", e);
+      res.json({ success: true });
     }
-    const issuedAt = Date.now();
-    const expiresInMs = ONE_YEAR_MS;
-    const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
-    const token = await new SignJWT({ openId, appId: "tot-training", name: name ?? "Ambassador" }).setProtectedHeader({ alg: "HS256", typ: "JWT" }).setExpirationTime(expirationSeconds).sign(getSessionSecret());
-    const cookieOptions = getSessionCookieOptions(req);
-    res.cookie("tot_session", token, { ...cookieOptions, maxAge: expiresInMs });
-    res.json({ success: true, name: name ?? "Ambassador" });
+  });
+  app2.post("/api/auth/reset", async (req, res) => {
+    try {
+      const { email: email3, code, newPassword } = req.body;
+      if (!email3 || !code || !newPassword) return res.status(400).json({ error: "Missing fields." });
+      if (newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
+      const row = await findValidResetCode(email3.trim(), sha256(code.trim()));
+      if (!row) return res.status(400).json({ error: "Invalid or expired code." });
+      const user = await getUserByEmail(email3.trim());
+      if (!user?.openId.startsWith("sb_")) return res.status(400).json({ error: "Invalid or expired code." });
+      await adminUpdatePassword(user.openId.slice(3), newPassword);
+      await markResetCodeUsed(row.id);
+      res.json({ success: true });
+    } catch (e) {
+      console.error("[auth] reset failed:", e);
+      res.status(500).json({ error: "Password reset failed. Please try again." });
+    }
   });
   app2.post("/api/auth/logout", (req, res) => {
     const cookieOptions = getSessionCookieOptions(req);
@@ -46722,7 +46940,7 @@ function registerOAuthRoutes(app2) {
 init_env();
 
 // server/crmDb.ts
-var import_crypto = require("crypto");
+var import_crypto2 = require("crypto");
 async function requireDb() {
   const db = await getDb();
   if (!db) throw new Error("CRM database not available");
@@ -46731,7 +46949,7 @@ async function requireDb() {
 function codeFromName(name) {
   const base = (name ?? "amb").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "AMB";
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const b = (0, import_crypto.randomBytes)(4);
+  const b = (0, import_crypto2.randomBytes)(4);
   let suffix = "";
   for (let i = 0; i < 4; i++) suffix += alphabet[b[i] % alphabet.length];
   return `${base}-${suffix}`;
@@ -47800,7 +48018,7 @@ __export(core_exports2, {
   toJSONSchema: () => toJSONSchema,
   treeifyError: () => treeifyError,
   util: () => util_exports,
-  version: () => version2
+  version: () => version3
 });
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/core/core.js
@@ -49458,7 +49676,7 @@ var Doc = class {
 };
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/core/versions.js
-var version2 = {
+var version3 = {
   major: 4,
   minor: 1,
   patch: 12
@@ -49470,7 +49688,7 @@ var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   inst ?? (inst = {});
   inst._zod.def = def;
   inst._zod.bag = inst._zod.bag || {};
-  inst._zod.version = version2;
+  inst._zod.version = version3;
   const checks = [...inst._zod.def.checks ?? []];
   if (inst._zod.traits.has("$ZodCheck")) {
     checks.unshift(inst);
@@ -60110,12 +60328,12 @@ async function notifyOwner(payload) {
 }
 
 // shared/const.ts
-var ONE_YEAR_MS2 = 1e3 * 60 * 60 * 24 * 365;
+var ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
 var UNAUTHED_ERR_MSG = "Please login (10001)";
 var NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
 // server/_core/trpc.ts
-var import_superjson = __toESM(require_dist2(), 1);
+var import_superjson = __toESM(require_dist3(), 1);
 var t = initTRPC.context().create({
   transformer: import_superjson.default
 });
@@ -60173,7 +60391,7 @@ var systemRouter = router({
 
 // server/routers.ts
 init_env();
-var import_crypto2 = require("crypto");
+var import_crypto3 = require("crypto");
 
 // server/crmRouter.ts
 init_env();
@@ -60219,7 +60437,20 @@ var VISIT_OUTCOMES = [
   "no_decision_maker"
 ];
 var ambassadorProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const cred = await getCredentialByUserId(ctx.user.id);
+  if (!cred) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "NOT_CERTIFIED: Complete the training and pass the final certification test to access the Field CRM."
+    });
+  }
   const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+  if (!amb.active) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "DEACTIVATED: Your ambassador account is deactivated. Contact your coordinator."
+    });
+  }
   return next({ ctx: { ...ctx, ambassador: amb } });
 });
 var crmAdminProcedure = publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).use(async ({ input, next }) => {
@@ -60289,8 +60520,9 @@ var crmRouter = router({
   myVisits: ambassadorProcedure.query(async ({ ctx }) => {
     return getVisitsByAmbassador(ctx.ambassador.id);
   }),
-  // Ranked target queue (§6): unclaimed businesses, by distance (if located) or confidence.
-  targets: protectedProcedure.input(external_exports.object({ lat: external_exports.number().optional(), lng: external_exports.number().optional(), limit: external_exports.number().int().min(1).max(200).optional() }).optional()).query(async ({ input }) => {
+  // Ranked target queue (§6): unclaimed businesses, by distance (if located) or
+  // confidence. Ambassador-gated: the directory is for certified field staff.
+  targets: ambassadorProcedure.input(external_exports.object({ lat: external_exports.number().optional(), lng: external_exports.number().optional(), limit: external_exports.number().int().min(1).max(200).optional() }).optional()).query(async ({ input }) => {
     return getTargets({ lat: input?.lat ?? null, lng: input?.lng ?? null, limit: input?.limit });
   }),
   // Earnings dashboard (§7).
@@ -60332,7 +60564,7 @@ var crmRouter = router({
 var CREDENTIAL_PROGRAM = "AEO/GEO Foundations \u2014 Level I";
 function generateCredentialCode() {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const bytes = (0, import_crypto2.randomBytes)(6);
+  const bytes = (0, import_crypto3.randomBytes)(6);
   let suffix = "";
   for (let i = 0; i < 6; i++) suffix += alphabet[bytes[i] % alphabet.length];
   return `TOT-AEO1-${suffix}`;

@@ -1,7 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { InsertUser, users, roleplayAttempts, trainingProgress, traineeFeedback, credentials, InsertRoleplayAttempt, InsertTrainingProgress, InsertTraineeFeedback, InsertCredential } from "../drizzle/schema";
+import { InsertUser, users, roleplayAttempts, trainingProgress, traineeFeedback, credentials, authResetCode, InsertRoleplayAttempt, InsertTrainingProgress, InsertTraineeFeedback, InsertCredential } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -84,6 +84,61 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     console.warn("[Database] Failed to upsert user (non-fatal):", (error as Error).message);
     // Non-fatal: login still succeeds via JWT cookie even if DB write fails
   }
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = lower(${email})`)
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── Password-reset codes (hashes only; verified then marked used) ───────────
+
+export async function countRecentResetCodes(email: string, sinceMs: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(authResetCode)
+    .where(and(sql`lower(${authResetCode.email}) = lower(${email})`, gt(authResetCode.createdAt, new Date(Date.now() - sinceMs))));
+  return Number(rows[0]?.n ?? 0);
+}
+
+export async function createResetCode(email: string, codeHash: string, ttlMs: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(authResetCode).values({ email, codeHash, expiresAt: new Date(Date.now() + ttlMs) });
+}
+
+/** Latest matching, unused, unexpired code row — or undefined. */
+export async function findValidResetCode(email: string, codeHash: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(authResetCode)
+    .where(
+      and(
+        sql`lower(${authResetCode.email}) = lower(${email})`,
+        eq(authResetCode.codeHash, codeHash),
+        eq(authResetCode.used, false),
+        gt(authResetCode.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(authResetCode.createdAt))
+    .limit(1);
+  return rows[0];
+}
+
+export async function markResetCodeUsed(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(authResetCode).set({ used: true }).where(eq(authResetCode.id, id));
 }
 
 export async function getUserByOpenId(openId: string) {

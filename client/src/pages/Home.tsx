@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
-import { PasswordGate } from '@/components/PasswordGate';
+import { AuthGate } from '@/components/AuthGate';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -471,7 +471,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return <PasswordGate onSuccess={() => progressQuery.refetch()} />;
+    return <AuthGate onSuccess={() => progressQuery.refetch()} />;
   }
 
   // ─── Main Training Portal ──────────────────────────────────────────────────
@@ -745,8 +745,8 @@ export default function Home() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                <Button onClick={() => toast.success('Certificate saved! Share this screen with your supervisor to confirm field clearance.')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">
-                  Confirm Field Clearance
+                <Button onClick={() => setLocation('/crm')} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 text-sm font-bold shadow-md">
+                  Enter the Field CRM →
                 </Button>
                 <Button variant="outline" onClick={() => setShowFinalTest(false)} className="flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl py-6 text-sm font-semibold">
                   Review Training Guides

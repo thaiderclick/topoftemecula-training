@@ -22,6 +22,7 @@ import {
   setBounty,
   submitCurriculumGap,
 } from "./crmDb";
+import { getCredentialByUserId } from "./db";
 import { reconcileLiveCheck } from "./reconciliation";
 import { getAttributionLeakCount } from "./monitoring";
 
@@ -38,9 +39,27 @@ const VISIT_OUTCOMES = [
  * All ambassador-facing procedures resolve the ambassador ONCE here (issuing a
  * referral code on first use) and expose it as ctx.ambassador — no procedure
  * can forget to do it or derive the code differently.
+ *
+ * Field access is EARNED: it requires the training certificate (a credentials
+ * row, issued on a perfect final test) and an active ambassador record. This is
+ * the server-side gate — routing alone must never be the only thing keeping an
+ * uncertified user out of the CRM.
  */
 const ambassadorProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const cred = await getCredentialByUserId(ctx.user.id);
+  if (!cred) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "NOT_CERTIFIED: Complete the training and pass the final certification test to access the Field CRM.",
+    });
+  }
   const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+  if (!amb.active) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "DEACTIVATED: Your ambassador account is deactivated. Contact your coordinator.",
+    });
+  }
   return next({ ctx: { ...ctx, ambassador: amb } });
 });
 
@@ -129,8 +148,9 @@ export const crmRouter = router({
     return getVisitsByAmbassador(ctx.ambassador.id);
   }),
 
-  // Ranked target queue (§6): unclaimed businesses, by distance (if located) or confidence.
-  targets: protectedProcedure
+  // Ranked target queue (§6): unclaimed businesses, by distance (if located) or
+  // confidence. Ambassador-gated: the directory is for certified field staff.
+  targets: ambassadorProcedure
     .input(z.object({ lat: z.number().optional(), lng: z.number().optional(), limit: z.number().int().min(1).max(200).optional() }).optional())
     .query(async ({ input }) => {
       return getTargets({ lat: input?.lat ?? null, lng: input?.lng ?? null, limit: input?.limit });

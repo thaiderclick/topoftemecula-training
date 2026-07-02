@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { PasswordGate } from "@/components/PasswordGate";
+import { AuthGate } from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation, History } from "lucide-react";
+import { Loader2, MapPin, DollarSign, ClipboardCheck, MessageSquareWarning, Navigation, History, GraduationCap, LogOut, Lock } from "lucide-react";
 
 const OUTCOMES: { value: string; label: string; hint?: string }[] = [
   { value: "claimed_onsite", label: "Claimed on-site 🎉", hint: "Owner claimed while you were there" },
@@ -123,7 +124,7 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
 }
 
 export default function Crm() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, logout } = useAuth();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [openVisitFor, setOpenVisitFor] = useState<string | null>(null);
   const [gapText, setGapText] = useState("");
@@ -145,7 +146,33 @@ export default function Crm() {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
   if (!isAuthenticated) {
-    return <PasswordGate onSuccess={() => { me.refetch(); earnings.refetch(); }} />;
+    return <AuthGate onSuccess={() => { me.refetch(); earnings.refetch(); }} />;
+  }
+
+  // Field access is certification-gated server-side; show the path forward
+  // instead of raw errors when a trainee lands here early.
+  if (me.error?.data?.code === "FORBIDDEN") {
+    const deactivated = me.error.message.startsWith("DEACTIVATED");
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <Card className="max-w-md w-full p-8 text-center flex flex-col items-center gap-4">
+          <Lock className="w-10 h-10 text-primary" />
+          <h1 className="text-xl font-serif font-extrabold text-foreground">
+            {deactivated ? "Account deactivated" : "The Field CRM unlocks at certification"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {deactivated
+              ? "Your ambassador account has been deactivated. Contact your coordinator if you think this is a mistake."
+              : "Finish the training modules and pass the final test — your certificate is the key to the field toolkit."}
+          </p>
+          {!deactivated && (
+            <Link href="/learn">
+              <Button className="rounded-xl gap-2"><GraduationCap className="w-4 h-4" /> Go to training</Button>
+            </Link>
+          )}
+        </Card>
+      </div>
+    );
   }
 
   const useMyLocation = () => {
@@ -162,7 +189,17 @@ export default function Crm() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="mx-auto max-w-md px-4 pt-6">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-primary font-semibold">Top of Temecula · Field CRM</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-primary font-semibold">Top of Temecula · Field CRM</p>
+          <div className="flex items-center gap-3">
+            <Link href="/learn" className="text-[11px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <GraduationCap className="w-3.5 h-3.5" /> Learning Center
+            </Link>
+            <button onClick={logout} className="text-[11px] font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <LogOut className="w-3.5 h-3.5" /> Sign out
+            </button>
+          </div>
+        </div>
         <h1 className="text-2xl font-serif font-extrabold text-foreground">Your Field Dashboard</h1>
         {me.data && (
           <p className="text-sm text-muted-foreground mt-1">
