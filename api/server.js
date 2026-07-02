@@ -47295,6 +47295,11 @@ async function createVisit(ambassadorId, data) {
   }
   return { visitId, loggedClaimId };
 }
+async function hasPriorVisit(businessId) {
+  const db = await requireDb();
+  const rows = await db.select({ id: visit.id }).from(visit).where(eq(visit.businessId, businessId)).limit(1);
+  return !!rows[0];
+}
 async function getVisitsByAmbassador(ambassadorId, limit = 50) {
   const db = await requireDb();
   return db.select({
@@ -61250,9 +61255,8 @@ async function getAttributionLeakCount() {
 }
 
 // server/crmRouter.ts
-var VISIT_OUTCOMES = [
-  "first_visit",
-  "follow_up",
+var CONVERSATION_RESULTS = [
+  "neutral",
   "claimed_onsite",
   "not_interested_no_revisit",
   "left_info_needs_followup",
@@ -61308,7 +61312,7 @@ var crmRouter = router({
   logVisit: ambassadorProcedure.input(
     external_exports.object({
       businessId: external_exports.string().uuid(),
-      outcome: external_exports.enum(VISIT_OUTCOMES),
+      outcome: external_exports.enum(CONVERSATION_RESULTS),
       spokeWithName: external_exports.string().max(200).optional(),
       spokeWithRole: external_exports.enum(["owner", "manager", "front_desk", "other"]).optional(),
       notes: external_exports.string().max(4e3).optional(),
@@ -61323,9 +61327,10 @@ var crmRouter = router({
     })
   ).mutation(async ({ ctx, input }) => {
     const amb = ctx.ambassador;
+    const outcome = input.outcome === "neutral" ? await hasPriorVisit(input.businessId) ? "follow_up" : "first_visit" : input.outcome;
     const { visitId, loggedClaimId } = await createVisit(amb.id, {
       businessId: input.businessId,
-      outcome: input.outcome,
+      outcome,
       spokeWithName: input.spokeWithName ?? null,
       spokeWithRole: input.spokeWithRole ?? null,
       notes: input.notes ?? null,
@@ -61345,10 +61350,10 @@ var crmRouter = router({
       const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
       const someoneElses = !mine && results.some((r) => r.state === "verified");
       if (mine) liveCheck = "verified";
-      else if (someoneElses && input.outcome === "claimed_onsite") liveCheck = "already_attributed";
-      else if (input.outcome === "claimed_onsite") liveCheck = "logged";
+      else if (someoneElses && outcome === "claimed_onsite") liveCheck = "already_attributed";
+      else if (outcome === "claimed_onsite") liveCheck = "logged";
     } catch {
-      if (input.outcome === "claimed_onsite") liveCheck = "pending";
+      if (outcome === "claimed_onsite") liveCheck = "pending";
     }
     return { visitId, loggedClaimId, liveCheck };
   }),

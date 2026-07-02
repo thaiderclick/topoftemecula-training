@@ -10,6 +10,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import {
   addRouteStop,
+  hasPriorVisit,
   buildRoutePlan,
   clearRoutePlan,
   createVisit,
@@ -40,9 +41,11 @@ import { getStopIntel } from "./precallIntel";
 import { reconcileLiveCheck } from "./reconciliation";
 import { getAttributionLeakCount } from "./monitoring";
 
-const VISIT_OUTCOMES = [
-  "first_visit",
-  "follow_up",
+// What the ambassador reports: how the conversation ended. "neutral" is
+// resolved server-side into first_visit / follow_up from visit history —
+// the system never asks a human for a fact the database already knows.
+const CONVERSATION_RESULTS = [
+  "neutral",
   "claimed_onsite",
   "not_interested_no_revisit",
   "left_info_needs_followup",
@@ -121,7 +124,7 @@ export const crmRouter = router({
     .input(
       z.object({
         businessId: z.string().uuid(),
-        outcome: z.enum(VISIT_OUTCOMES),
+        outcome: z.enum(CONVERSATION_RESULTS),
         spokeWithName: z.string().max(200).optional(),
         spokeWithRole: z.enum(["owner", "manager", "front_desk", "other"]).optional(),
         notes: z.string().max(4000).optional(),
@@ -137,9 +140,15 @@ export const crmRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const amb = ctx.ambassador;
+      // Derive what the system can know: a neutral touch-base is a first visit
+      // or a follow-up depending on whether this business has been visited.
+      const outcome =
+        input.outcome === "neutral"
+          ? (await hasPriorVisit(input.businessId)) ? "follow_up" : "first_visit"
+          : input.outcome;
       const { visitId, loggedClaimId } = await createVisit(amb.id, {
         businessId: input.businessId,
-        outcome: input.outcome,
+        outcome,
         spokeWithName: input.spokeWithName ?? null,
         spokeWithRole: input.spokeWithRole ?? null,
         notes: input.notes ?? null,
@@ -168,10 +177,10 @@ export const crmRouter = router({
         const mine = results.some((r) => r.state === "verified" && r.ambassadorId === amb.id);
         const someoneElses = !mine && results.some((r) => r.state === "verified");
         if (mine) liveCheck = "verified";
-        else if (someoneElses && input.outcome === "claimed_onsite") liveCheck = "already_attributed";
-        else if (input.outcome === "claimed_onsite") liveCheck = "logged";
+        else if (someoneElses && outcome === "claimed_onsite") liveCheck = "already_attributed";
+        else if (outcome === "claimed_onsite") liveCheck = "logged";
       } catch {
-        if (input.outcome === "claimed_onsite") liveCheck = "pending"; // website unreachable — daily poll resolves it
+        if (outcome === "claimed_onsite") liveCheck = "pending"; // website unreachable — daily poll resolves it
       }
       return { visitId, loggedClaimId, liveCheck };
     }),

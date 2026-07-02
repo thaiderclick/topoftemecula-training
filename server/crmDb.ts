@@ -137,6 +137,17 @@ export async function createVisit(
   return { visitId, loggedClaimId };
 }
 
+/** Has ANY ambassador visited this business before? (Derives first vs follow-up.) */
+export async function hasPriorVisit(businessId: string): Promise<boolean> {
+  const db = await requireDb();
+  const rows = await db
+    .select({ id: visit.id })
+    .from(visit)
+    .where(eq(visit.businessId, businessId))
+    .limit(1);
+  return !!rows[0];
+}
+
 export async function getVisitsByAmbassador(ambassadorId: number, limit = 50) {
   const db = await requireDb();
   return db

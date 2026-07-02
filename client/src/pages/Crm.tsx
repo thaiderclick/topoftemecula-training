@@ -16,10 +16,21 @@ import {
   Route as RouteIcon, Check, RotateCcw, Trash2, PlusCircle, Flag, Sparkles,
 } from "lucide-react";
 
-// What happened in the CONVERSATION — the ambassador never declares a claim.
-// Claims are detected automatically against the website on every logged visit.
-const OUTCOMES: { value: string; label: string; hint?: string }[] = [
-  { value: "claimed_onsite", label: "Owner said yes — claiming now 🎉", hint: "They're doing the claim while you're there (show your QR) — we'll verify it automatically" },
+// The ambassador reports ONLY what the system can't know: how the
+// conversation ended. Everything else is determined automatically — claims
+// are verified against the website on every visit, and first-visit vs
+// follow-up is derived from visit history server-side.
+const CONVERSATION_RESULTS: { value: string; label: string; hint?: string }[] = [
+  { value: "claimed_onsite", label: "Owner said yes — claiming now 🎉", hint: "Show your QR — we verify the claim automatically" },
+  { value: "left_info_needs_followup", label: "Interested — left info, needs follow-up" },
+  { value: "no_decision_maker", label: "No decision-maker present" },
+  { value: "not_interested_no_revisit", label: "Not interested — no revisit" },
+  { value: "neutral", label: "Just a touch-base", hint: "No answer yet either way" },
+];
+
+// Display labels for stored outcomes (incl. the two the server derives).
+const OUTCOMES: { value: string; label: string }[] = [
+  { value: "claimed_onsite", label: "Owner said yes — claiming 🎉" },
   { value: "first_visit", label: "First visit" },
   { value: "follow_up", label: "Follow-up visit" },
   { value: "left_info_needs_followup", label: "Left info — needs follow-up" },
@@ -166,7 +177,7 @@ function StopIntelPanel({ businessId }: { businessId: string }) {
 
 function VisitForm({ businessId, businessName, onDone }: { businessId: string; businessName: string; onDone: () => void }) {
   const utils = trpc.useUtils();
-  const [outcome, setOutcome] = useState("first_visit");
+  const [outcome, setOutcome] = useState("neutral");
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     // Stamp the visit with where it was logged (best-effort, non-blocking).
@@ -204,8 +215,9 @@ function VisitForm({ businessId, businessName, onDone }: { businessId: string; b
 
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-border/60 pt-3">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">How did it end?</p>
       <div className="grid grid-cols-1 gap-1.5">
-        {OUTCOMES.map((o) => (
+        {CONVERSATION_RESULTS.map((o) => (
           <button
             key={o.value}
             onClick={() => setOutcome(o.value)}
