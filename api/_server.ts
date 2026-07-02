@@ -6,6 +6,7 @@
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "../server/_core/oauth";
+import { registerScheduledRoutes } from "../server/scheduled";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 
@@ -27,6 +28,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 registerOAuthRoutes(app);
+registerScheduledRoutes(app);
 
 app.use(
   "/api/trpc",

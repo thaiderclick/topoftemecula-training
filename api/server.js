@@ -23624,7 +23624,7 @@ var require_utils4 = __commonJS({
     var nodeCrypto = require("crypto");
     module2.exports = {
       postgresMd5PasswordHash,
-      randomBytes,
+      randomBytes: randomBytes3,
       deriveKey,
       sha256,
       hashByName,
@@ -23634,7 +23634,7 @@ var require_utils4 = __commonJS({
     var webCrypto = nodeCrypto.webcrypto || globalThis.crypto;
     var subtleCrypto = webCrypto.subtle;
     var textEncoder2 = new TextEncoder();
-    function randomBytes(length) {
+    function randomBytes3(length) {
       return webCrypto.getRandomValues(Buffer.alloc(length));
     }
     async function md5(string4) {
@@ -27626,6 +27626,17 @@ var init_env = __esm({
       // Resend email notification for trainee completion alerts
       resendApiKey: process.env.RESEND_API_KEY ?? "",
       notificationEmail: process.env.NOTIFICATION_EMAIL ?? "",
+      // Ambassador CRM: read-only connection to the SEPARATE website Supabase project.
+      // Server-side only; never exposed to the client bundle.
+      websiteDatabaseUrl: process.env.WEBSITE_DATABASE_URL ?? "",
+      // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
+      cronSecret: process.env.CRON_SECRET ?? "",
+      // Public base URL for building business canonical links from slugs.
+      websitePublicBaseUrl: process.env.WEBSITE_PUBLIC_BASE_URL ?? "https://topoftemecula.com",
+      // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
+      posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
+      posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",
+      posthogHost: process.env.POSTHOG_HOST ?? "https://us.posthog.com",
       // Legacy aliases kept so llm.ts compiles without changes
       forgeApiUrl: "https://api.openai.com",
       forgeApiKey: process.env.OPENAI_API_KEY ?? "",
@@ -38057,9 +38068,9 @@ var JWTClaimValidationFailed = class extends JOSEError {
   claim;
   reason;
   payload;
-  constructor(message2, payload, claim = "unspecified", reason = "unspecified") {
-    super(message2, { cause: { claim, reason, payload } });
-    this.claim = claim;
+  constructor(message2, payload, claim2 = "unspecified", reason = "unspecified") {
+    super(message2, { cause: { claim: claim2, reason, payload } });
+    this.claim = claim2;
     this.reason = reason;
     this.payload = payload;
   }
@@ -38070,9 +38081,9 @@ var JWTExpired = class extends JOSEError {
   claim;
   reason;
   payload;
-  constructor(message2, payload, claim = "unspecified", reason = "unspecified") {
-    super(message2, { cause: { claim, reason, payload } });
-    this.claim = claim;
+  constructor(message2, payload, claim2 = "unspecified", reason = "unspecified") {
+    super(message2, { cause: { claim: claim2, reason, payload } });
+    this.claim = claim2;
     this.reason = reason;
     this.payload = payload;
   }
@@ -39023,9 +39034,9 @@ function validateClaimsSet(protectedHeader, encodedPayload, options = {}) {
     presenceCheck.push("sub");
   if (issuer !== void 0)
     presenceCheck.push("iss");
-  for (const claim of new Set(presenceCheck.reverse())) {
-    if (!(claim in payload)) {
-      throw new JWTClaimValidationFailed(`missing required "${claim}" claim`, payload, claim, "missing");
+  for (const claim2 of new Set(presenceCheck.reverse())) {
+    if (!(claim2 in payload)) {
+      throw new JWTClaimValidationFailed(`missing required "${claim2}" claim`, payload, claim2, "missing");
     }
   }
   if (issuer && !(Array.isArray(issuer) ? issuer : [issuer]).includes(payload.iss)) {
@@ -46304,6 +46315,11 @@ function drizzle(...params) {
 })(drizzle || (drizzle = {}));
 
 // drizzle/schema.ts
+var citext = customType({
+  dataType() {
+    return "citext";
+  }
+});
 var roleEnum = pgEnum("role", ["user", "admin"]);
 var users = pgTable("users", {
   /**
@@ -46357,6 +46373,128 @@ var traineeFeedback = pgTable("trainee_feedback", {
   // e.g. "Day 1 – Slide 3: Mission Statement"
   message: text("message").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull()
+});
+var credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  holderName: text("holderName"),
+  program: varchar("program", { length: 128 }).notNull(),
+  finalTestScore: integer("finalTestScore"),
+  issuedAt: timestamp("issuedAt").defaultNow().notNull()
+});
+var ambassador = pgTable("ambassador", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  referralCode: citext("referral_code").notNull().unique(),
+  payoutMethodStatus: text("payout_method_status").notNull().default("unset"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var business = pgTable("business", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull().unique(),
+  name: text("name"),
+  slug: text("slug"),
+  categoryId: uuid("category_id"),
+  neighborhoodId: uuid("neighborhood_id"),
+  city: text("city"),
+  address: text("address"),
+  phone: text("phone"),
+  website: text("website"),
+  hours: jsonb("hours"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
+  directoryClaimStatus: text("directory_claim_status"),
+  subscriptionTier: text("subscription_tier"),
+  isFeatured: boolean("is_featured"),
+  confidenceScore: numeric("confidence_score"),
+  status: text("status"),
+  signupSource: text("signup_source"),
+  ownerContactEmail: text("owner_contact_email"),
+  localClaimStatus: text("local_claim_status").notNull().default("unclaimed"),
+  sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).defaultNow().notNull()
+});
+var visit = pgTable("visit", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  outcome: text("outcome").notNull(),
+  spokeWithName: text("spoke_with_name"),
+  spokeWithRole: text("spoke_with_role"),
+  notes: text("notes"),
+  ownerEmailCaptured: text("owner_email_captured"),
+  ownerNameForFollowup: text("owner_name_for_followup"),
+  bestTimeToReturn: text("best_time_to_return"),
+  rung: integer("rung"),
+  photoUrls: text("photo_urls").array(),
+  device: text("device"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var claim = pgTable("claim", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull(),
+  ambassadorId: integer("ambassador_id"),
+  referralCode: citext("referral_code"),
+  originatingVisitId: integer("originating_visit_id"),
+  state: text("state").notNull().default("logged"),
+  bountyAmountCents: integer("bounty_amount_cents"),
+  sourceBusinessUsersId: uuid("source_business_users_id").unique(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verificationSource: text("verification_source"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  payoutBatchId: integer("payout_batch_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+var followupTask = pgTable("followup_task", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  dueDate: date("due_date"),
+  note: text("note"),
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var curriculumGap = pgTable("curriculum_gap", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id"),
+  objectionText: text("objection_text").notNull(),
+  context: text("context"),
+  status: text("status").notNull().default("new"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var bountyConfig = pgTable("bounty_config", {
+  id: serial("id").primaryKey(),
+  amountCents: integer("amount_cents").notNull(),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).defaultNow().notNull(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true })
+});
+var payoutPeriod = pgTable("payout_period", {
+  id: serial("id").primaryKey(),
+  label: text("label"),
+  startsOn: date("starts_on"),
+  endsOn: date("ends_on"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var payoutBatch = pgTable("payout_batch", {
+  id: serial("id").primaryKey(),
+  payoutPeriodId: integer("payout_period_id"),
+  ambassadorId: integer("ambassador_id"),
+  totalCents: integer("total_cents"),
+  status: text("status").notNull().default("pending"),
+  exportedAt: timestamp("exported_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+var syncState = pgTable("sync_state", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull().unique(),
+  watermark: timestamp("watermark", { withTimezone: true }),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  lastStatus: text("last_status")
 });
 
 // server/db.ts
@@ -46485,6 +46623,26 @@ async function getAllFeedback() {
   if (!db) return [];
   return db.select().from(traineeFeedback).orderBy(traineeFeedback.createdAt);
 }
+async function getCredentialByUserId(userId) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(credentials).where(eq(credentials.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+async function getCredentialByCode(code) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(credentials).where(eq(credentials.code, code)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+async function issueCredential(data) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getCredentialByUserId(data.userId);
+  if (existing) return existing;
+  await db.insert(credentials).values(data).onConflictDoNothing({ target: credentials.userId });
+  return getCredentialByUserId(data.userId);
+}
 async function getAllTrainees() {
   const db = await getDb();
   if (!db) return [];
@@ -46557,6 +46715,357 @@ function registerOAuthRoutes(app2) {
     res.clearCookie("tot_session", { ...cookieOptions, maxAge: -1 });
     res.json({ success: true });
   });
+}
+
+// server/scheduled.ts
+init_env();
+
+// server/websiteDb.ts
+init_env();
+var _pool = null;
+function getWebsitePool() {
+  if (!ENV.websiteDatabaseUrl) return null;
+  if (!_pool) {
+    _pool = new Pool({
+      connectionString: ENV.websiteDatabaseUrl,
+      ssl: { rejectUnauthorized: false },
+      max: 3,
+      idleTimeoutMillis: 1e4,
+      connectionTimeoutMillis: 1e4,
+      application_name: "tot-crm-readonly"
+    });
+  }
+  return _pool;
+}
+function sanitizeIso(d) {
+  const iso = d.toISOString();
+  if (!/^[0-9T:.\-]+Z$/.test(iso)) throw new Error("bad timestamp");
+  return iso;
+}
+async function fetchBusinessesPage(opts) {
+  const pool = getWebsitePool();
+  if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
+  const limit = Math.max(1, Math.min(5e3, Math.floor(opts.limit)));
+  const offset = Math.max(0, Math.floor(opts.offset));
+  const where = opts.since ? `where coalesce(updated_at, created_at) > '${sanitizeIso(opts.since)}'::timestamptz` : "";
+  const sql2 = `
+    select id, name, slug, category_id, neighborhood_id, city, address, phone, website, hours,
+           latitude, longitude, claim_status, subscription_tier, is_featured, confidence_score,
+           status, signup_source, owner_contact_email,
+           coalesce(updated_at, created_at) as effective_at
+    from public.businesses
+    ${where}
+    order by coalesce(updated_at, created_at) asc, id asc
+    limit ${limit} offset ${offset}`;
+  const { rows } = await pool.query(sql2);
+  return rows;
+}
+async function fetchBusinessUsersPage(opts) {
+  const pool = getWebsitePool();
+  if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
+  const limit = Math.max(1, Math.min(5e3, Math.floor(opts.limit)));
+  const offset = Math.max(0, Math.floor(opts.offset));
+  const where = opts.since ? `where created_at > '${sanitizeIso(opts.since)}'::timestamptz` : "";
+  const sql2 = `
+    select id, user_id, business_id, role, referral_code, created_at
+    from public.business_users
+    ${where}
+    order by created_at asc, id asc
+    limit ${limit} offset ${offset}`;
+  const { rows } = await pool.query(sql2);
+  return rows;
+}
+async function fetchBusinessUsersByBusiness(businessId) {
+  const pool = getWebsitePool();
+  if (!pool) throw new Error("WEBSITE_DATABASE_URL not configured");
+  if (!/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error("bad business_id");
+  const sql2 = `
+    select id, user_id, business_id, role, referral_code, created_at
+    from public.business_users
+    where business_id = '${businessId}'::uuid
+    order by created_at asc`;
+  const { rows } = await pool.query(sql2);
+  return rows;
+}
+
+// server/directorySync.ts
+var PAGE_SIZE = 1e3;
+var SYNC_SOURCE = "directory_listings";
+function mapRow(r) {
+  return {
+    businessId: r.id,
+    name: r.name,
+    slug: r.slug,
+    categoryId: r.category_id,
+    neighborhoodId: r.neighborhood_id,
+    city: r.city,
+    address: r.address,
+    phone: r.phone,
+    website: r.website,
+    hours: r.hours ?? null,
+    lat: r.latitude,
+    lng: r.longitude,
+    directoryClaimStatus: r.claim_status,
+    subscriptionTier: r.subscription_tier,
+    isFeatured: r.is_featured,
+    confidenceScore: r.confidence_score,
+    // numeric ⇒ string | null (drizzle)
+    status: r.status,
+    signupSource: r.signup_source,
+    ownerContactEmail: r.owner_contact_email,
+    sourceUpdatedAt: r.effective_at ? new Date(r.effective_at) : null,
+    lastSyncedAt: /* @__PURE__ */ new Date()
+    // localClaimStatus intentionally omitted — defaults to 'unclaimed' on insert
+    // and is left untouched on update (see conflict set below).
+  };
+}
+var CONFLICT_SET = {
+  name: sql`excluded.name`,
+  slug: sql`excluded.slug`,
+  categoryId: sql`excluded.category_id`,
+  neighborhoodId: sql`excluded.neighborhood_id`,
+  city: sql`excluded.city`,
+  address: sql`excluded.address`,
+  phone: sql`excluded.phone`,
+  website: sql`excluded.website`,
+  hours: sql`excluded.hours`,
+  lat: sql`excluded.lat`,
+  lng: sql`excluded.lng`,
+  directoryClaimStatus: sql`excluded.directory_claim_status`,
+  subscriptionTier: sql`excluded.subscription_tier`,
+  isFeatured: sql`excluded.is_featured`,
+  confidenceScore: sql`excluded.confidence_score`,
+  status: sql`excluded.status`,
+  signupSource: sql`excluded.signup_source`,
+  ownerContactEmail: sql`excluded.owner_contact_email`,
+  sourceUpdatedAt: sql`excluded.source_updated_at`,
+  lastSyncedAt: sql`now()`
+};
+async function runDirectorySync(opts = {}) {
+  const { full = false, maxRows = Infinity, updateWatermark = true } = opts;
+  const startedAt = /* @__PURE__ */ new Date();
+  const db = await getDb();
+  if (!db) throw new Error("CRM database not available");
+  const stateRows = await db.select().from(syncState).where(eq(syncState.source, SYNC_SOURCE)).limit(1);
+  const stateRow = stateRows[0];
+  const since = full ? null : stateRow?.watermark ?? null;
+  let offset = 0;
+  let processed = 0;
+  let maxEffective = null;
+  for (; ; ) {
+    const remaining = maxRows - processed;
+    if (remaining <= 0) break;
+    const limit = Math.min(PAGE_SIZE, remaining);
+    const rows = await fetchBusinessesPage({ since, limit, offset });
+    if (rows.length === 0) break;
+    await db.insert(business).values(rows.map(mapRow)).onConflictDoUpdate({ target: business.businessId, set: CONFLICT_SET });
+    for (const r of rows) {
+      if (r.effective_at) {
+        const eff = new Date(r.effective_at);
+        if (!maxEffective || eff > maxEffective) maxEffective = eff;
+      }
+    }
+    processed += rows.length;
+    offset += rows.length;
+    if (rows.length < limit) break;
+  }
+  const finishedAt = /* @__PURE__ */ new Date();
+  const newWatermark = maxEffective ?? since;
+  const watermarkAdvanced = !!maxEffective && (!since || maxEffective > since);
+  if (updateWatermark) {
+    await db.update(syncState).set({
+      watermark: newWatermark,
+      lastRunAt: startedAt,
+      lastStatus: `ok: ${processed} upserted (${since ? "incremental" : "full backfill"})`
+    }).where(eq(syncState.source, SYNC_SOURCE));
+  }
+  return {
+    mode: since ? "incremental" : "full",
+    processed,
+    watermark: newWatermark ? newWatermark.toISOString() : null,
+    watermarkAdvanced,
+    startedAt: startedAt.toISOString(),
+    finishedAt: finishedAt.toISOString()
+  };
+}
+
+// server/reconciliation.ts
+function decideReconciliation(row, inp) {
+  if (inp.existingBySource) return { kind: "idempotent", claimId: inp.existingBySource.id };
+  if (row.referral_code == null) return { kind: "unattributed" };
+  if (inp.ambassadorId == null) return { kind: "anomaly" };
+  return { kind: "verified", ambassadorId: inp.ambassadorId, upgradeClaimId: inp.loggedClaim?.id };
+}
+async function getActiveBountyCents(db) {
+  const now = /* @__PURE__ */ new Date();
+  const rows = await db.select({ amt: bountyConfig.amountCents }).from(bountyConfig).where(and(lte(bountyConfig.effectiveFrom, now), or(isNull(bountyConfig.effectiveTo), gt(bountyConfig.effectiveTo, now)))).orderBy(desc(bountyConfig.effectiveFrom)).limit(1);
+  return rows[0]?.amt ?? null;
+}
+async function reconcileFromRow(row, source) {
+  const db = await getDb();
+  if (!db) throw new Error("CRM database not available");
+  const existing = await db.select({ id: claim.id, state: claim.state, bounty: claim.bountyAmountCents }).from(claim).where(eq(claim.sourceBusinessUsersId, row.id)).limit(1);
+  if (existing[0]) {
+    return { action: "idempotent", claimId: existing[0].id, state: existing[0].state, bountyAmountCents: existing[0].bounty ?? null };
+  }
+  let ambassadorId = null;
+  if (row.referral_code != null) {
+    const a = await db.select({ id: ambassador.id }).from(ambassador).where(eq(ambassador.referralCode, row.referral_code)).limit(1);
+    ambassadorId = a[0]?.id ?? null;
+  }
+  let loggedClaim = null;
+  if (ambassadorId != null) {
+    const lc = await db.select({ id: claim.id }).from(claim).where(and(eq(claim.businessId, row.business_id), eq(claim.ambassadorId, ambassadorId), eq(claim.state, "logged"), isNull(claim.sourceBusinessUsersId))).limit(1);
+    loggedClaim = lc[0] ?? null;
+  }
+  const action = decideReconciliation(row, { existingBySource: null, ambassadorId, loggedClaim });
+  const createdAt = row.created_at ? new Date(row.created_at) : /* @__PURE__ */ new Date();
+  if (action.kind === "unattributed") {
+    const id = await insertOrGetBySource(db, {
+      businessId: row.business_id,
+      referralCode: null,
+      state: "unattributed",
+      sourceBusinessUsersId: row.id,
+      verificationSource: source
+    });
+    return { action: "unattributed", claimId: id, state: "unattributed", bountyAmountCents: null };
+  }
+  if (action.kind === "anomaly") {
+    const id = await insertOrGetBySource(db, {
+      businessId: row.business_id,
+      referralCode: row.referral_code,
+      // keep the unknown code for review
+      state: "anomaly",
+      sourceBusinessUsersId: row.id,
+      verificationSource: source
+    });
+    return { action: "anomaly", claimId: id, state: "anomaly", bountyAmountCents: null };
+  }
+  if (action.kind !== "verified") throw new Error(`unexpected reconcile action: ${action.kind}`);
+  const bounty = await getActiveBountyCents(db);
+  const now = /* @__PURE__ */ new Date();
+  if (action.upgradeClaimId) {
+    await db.update(claim).set({
+      state: "verified",
+      ambassadorId: action.ambassadorId,
+      referralCode: row.referral_code,
+      sourceBusinessUsersId: row.id,
+      bountyAmountCents: bounty,
+      verifiedAt: now,
+      verificationSource: source,
+      updatedAt: now
+    }).where(eq(claim.id, action.upgradeClaimId));
+    return { action: "verified", claimId: action.upgradeClaimId, state: "verified", bountyAmountCents: bounty };
+  }
+  const v = await db.select({ id: visit.id }).from(visit).where(and(eq(visit.ambassadorId, action.ambassadorId), eq(visit.businessId, row.business_id))).orderBy(desc(visit.createdAt)).limit(1);
+  const inserted = await db.insert(claim).values({
+    businessId: row.business_id,
+    ambassadorId: action.ambassadorId,
+    referralCode: row.referral_code,
+    originatingVisitId: v[0]?.id ?? null,
+    state: "verified",
+    bountyAmountCents: bounty,
+    sourceBusinessUsersId: row.id,
+    verifiedAt: now,
+    verificationSource: source,
+    createdAt,
+    updatedAt: now
+  }).onConflictDoNothing({ target: claim.sourceBusinessUsersId }).returning({ id: claim.id });
+  const claimId = inserted[0]?.id ?? await selectIdBySource(db, row.id);
+  return { action: "verified", claimId, state: "verified", bountyAmountCents: bounty };
+}
+async function insertOrGetBySource(db, values) {
+  const inserted = await db.insert(claim).values(values).onConflictDoNothing({ target: claim.sourceBusinessUsersId }).returning({ id: claim.id });
+  return inserted[0]?.id ?? await selectIdBySource(db, values.sourceBusinessUsersId);
+}
+async function selectIdBySource(db, sourceId) {
+  const rows = await db.select({ id: claim.id }).from(claim).where(eq(claim.sourceBusinessUsersId, sourceId)).limit(1);
+  return rows[0].id;
+}
+var CLAIM_SYNC_SOURCE = "claim_events";
+var POLL_PAGE = 500;
+async function pollClaimEvents(opts = {}) {
+  const { maxRows = Infinity, updateWatermark = true } = opts;
+  const db = await getDb();
+  if (!db) throw new Error("CRM database not available");
+  const stateRows = await db.select().from(syncState).where(eq(syncState.source, CLAIM_SYNC_SOURCE)).limit(1);
+  const since = stateRows[0]?.watermark ?? null;
+  let offset = 0;
+  let processed = 0;
+  let maxCreated = null;
+  const counts = { verified: 0, unattributed: 0, anomaly: 0, idempotent: 0 };
+  const startedAt = /* @__PURE__ */ new Date();
+  for (; ; ) {
+    const remaining = maxRows - processed;
+    if (remaining <= 0) break;
+    const limit = Math.min(POLL_PAGE, remaining);
+    const rows = await fetchBusinessUsersPage({ since, limit, offset });
+    if (rows.length === 0) break;
+    for (const r of rows) {
+      const res = await reconcileFromRow(r, "poll");
+      counts[res.action] = (counts[res.action] ?? 0) + 1;
+      const c = new Date(r.created_at);
+      if (!maxCreated || c > maxCreated) maxCreated = c;
+    }
+    processed += rows.length;
+    offset += rows.length;
+    if (rows.length < limit) break;
+  }
+  if (updateWatermark) {
+    await db.update(syncState).set({ watermark: maxCreated ?? since, lastRunAt: startedAt, lastStatus: `ok: ${processed} rows (${JSON.stringify(counts)})` }).where(eq(syncState.source, CLAIM_SYNC_SOURCE));
+  }
+  return { processed, counts, watermark: (maxCreated ?? since)?.toISOString() ?? null, startedAt: startedAt.toISOString() };
+}
+async function reconcileLiveCheck(businessId) {
+  const rows = await fetchBusinessUsersByBusiness(businessId);
+  const out = [];
+  for (const r of rows) out.push(await reconcileFromRow(r, "live_check"));
+  return out;
+}
+
+// server/scheduled.ts
+function authorized(req) {
+  if (ENV.cronSecret) {
+    return req.headers["authorization"] === `Bearer ${ENV.cronSecret}`;
+  }
+  return !ENV.isProduction;
+}
+function registerScheduledRoutes(app2) {
+  const syncDirectory = async (req, res) => {
+    if (!authorized(req)) return res.status(403).json({ error: "forbidden" });
+    const full = req.query.full === "1" || req.body && req.body.full === true;
+    try {
+      const result = await runDirectorySync({ full: !!full });
+      res.json({ ok: true, job: "syncDirectory", ...result });
+    } catch (e) {
+      const err = e;
+      res.status(500).json({
+        job: "syncDirectory",
+        error: err?.message ?? String(e),
+        stack: err?.stack,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+  };
+  app2.get("/api/scheduled/syncDirectory", syncDirectory);
+  app2.post("/api/scheduled/syncDirectory", syncDirectory);
+  const pollClaims = async (req, res) => {
+    if (!authorized(req)) return res.status(403).json({ error: "forbidden" });
+    try {
+      const result = await pollClaimEvents();
+      res.json({ ok: true, job: "pollClaims", ...result });
+    } catch (e) {
+      const err = e;
+      res.status(500).json({
+        job: "pollClaims",
+        error: err?.message ?? String(e),
+        stack: err?.stack,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+  };
+  app2.get("/api/scheduled/pollClaims", pollClaims);
+  app2.post("/api/scheduled/pollClaims", pollClaims);
 }
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/classic/external.js
@@ -59423,6 +59932,318 @@ var systemRouter = router({
 
 // server/routers.ts
 init_env();
+var import_crypto2 = require("crypto");
+
+// server/crmRouter.ts
+init_env();
+
+// server/crmDb.ts
+var import_crypto = require("crypto");
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new Error("CRM database not available");
+  return db;
+}
+function codeFromName(name) {
+  const base = (name ?? "amb").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "AMB";
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const b = (0, import_crypto.randomBytes)(4);
+  let suffix = "";
+  for (let i = 0; i < 4; i++) suffix += alphabet[b[i] % alphabet.length];
+  return `${base}-${suffix}`;
+}
+async function ensureAmbassador(userId, name) {
+  const db = await requireDb();
+  const existing = await db.select().from(ambassador).where(eq(ambassador.userId, userId)).limit(1);
+  if (existing[0]) return existing[0];
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const code = codeFromName(name);
+    const inserted = await db.insert(ambassador).values({ userId, referralCode: code }).onConflictDoNothing().returning();
+    if (inserted[0]) return inserted[0];
+    const again = await db.select().from(ambassador).where(eq(ambassador.userId, userId)).limit(1);
+    if (again[0]) return again[0];
+  }
+  throw new Error("could not issue a unique referral code");
+}
+var REVISIT_OUTCOMES = /* @__PURE__ */ new Set(["first_visit", "follow_up"]);
+async function createVisit(ambassadorId, data) {
+  const db = await requireDb();
+  const inserted = await db.insert(visit).values({ ...data, ambassadorId }).returning({ id: visit.id });
+  const visitId = inserted[0].id;
+  if (REVISIT_OUTCOMES.has(data.outcome)) {
+    await db.update(business).set({ localClaimStatus: "in_progress" }).where(and(eq(business.businessId, data.businessId), ne(business.localClaimStatus, "claimed")));
+  }
+  let loggedClaimId = null;
+  if (data.outcome === "claimed_onsite") {
+    await db.update(business).set({ localClaimStatus: "claimed" }).where(eq(business.businessId, data.businessId));
+    const amb = await db.select({ code: ambassador.referralCode }).from(ambassador).where(eq(ambassador.id, ambassadorId)).limit(1);
+    const existingLogged = await db.select({ id: claim.id }).from(claim).where(and(eq(claim.businessId, data.businessId), eq(claim.ambassadorId, ambassadorId), eq(claim.state, "logged"))).limit(1);
+    if (existingLogged[0]) {
+      loggedClaimId = existingLogged[0].id;
+    } else {
+      const c = await db.insert(claim).values({
+        businessId: data.businessId,
+        ambassadorId,
+        referralCode: amb[0]?.code ?? null,
+        originatingVisitId: visitId,
+        state: "logged"
+      }).returning({ id: claim.id });
+      loggedClaimId = c[0].id;
+    }
+  }
+  return { visitId, loggedClaimId };
+}
+async function getVisitsByAmbassador(ambassadorId) {
+  const db = await requireDb();
+  return db.select().from(visit).where(eq(visit.ambassadorId, ambassadorId)).orderBy(desc(visit.createdAt));
+}
+function haversineMiles(aLat, aLng, bLat, bLng) {
+  const R = 3958.8;
+  const dLat = (bLat - aLat) * Math.PI / 180;
+  const dLng = (bLng - aLng) * Math.PI / 180;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+async function getTargets(q) {
+  const db = await requireDb();
+  const limit = Math.max(1, Math.min(200, q.limit ?? 50));
+  const hasLoc = typeof q.lat === "number" && typeof q.lng === "number";
+  const conds = [eq(business.directoryClaimStatus, "unclaimed"), ne(business.localClaimStatus, "claimed")];
+  if (hasLoc) {
+    const dLat = 0.4;
+    const dLng = 0.5;
+    conds.push(
+      sql`${business.lat} between ${q.lat - dLat} and ${q.lat + dLat}`,
+      sql`${business.lng} between ${q.lng - dLng} and ${q.lng + dLng}`
+    );
+  }
+  const rows = await db.select().from(business).where(and(...conds)).orderBy(sql`${business.confidenceScore} desc nulls last`).limit(hasLoc ? 500 : limit);
+  if (!hasLoc) return rows.map((r) => ({ ...r, distanceMiles: null }));
+  return rows.map((r) => ({
+    ...r,
+    distanceMiles: r.lat != null && r.lng != null ? haversineMiles(q.lat, q.lng, r.lat, r.lng) : null
+  })).sort((a, b) => (a.distanceMiles ?? 1e9) - (b.distanceMiles ?? 1e9)).slice(0, limit);
+}
+async function getEarnings(ambassadorId) {
+  const db = await requireDb();
+  const rows = await db.select({
+    paidCents: sql`coalesce(sum(case when ${claim.state}='paid' then ${claim.bountyAmountCents} end),0)`,
+    verifiedUnpaidCents: sql`coalesce(sum(case when ${claim.state}='verified' then ${claim.bountyAmountCents} end),0)`,
+    pendingCount: sql`count(*) filter (where ${claim.state}='logged')`,
+    verifiedCount: sql`count(*) filter (where ${claim.state}='verified')`,
+    paidCount: sql`count(*) filter (where ${claim.state}='paid')`
+  }).from(claim).where(eq(claim.ambassadorId, ambassadorId));
+  const visitCountRows = await db.select({ n: sql`count(*)` }).from(visit).where(eq(visit.ambassadorId, ambassadorId));
+  const r = rows[0];
+  const visitCount = Number(visitCountRows[0]?.n ?? 0);
+  const verifiedCount = Number(r?.verifiedCount ?? 0);
+  return {
+    paidCents: Number(r?.paidCents ?? 0),
+    verifiedUnpaidCents: Number(r?.verifiedUnpaidCents ?? 0),
+    pendingCount: Number(r?.pendingCount ?? 0),
+    verifiedCount,
+    paidCount: Number(r?.paidCount ?? 0),
+    visitCount,
+    conversionPct: visitCount > 0 ? Math.round(verifiedCount / visitCount * 100) : 0
+  };
+}
+async function getOpenFollowups(ambassadorId) {
+  const db = await requireDb();
+  return db.select().from(followupTask).where(and(eq(followupTask.ambassadorId, ambassadorId), eq(followupTask.done, false))).orderBy(followupTask.dueDate);
+}
+async function getActiveBounty() {
+  const db = await requireDb();
+  const now = /* @__PURE__ */ new Date();
+  const rows = await db.select().from(bountyConfig).where(and(sql`${bountyConfig.effectiveFrom} <= ${now}`, or(isNull(bountyConfig.effectiveTo), gt(bountyConfig.effectiveTo, now)))).orderBy(desc(bountyConfig.effectiveFrom)).limit(1);
+  return rows[0] ?? null;
+}
+async function setBounty(amountCents) {
+  const db = await requireDb();
+  const now = /* @__PURE__ */ new Date();
+  await db.update(bountyConfig).set({ effectiveTo: now }).where(isNull(bountyConfig.effectiveTo));
+  const inserted = await db.insert(bountyConfig).values({ amountCents, effectiveFrom: now }).returning();
+  return inserted[0];
+}
+async function submitCurriculumGap(data) {
+  const db = await requireDb();
+  await db.insert(curriculumGap).values(data);
+}
+async function getCurriculumGaps() {
+  const db = await requireDb();
+  return db.select().from(curriculumGap).orderBy(desc(curriculumGap.createdAt));
+}
+async function getAnomalyClaims() {
+  const db = await requireDb();
+  return db.select().from(claim).where(eq(claim.state, "anomaly")).orderBy(desc(claim.createdAt));
+}
+async function getLeaderboard() {
+  const db = await requireDb();
+  return db.select({
+    ambassadorId: claim.ambassadorId,
+    verified: sql`count(*) filter (where ${claim.state} in ('verified','paid'))`
+  }).from(claim).groupBy(claim.ambassadorId).orderBy(sql`count(*) filter (where ${claim.state} in ('verified','paid')) desc`);
+}
+
+// server/monitoring.ts
+init_env();
+async function getAttributionLeakCount() {
+  if (!ENV.posthogApiKey || !ENV.posthogProjectId) {
+    return {
+      configured: false,
+      count: null,
+      note: "Set POSTHOG_API_KEY + POSTHOG_PROJECT_ID to surface ambassador_attribution_dropped counts."
+    };
+  }
+  try {
+    const host = ENV.posthogHost || "https://us.posthog.com";
+    const res = await fetch(`${host}/api/projects/${ENV.posthogProjectId}/query/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${ENV.posthogApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: {
+          kind: "HogQLQuery",
+          query: "select count() from events where event = 'ambassador_attribution_dropped'"
+        }
+      })
+    });
+    if (!res.ok) return { configured: true, count: null, note: `PostHog error ${res.status}` };
+    const data = await res.json();
+    const count = Number(data?.results?.[0]?.[0] ?? 0);
+    return { configured: true, count };
+  } catch (e) {
+    return { configured: true, count: null, note: e.message };
+  }
+}
+
+// server/crmRouter.ts
+var VISIT_OUTCOMES = [
+  "first_visit",
+  "follow_up",
+  "claimed_onsite",
+  "not_interested_no_revisit",
+  "left_info_needs_followup",
+  "no_decision_maker"
+];
+function requireAdmin(password) {
+  if (password !== ENV.adminPassword) throw new Error("Unauthorized");
+}
+var crmRouter = router({
+  // The signed-in user's ambassador profile (created on first use).
+  me: protectedProcedure.query(async ({ ctx }) => {
+    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+    return { id: amb.id, referralCode: amb.referralCode, payoutMethodStatus: amb.payoutMethodStatus, active: amb.active };
+  }),
+  // Log a field visit (§5). claimed_onsite creates a `logged` claim and runs an
+  // on-demand live-check; verification/attribution is still decided by the
+  // business_users referral_code, never by who logged first.
+  logVisit: protectedProcedure.input(
+    external_exports.object({
+      businessId: external_exports.string().uuid(),
+      outcome: external_exports.enum(VISIT_OUTCOMES),
+      spokeWithName: external_exports.string().max(200).optional(),
+      spokeWithRole: external_exports.enum(["owner", "manager", "front_desk", "other"]).optional(),
+      notes: external_exports.string().max(4e3).optional(),
+      ownerEmailCaptured: external_exports.string().max(320).optional(),
+      ownerNameForFollowup: external_exports.string().max(200).optional(),
+      bestTimeToReturn: external_exports.string().max(200).optional(),
+      rung: external_exports.number().int().min(1).max(8).optional(),
+      photoUrls: external_exports.array(external_exports.string().url()).max(10).optional(),
+      device: external_exports.string().max(200).optional()
+    })
+  ).mutation(async ({ ctx, input }) => {
+    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+    const { visitId, loggedClaimId } = await createVisit(amb.id, {
+      businessId: input.businessId,
+      outcome: input.outcome,
+      spokeWithName: input.spokeWithName ?? null,
+      spokeWithRole: input.spokeWithRole ?? null,
+      notes: input.notes ?? null,
+      ownerEmailCaptured: input.ownerEmailCaptured ?? null,
+      ownerNameForFollowup: input.ownerNameForFollowup ?? null,
+      bestTimeToReturn: input.bestTimeToReturn ?? null,
+      rung: input.rung ?? null,
+      photoUrls: input.photoUrls ?? null,
+      device: input.device ?? null
+    });
+    let liveCheck = null;
+    if (input.outcome === "claimed_onsite") {
+      try {
+        const results = await reconcileLiveCheck(input.businessId);
+        const verified = results.find((r) => r.state === "verified");
+        liveCheck = verified ? "verified" : "logged";
+      } catch {
+        liveCheck = "pending";
+      }
+    }
+    return { visitId, loggedClaimId, liveCheck };
+  }),
+  myVisits: protectedProcedure.query(async ({ ctx }) => {
+    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+    return getVisitsByAmbassador(amb.id);
+  }),
+  // Ranked target queue (§6): unclaimed businesses, by distance (if located) or confidence.
+  targets: protectedProcedure.input(external_exports.object({ lat: external_exports.number().optional(), lng: external_exports.number().optional(), limit: external_exports.number().int().min(1).max(200).optional() }).optional()).query(async ({ input }) => {
+    return getTargets({ lat: input?.lat ?? null, lng: input?.lng ?? null, limit: input?.limit });
+  }),
+  // Earnings dashboard (§7).
+  earnings: protectedProcedure.query(async ({ ctx }) => {
+    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+    const [earnings, followups, bounty] = await Promise.all([
+      getEarnings(amb.id),
+      getOpenFollowups(amb.id),
+      getActiveBounty()
+    ]);
+    return { ...earnings, openFollowups: followups, activeBountyCents: bounty?.amountCents ?? null };
+  }),
+  // Curriculum-gap capture (§8).
+  submitGap: protectedProcedure.input(external_exports.object({ businessId: external_exports.string().uuid().optional(), objectionText: external_exports.string().min(1).max(2e3), context: external_exports.string().max(2e3).optional() })).mutation(async ({ ctx, input }) => {
+    const amb = await ensureAmbassador(ctx.user.id, ctx.user.name ?? null);
+    await submitCurriculumGap({
+      ambassadorId: amb.id,
+      businessId: input.businessId ?? null,
+      objectionText: input.objectionText,
+      context: input.context ?? null
+    });
+    return { success: true };
+  }),
+  // ── Admin (shared password) ──────────────────────────────────────────────
+  adminGetActiveBounty: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).query(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    const b = await getActiveBounty();
+    return { amountCents: b?.amountCents ?? null, effectiveFrom: b?.effectiveFrom ?? null };
+  }),
+  adminSetBounty: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string(), amountCents: external_exports.number().int().min(0).max(1e6) })).mutation(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    const b = await setBounty(input.amountCents);
+    return { amountCents: b.amountCents, effectiveFrom: b.effectiveFrom };
+  }),
+  adminAnomalies: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).query(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    return getAnomalyClaims();
+  }),
+  adminGaps: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).query(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    return getCurriculumGaps();
+  }),
+  adminLeaderboard: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).query(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    return getLeaderboard();
+  }),
+  adminAttributionLeak: publicProcedure.input(external_exports.object({ adminPassword: external_exports.string() })).query(async ({ input }) => {
+    requireAdmin(input.adminPassword);
+    return getAttributionLeakCount();
+  })
+});
+
+// server/routers.ts
+var CREDENTIAL_PROGRAM = "AEO/GEO Foundations \u2014 Level I";
+function generateCredentialCode() {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = (0, import_crypto2.randomBytes)(6);
+  let suffix = "";
+  for (let i = 0; i < 6; i++) suffix += alphabet[bytes[i] % alphabet.length];
+  return `TOT-AEO1-${suffix}`;
+}
 var PERSONA_DESCRIPTIONS = {
   busy: "a distracted, time-pressed owner who is half-listening and keeps looking away. You have 3 things going on at once.",
   skeptical_google: "a skeptical owner who already has a Google Business Profile and Yelp listing. You're not convinced you need another platform.",
@@ -59464,6 +60285,8 @@ Return this exact JSON schema:
 {"compliance_pass":true,"compliance_flags":[],"scores":{"led_with_claim":2,"used_dashboard_hook":2,"objection_handling":2,"secured_outcome":2,"professional_lowpressure":2,"clean_close":2},"total":12,"result":"PASS","what_went_well":["...","..."],"coaching":["...specific + actionable...","..."],"one_thing_to_try_next_time":"..."}`;
 var appRouter = router({
   system: systemRouter,
+  // Ambassador Field CRM (Phase 1)
+  crm: crmRouter,
   auth: router({
     // Returns the current user from the session cookie (null if not logged in)
     me: publicProcedure.query((opts) => opts.ctx.user)
@@ -59498,6 +60321,16 @@ var appRouter = router({
         const existing = await getTrainingProgress(ctx.user.id);
         if (!existing?.passedFinalTest) {
           try {
+            await issueCredential({
+              userId: ctx.user.id,
+              code: generateCredentialCode(),
+              holderName: ctx.user.name ?? null,
+              program: CREDENTIAL_PROGRAM,
+              finalTestScore: input.finalTestScore ?? 10
+            });
+          } catch {
+          }
+          try {
             const { sendCompletionAlert: sendCompletionAlert2 } = await Promise.resolve().then(() => (init_email(), email_exports));
             await sendCompletionAlert2({
               traineeName: ctx.user.name ?? "Ambassador",
@@ -59510,6 +60343,27 @@ var appRouter = router({
       }
       await upsertTrainingProgress(ctx.user.id, input);
       return { success: true };
+    })
+  }),
+  // Verifiable Certification Credential
+  credential: router({
+    // The signed-in holder's own credential (for display on the certificate).
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      const cred = await getCredentialByUserId(ctx.user.id);
+      if (!cred) return null;
+      return { code: cred.code, holderName: cred.holderName, program: cred.program, issuedAt: cred.issuedAt };
+    }),
+    // Public verification — no auth. Returns minimal, non-sensitive fields.
+    verify: publicProcedure.input(external_exports.object({ code: external_exports.string().min(3).max(32) })).query(async ({ input }) => {
+      const cred = await getCredentialByCode(input.code.trim().toUpperCase());
+      if (!cred) return { valid: false };
+      return {
+        valid: true,
+        code: cred.code,
+        holderName: cred.holderName,
+        program: cred.program,
+        issuedAt: cred.issuedAt
+      };
     })
   }),
   // Admin / Supervisor Dashboard
@@ -59708,6 +60562,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 registerOAuthRoutes(app);
+registerScheduledRoutes(app);
 app.use(
   "/api/trpc",
   createExpressMiddleware({

@@ -17,6 +17,7 @@ import {
 } from "./db";
 import { ENV } from "./_core/env";
 import { randomBytes } from "crypto";
+import { crmRouter } from "./crmRouter";
 
 // ─── Credential helpers ─────────────────────────────────────────────────────
 export const CREDENTIAL_PROGRAM = "AEO/GEO Foundations — Level I";
@@ -78,6 +79,9 @@ Return this exact JSON schema:
 
 export const appRouter = router({
   system: systemRouter,
+
+  // Ambassador Field CRM (Phase 1)
+  crm: crmRouter,
 
   auth: router({
     // Returns the current user from the session cookie (null if not logged in)

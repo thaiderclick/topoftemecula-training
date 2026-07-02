@@ -1,4 +1,11 @@
-import { boolean, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, customType, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+
+/** citext — case-insensitive text (website + CRM both use it for referral_code). */
+const citext = customType<{ data: string }>({
+  dataType() {
+    return "citext";
+  },
+});
 
 /**
  * Core user table backing auth flow.
@@ -103,3 +110,159 @@ export const credentials = pgTable("credentials", {
 
 export type Credential = typeof credentials.$inferSelect;
 export type InsertCredential = typeof credentials.$inferInsert;
+
+// ============================================================================
+// Ambassador Field CRM — Phase 1 (mirrors drizzle/crm_0001_init.sql).
+// business_id (uuid) is the cross-project join key to the website directory.
+// referral_code is citext on both sides — match with plain equality, no
+// lowercasing in app code. Bounty amounts come from bountyConfig, never hardcoded.
+// ============================================================================
+
+/** Field ambassadors — existing training-app users who work the field. */
+export const ambassador = pgTable("ambassador", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  referralCode: citext("referral_code").notNull().unique(),
+  payoutMethodStatus: text("payout_method_status").notNull().default("unset"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type Ambassador = typeof ambassador.$inferSelect;
+export type InsertAmbassador = typeof ambassador.$inferInsert;
+
+/** Read-only mirror of the website business directory (synced, keyed on businessId). */
+export const business = pgTable("business", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull().unique(),
+  name: text("name"),
+  slug: text("slug"),
+  categoryId: uuid("category_id"),
+  neighborhoodId: uuid("neighborhood_id"),
+  city: text("city"),
+  address: text("address"),
+  phone: text("phone"),
+  website: text("website"),
+  hours: jsonb("hours"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
+  directoryClaimStatus: text("directory_claim_status"),
+  subscriptionTier: text("subscription_tier"),
+  isFeatured: boolean("is_featured"),
+  confidenceScore: numeric("confidence_score"),
+  status: text("status"),
+  signupSource: text("signup_source"),
+  ownerContactEmail: text("owner_contact_email"),
+  localClaimStatus: text("local_claim_status").notNull().default("unclaimed"),
+  sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type Business = typeof business.$inferSelect;
+export type InsertBusiness = typeof business.$inferInsert;
+
+/** Field activity log. Never pays directly; claimed_onsite creates a `logged` claim. */
+export const visit = pgTable("visit", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  outcome: text("outcome").notNull(),
+  spokeWithName: text("spoke_with_name"),
+  spokeWithRole: text("spoke_with_role"),
+  notes: text("notes"),
+  ownerEmailCaptured: text("owner_email_captured"),
+  ownerNameForFollowup: text("owner_name_for_followup"),
+  bestTimeToReturn: text("best_time_to_return"),
+  rung: integer("rung"),
+  photoUrls: text("photo_urls").array(),
+  device: text("device"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type Visit = typeof visit.$inferSelect;
+export type InsertVisit = typeof visit.$inferInsert;
+
+/** The payable object. A `verified` claim always references a real business_users row. */
+export const claim = pgTable("claim", {
+  id: serial("id").primaryKey(),
+  businessId: uuid("business_id").notNull(),
+  ambassadorId: integer("ambassador_id"),
+  referralCode: citext("referral_code"),
+  originatingVisitId: integer("originating_visit_id"),
+  state: text("state").notNull().default("logged"),
+  bountyAmountCents: integer("bounty_amount_cents"),
+  sourceBusinessUsersId: uuid("source_business_users_id").unique(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verificationSource: text("verification_source"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  payoutBatchId: integer("payout_batch_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type Claim = typeof claim.$inferSelect;
+export type InsertClaim = typeof claim.$inferInsert;
+
+export const followupTask = pgTable("followup_task", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id").notNull(),
+  dueDate: date("due_date"),
+  note: text("note"),
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type FollowupTask = typeof followupTask.$inferSelect;
+export type InsertFollowupTask = typeof followupTask.$inferInsert;
+
+export const curriculumGap = pgTable("curriculum_gap", {
+  id: serial("id").primaryKey(),
+  ambassadorId: integer("ambassador_id").notNull(),
+  businessId: uuid("business_id"),
+  objectionText: text("objection_text").notNull(),
+  context: text("context"),
+  status: text("status").notNull().default("new"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type CurriculumGap = typeof curriculumGap.$inferSelect;
+export type InsertCurriculumGap = typeof curriculumGap.$inferInsert;
+
+/** Bounty is config-driven, never hardcoded. Reconciliation reads the active row. */
+export const bountyConfig = pgTable("bounty_config", {
+  id: serial("id").primaryKey(),
+  amountCents: integer("amount_cents").notNull(),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).defaultNow().notNull(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true }),
+});
+export type BountyConfig = typeof bountyConfig.$inferSelect;
+export type InsertBountyConfig = typeof bountyConfig.$inferInsert;
+
+export const payoutPeriod = pgTable("payout_period", {
+  id: serial("id").primaryKey(),
+  label: text("label"),
+  startsOn: date("starts_on"),
+  endsOn: date("ends_on"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type PayoutPeriod = typeof payoutPeriod.$inferSelect;
+export type InsertPayoutPeriod = typeof payoutPeriod.$inferInsert;
+
+export const payoutBatch = pgTable("payout_batch", {
+  id: serial("id").primaryKey(),
+  payoutPeriodId: integer("payout_period_id"),
+  ambassadorId: integer("ambassador_id"),
+  totalCents: integer("total_cents"),
+  status: text("status").notNull().default("pending"),
+  exportedAt: timestamp("exported_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type PayoutBatch = typeof payoutBatch.$inferSelect;
+export type InsertPayoutBatch = typeof payoutBatch.$inferInsert;
+
+/** Watermarks for the two website read surfaces (directory sync + claim reconciliation). */
+export const syncState = pgTable("sync_state", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull().unique(),
+  watermark: timestamp("watermark", { withTimezone: true }),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  lastStatus: text("last_status"),
+});
+export type SyncState = typeof syncState.$inferSelect;
+export type InsertSyncState = typeof syncState.$inferInsert;

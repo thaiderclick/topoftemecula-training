@@ -9,6 +9,17 @@ export const ENV = {
   // Resend email notification for trainee completion alerts
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   notificationEmail: process.env.NOTIFICATION_EMAIL ?? "",
+  // Ambassador CRM: read-only connection to the SEPARATE website Supabase project.
+  // Server-side only; never exposed to the client bundle.
+  websiteDatabaseUrl: process.env.WEBSITE_DATABASE_URL ?? "",
+  // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
+  cronSecret: process.env.CRON_SECRET ?? "",
+  // Public base URL for building business canonical links from slugs.
+  websitePublicBaseUrl: process.env.WEBSITE_PUBLIC_BASE_URL ?? "https://topoftemecula.com",
+  // PostHog (attribution-leak monitor §10). Optional — monitor degrades gracefully.
+  posthogApiKey: process.env.POSTHOG_API_KEY ?? "",
+  posthogProjectId: process.env.POSTHOG_PROJECT_ID ?? "",
+  posthogHost: process.env.POSTHOG_HOST ?? "https://us.posthog.com",
   // Legacy aliases kept so llm.ts compiles without changes
   forgeApiUrl: "https://api.openai.com",
   forgeApiKey: process.env.OPENAI_API_KEY ?? "",
